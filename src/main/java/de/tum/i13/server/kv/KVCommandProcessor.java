@@ -12,6 +12,7 @@ public class KVCommandProcessor implements CommandProcessor {
         this.kvStore = kvStore;
     }
 
+
     @Override
     public String process(String command) {
         //sarra parsing the possible commands
