@@ -1,34 +1,29 @@
 package de.tum.i13.server.kv;
 
-public class KVMessageProcessor implements KVMessage{
-//Sarra : i think there should be somehow instances here
+public class KVMessageProcessor implements KVMessage {
+    KVMessage kv;
+    private StatusType status;
+    private String key;
+    private String value;
+
+    public KVMessageProcessor(StatusType status, String key, String value) {
+        this.key = key;
+        this.status = status;
+        this.value = value;
+    }
+
     @Override
     public String getKey() {
-        //key is the instance
-
-        /*if ("key is in our cache")
-        return
-        * */
-
-        return null;
+        return this.key;
     }
 
     @Override
     public String getValue() {
-        //value is the instance
-
-        /*if value==null
-        return enum GET_ERROR
-        else return enum GET_SUCCESS
-        * */
-
-        return null;
+        return this.value;
     }
 
     @Override
     public StatusType getStatus() {
-        if (getKey()==null || getValue()==null)
-            return StatusType.GET_ERROR;
-        else return StatusType.GET_SUCCESS;
+        return this.status;
     }
 }
