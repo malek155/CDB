@@ -6,7 +6,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 public class KVCommandProcessor implements CommandProcessor {
-    private KVStore kvStore;
+    final private KVStore kvStore;
 
     public KVCommandProcessor(KVStore kvStore) {
         this.kvStore = kvStore;
@@ -15,21 +15,25 @@ public class KVCommandProcessor implements CommandProcessor {
 
     @Override
     public String process(String command) {
-        //sarra parsing the possible commands
         //TODO
-        if (command.toLowerCase() == "put")
+        int keyDelimiter = 0;
+        if (command.substring(0, 3).toLowerCase() == "put")
             //Parse message "put message", call kvstore.put
+            keyDelimiter = command.substring(4).indexOf(' ');
+        try {
+            this.kvStore.put(command.substring(4, keyDelimiter), command.substring(keyDelimiter + 1));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (command.substring(0, 3).toLowerCase() == "get") {
+            keyDelimiter = command.substring(4).indexOf(' ');
             try {
-                this.kvStore.put("key", "value");
+                this.kvStore.get(command.substring(4));
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        else if (command.toLowerCase() == "get") {
-            try {
-                this.kvStore.get("key");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        } else {
+
         }
 
         return null;
