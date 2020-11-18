@@ -14,12 +14,21 @@ public class KVCommandProcessor implements CommandProcessor {
 
     @Override
     public String process(String command) {
+        //sarra parsing the possible commands
         //TODO
-        //Parse message "put message", call kvstore.put
-        try {
-            this.kvStore.put("key", "hello");
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (command.toLowerCase() == "put")
+            //Parse message "put message", call kvstore.put
+            try {
+                this.kvStore.put("key", "value");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        else if (command.toLowerCase() == "get") {
+            try {
+                this.kvStore.get("key");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         return null;
