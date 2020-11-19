@@ -9,32 +9,32 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class KVClientStore implements KVStore {
-    private String path = "C:\\users\\aina21\\owncdb\\storage.txt";
+public class KVStoreProcessor implements KVStore {
+    private String path = "storage.txt";
     private File storage = new File(path);
     private FileOutputStream fileOutputStream;
     private Scanner scanner;
     private KVMessageProcessor kvmessage;
     private String[] keyvalue;
-    private boolean updated;
+    private boolean change;
+    private Cache cache;
 
-    public KVClientStore(){
+    public KVStoreProcessor(){}
 
-    }
 
     @Override
     public KVMessageProcessor put(String key, String value) throws Exception {
-        this.updated = false;
+        this.change = false;
         try {
-            if (!storage.exists()) {
+            if (!storage.exists())
                 storage.createNewFile();
-            }
+
             scanner = new Scanner(new FileInputStream(storage));
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
                 keyvalue = line.split(" ");
                 if (keyvalue[0].equals(key)) {
-                    this.updated = true;
+                    this.change = true;
                     Path path1 = Paths.get(path);
                     Stream<String> lines = Files.lines(path1);
                     String replacingLine = (value == null)?"": key + " " + value + "\r\n" ;
@@ -48,12 +48,14 @@ public class KVClientStore implements KVStore {
                 }
                 }
             scanner.close();
-            if (!updated) {
+            if (this.change == false) {
                 String message = key + " " + value + "\r\n";
                 byte[] bytesOutput = message.getBytes();
-                fileOutputStream = new FileOutputStream(storage);
-                fileOutputStream.write(bytesOutput);
-                fileOutputStream.flush();
+                FileWriter fileWriter = new FileWriter(storage.getName(), true);
+                BufferedWriter bw = new BufferedWriter(fileWriter);
+                bw.write(message);
+                bw.close();
+                fileWriter.close();
                 kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, null
                 );
             }
@@ -61,12 +63,6 @@ public class KVClientStore implements KVStore {
             System.out.println(fe);
             kvmessage = (value==null)?new KVMessageProcessor(KVMessage.StatusType.DELETE_ERROR, key, null)
                     :new KVMessageProcessor(KVMessage.StatusType.PUT_ERROR, key, null);
-        } finally {
-            try {
-                fileOutputStream.close();
-            } catch (IOException ioe) {
-                System.out.println("Error in closing the stream");
-            }
         }
         return kvmessage;
     }
@@ -85,6 +81,17 @@ public class KVClientStore implements KVStore {
         }
         scanner.close();
         return kvmessage;
+    }
+
+    public static void main(String[] args) throws Exception {
+        KVStoreProcessor kvStoreProcessor = new KVStoreProcessor();
+        kvStoreProcessor.put("key0", "value0");
+        System.out.println(kvStoreProcessor.get("key0").getValue());
+        kvStoreProcessor.put("key1", "value1");
+        kvStoreProcessor.put("key2", "value3");
+        kvStoreProcessor.put("key1", "value3");
+        kvStoreProcessor.put("key0", null);
+        System.out.println(kvStoreProcessor.get("key0").getStatus());
     }
 
 }
