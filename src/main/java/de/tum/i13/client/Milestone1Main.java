@@ -1,8 +1,16 @@
 package de.tum.i13.client;
 
+import de.tum.i13.server.kv.KVMessage;
+import de.tum.i13.server.kv.KVStore;
+import de.tum.i13.server.kv.KVStoreProcessor;
+import jdk.internal.net.http.hpack.HPACK;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class Milestone1Main {
@@ -20,12 +28,20 @@ public class Milestone1Main {
                 case "connect": activeConnection = buildconnection(command); break;
                 case "send": sendmessage(activeConnection, command, line); break;
                 case "disconnect": closeConnection(activeConnection); break;
+                //case "put": put(command[1],command[2]);break;
+                //case "get" : get(command[1]);break;
+                case "logLevel": setLogger(command[1]);
                 case "help": printHelp(); break;
                 case "quit": printEchoLine("Application exit!"); return;
                 default: printEchoLine("Unknown command");
             }
         }
     }
+private static void setLogger (String strLevel){
+        Level level = Level.parse(strLevel);
+        Logger logger = Logger.getLogger("");
+        logger.setLevel(level);
+}
 
     private static void printHelp() {
         System.out.println("Available commands:");
@@ -89,4 +105,9 @@ public class Milestone1Main {
         }
         return null;
     }
+    //we have to implement the put and get method from the client side
+    //how is it gonna call the put method from the server when it isn't static
+
+
+
 }
