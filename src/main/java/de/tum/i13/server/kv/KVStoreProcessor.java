@@ -91,7 +91,7 @@ public class KVStoreProcessor implements KVStore {
         kvStoreProcessor.put("key2", "value3");
         kvStoreProcessor.put("key1", "value3");
         kvStoreProcessor.put("key0", null);
-        System.out.println(kvStoreProcessor.get("key0").getStatus());
+        System.out.println(kvStoreProcessor.put("key1", "value4").getStatus() + kvStoreProcessor.get("key1").getValue());
     }
 
 }
