@@ -7,19 +7,42 @@ import java.net.InetSocketAddress;
 
 public class KVCommandProcessor implements CommandProcessor {
     private KVStore kvStore;
+    private Cache cache;
 
-    public KVCommandProcessor(KVStore kvStore) {
+    public void setCacheStrategy(Cache cache){
+        if (cache.getClass().equals(LFUCache.class))
+            this.cache = (LFUCache) cache;
+        else this.cache = (FIFOLRUCache) cache;
+    }
+
+    public KVCommandProcessor(KVStoreProcessor kvStore) {
         this.kvStore = kvStore;
     }
 
-    @Override
     public String process(String command) {
-        //TODO
-        //Parse message "put message", call kvstore.put
+        int keyDelimiter = 0;
+        if (command.substring(0, 3).toLowerCase() == "put")
+            keyDelimiter = command.substring(4).indexOf(' ');
         try {
-            this.kvStore.put("key", "hello");
+            this.kvStore.put(command.substring(4, keyDelimiter), command.substring(keyDelimiter + 1));
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        if (command.substring(0, 3).toLowerCase() == "get") {
+            keyDelimiter = command.substring(4).indexOf(' ');
+            if (cache.get(command.substring(4))==null) {
+                try {
+                    this.kvStore.get(command.substring(4));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            else{
+
+            }
+        } else {
+
+
         }
 
         return null;
