@@ -19,20 +19,20 @@ public class KVCommandProcessor implements CommandProcessor {
 	// if we will use the cache here it should be static so that only one instance
 	// is accessed by all the KVCommandProcessors
 	@Override
-	public String process(String command) {
+	public String process(String command) throws ParameterException {
 		// TODO
 		// Parse message "put message", call kvstore.put
+		KVMessage msg;
+		String response;
 		try {
 			// the return value will be a KVMessageProcessor here and the methods can only
 			// be put or get or delete
 			// I will change it as a return
-			KVMessage msg;
-			String response;
 			String[] array = command.split(" ");
 			// put request
 			if (array[0].equals("put")) {
 				if (array.length < 3) {
-					System.out.println("Exception here");
+					throw new ParameterException("Put Request needs a key and a value !");
 				}
 				msg = this.kvStore.put(array[1], array[2]);
 				if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
@@ -42,10 +42,10 @@ public class KVCommandProcessor implements CommandProcessor {
 				}
 
 			}
-			// get request 
+			// get request
 			else if (array[0].equals("get")) {
 				if (array.length != 2) {
-					System.out.println("Exception here also because get command need only one parameter");
+					throw new ParameterException("Get Request needs only a key !");
 				}
 				msg = this.kvStore.get(array[1]);
 				if (msg.getStatus().equals(StatusType.GET_ERROR)) {
@@ -55,9 +55,17 @@ public class KVCommandProcessor implements CommandProcessor {
 				}
 
 			}
-			// delete request 
-			else if(array[0].equals("delete") ) {
-				msg = this.kvStore
+			// delete request
+			else if (array[0].equals("delete")) {
+				if (array.length != 2) {
+					throw new ParameterException("Delete Request needs only a key ! ");
+				}
+				msg = this.kvStore.put(array[1], null);
+				response = msg.getStatus().toString() + " " + msg.getKey();
+			} else {
+				// normally we will have nothing here because we are only forward the msg if it
+				// already contains put, get or delete
+				System.out.println("also exception here");
 			}
 
 			// this.kvStore.put("key", "hello");

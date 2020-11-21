@@ -62,8 +62,7 @@ public class KVStoreProcessor implements KVStore {
 					kvmessage = (value == null) ? new KVMessageProcessor(KVMessage.StatusType.DELETE_SUCCESS, key, null)
 							: new KVMessageProcessor(KVMessage.StatusType.PUT_UPDATE, key, value);
 					break;
-					// why we are reading by the scanner line by line when we are using the stream
-					// and changing it with it so we can just use the streams
+
 				}
 			}
 			scanner.close();

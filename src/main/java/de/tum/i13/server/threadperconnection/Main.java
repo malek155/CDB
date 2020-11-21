@@ -16,6 +16,7 @@ import static de.tum.i13.shared.LogSetup.setupLogging;
  * Created by chris on 09.01.15.
  */
 public class Main {
+	// used to shut down the server , maybe we need it
 	private static boolean isRunning = true;
 
 	// method to close the server
@@ -46,7 +47,14 @@ public class Main {
 
 		// Replace with your Key value server logic.
 		// If you use multithreading you need locking
+		// we can have
 		CommandProcessor logic = new EchoLogic();
+		// as we are using the same instance of logic for all the threads then we need
+		// only to synchronize the accessed methods , and if we are about to lock an
+		// object we have to lock the KVStore object which is only accessed through the
+		// KVCommandProcessor the we want have an access to it so I think we can only
+		// use the synchronized methods , otherwise we can change it and that will
+		// affect the structure that I am working with
 
 		// while (true) {
 		while (isRunning) {

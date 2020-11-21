@@ -19,14 +19,32 @@ public class EchoLogic implements CommandProcessor {
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
-		switch (input[0]) {
-		// we have to make sure that the user uses minimum 2 components in the put
-		// request otherwise we have to make an exception class for the put and get to
-		// handle the unwanted requests but they should be thrown in the
-		// KVCommandProcessor
-		case "put":
-			CommProc.process(command);// normally here we need the KVStore processor
-		case "get":
+		String response;
+		if (input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) {
+			// we have to make sure that the user uses minimum 2 components in the put
+			// request otherwise we have to make an exception class for the put, get and
+			// delete to
+			// handle the unwanted requests but they should be thrown in the
+			// KVCommandProcessor
+
+			response = CommProc.process(command);// normally here we need the KVStore processor
+
+		} else if (input[0].equals("connect")) {
+			// Here we will use the connectionAccepted method but we don't have access to
+			// the remote and local socket , how should we implement it ?
+			// response = connectionAccepted() ;
+			// I think also we need an instance of active connection here to bind the client
+			// but we still don't have a clear client interface we have to integrate it
+		} else if (input[0].equals("disconnect")) {
+			// same as connect matter
+		} else if (input[0].equals("loglevel")) {
+			//
+		} else if (input[0].equals("help")) {
+
+		} else if (input[0].equals("quit")) {
+
+		} else {
+			System.out.println("we have an exception here ");
 		}
 		// Let the magic happen here
 
