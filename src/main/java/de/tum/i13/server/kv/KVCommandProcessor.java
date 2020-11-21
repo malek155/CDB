@@ -2,6 +2,7 @@ package de.tum.i13.server.kv;
 
 import de.tum.i13.shared.CommandProcessor;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
@@ -9,45 +10,55 @@ public class KVCommandProcessor implements CommandProcessor {
     private KVStore kvStore;
     private Cache cache;
 
-    public void setCacheStrategy(Cache cache){
-        if (cache.getClass().equals(LFUCache.class))
-            this.cache = (LFUCache) cache;
-        else this.cache = (FIFOLRUCache) cache;
-    }
-
-    public KVCommandProcessor(KVStoreProcessor kvStore) {
+    public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache) {
         this.kvStore = kvStore;
+        this.cache = (cache.getClass().equals(LFUCache.class))?(LFUCache) cache:(FIFOLRUCache) cache;
     }
 
+    @Override
     public String process(String command) {
-        int keyDelimiter = 0;
-        if (command.substring(0, 3).toLowerCase() == "put")
-            keyDelimiter = command.substring(4).indexOf(' ');
+        // TODO
+        // Parse message "put message", call kvstore.put
         try {
-            this.kvStore.put(command.substring(4, keyDelimiter), command.substring(keyDelimiter + 1));
+            // the return value will be a KVMessageProcessor here and the methods can only
+            // be put or get or delete
+            // I will change it as a return
+            KVMessage msg;
+            String response;
+            String[] array = command.split(" ");
+            // put request
+            if (array[0].equals("put")) {
+                if (array.length < 3) {
+                    throw new IOException("Wrong \"put\" command");
+                }
+                msg = this.kvStore.put(array[1], array[2]);
+                if (msg.getStatus().equals(KVMessage.StatusType.PUT_ERROR)) {
+                    response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
+                } else {
+                    response = msg.getStatus().toString() + " " + msg.getKey();
+                }
+
+            }
+            // get request
+            else if (array[0].equals("get")) {
+                if (array.length != 2) {
+                    throw new IOException("Wrong \"get\" command");
+                }
+                msg = this.kvStore.get(array[1]);
+                if (msg.getStatus().equals(KVMessage.StatusType.GET_ERROR)) {
+                    response = msg.getStatus().toString() + " " + msg.getKey();
+                } else {
+                    response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
+                }
+
+            }
+            // this.kvStore.put("key", "hello");
         } catch (Exception e) {
             e.printStackTrace();
-        }
-        if (command.substring(0, 3).toLowerCase() == "get") {
-            keyDelimiter = command.substring(4).indexOf(' ');
-            if (cache.get(command.substring(4))==null) {
-                try {
-                    this.kvStore.get(command.substring(4));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            else{
-
-            }
-        } else {
-
-
         }
 
         return null;
     }
-
     @Override
     public String connectionAccepted(InetSocketAddress address, InetSocketAddress remoteAddress) {
         //TODO

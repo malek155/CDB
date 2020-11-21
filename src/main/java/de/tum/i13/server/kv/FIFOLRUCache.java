@@ -3,7 +3,7 @@ package de.tum.i13.server.kv;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class FIFOLRUCache {
+public class FIFOLRUCache implements Cache{
     Map<String, String> cache;
     private static int size;
 
@@ -17,6 +17,10 @@ public class FIFOLRUCache {
                 return this.size() == size;
             }
         };
+    }
+
+    public void setSize(int size) {
+        this.size = size;
     }
 
     public synchronized void put(String key, String value){

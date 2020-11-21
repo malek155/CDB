@@ -1,5 +1,8 @@
 package de.tum.i13.client;
 
+import de.tum.i13.server.kv.KVStoreProcessor;
+import de.tum.i13.server.kv.KVCommandProcessor;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -12,10 +15,17 @@ public class ActiveConnection implements AutoCloseable {
     private final Socket socket;
     private final PrintWriter output;
     private final BufferedReader input;
+    private KVStoreProcessor kvStore = new KVStoreProcessor();
+    private final KVCommandProcessor kvCommandProcessor = new KVCommandProcessor(kvStore);
+
+
+    public void kvAction(String line){
+        kvCommandProcessor.process(line);
+    }
+
 
     public ActiveConnection(Socket socket, PrintWriter output, BufferedReader input) {
         this.socket = socket;
-
         this.output = output;
         this.input = input;
     }
@@ -38,4 +48,5 @@ public class ActiveConnection implements AutoCloseable {
     public String getInfo() {
         return "/" + this.socket.getRemoteSocketAddress().toString();
     }
+
 }

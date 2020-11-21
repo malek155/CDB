@@ -56,8 +56,7 @@ public class KVStoreProcessor implements KVStore {
                 bw.write(message);
                 bw.close();
                 fileWriter.close();
-                kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, null
-                );
+                kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value);
             }
         } catch (FileNotFoundException fe) {
             System.out.println(fe);

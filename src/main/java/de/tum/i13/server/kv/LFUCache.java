@@ -3,7 +3,7 @@ package de.tum.i13.server.kv;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class LFUCache{
+public class LFUCache implements Cache{
     private class CacheEntry{
         public String value;
         public int frequency;
@@ -21,6 +21,10 @@ public class LFUCache{
     public LFUCache(int size) {
         this.size = size;
         cache = new LinkedHashMap<String, CacheEntry>(size, 1);
+    }
+
+    public void setSize(int size) {
+        this.size = size;
     }
 
     public boolean isFull(){

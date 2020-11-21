@@ -4,7 +4,6 @@ import picocli.CommandLine;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.List;
 
 /// ported from : https://github.com/zegelin/cassandra-exporter/blob/master/common/src/main/java/com/zegelin/picocli/InetSocketAddressTypeConverter.java
 public class InetSocketAddressTypeConverter implements CommandLine.ITypeConverter<InetSocketAddress> {

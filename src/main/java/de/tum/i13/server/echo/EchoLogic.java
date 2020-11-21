@@ -1,5 +1,8 @@
 package de.tum.i13.server.echo;
 
+import de.tum.i13.server.kv.Cache;
+import de.tum.i13.server.kv.KVCommandProcessor;
+import de.tum.i13.server.kv.KVStoreProcessor;
 import de.tum.i13.shared.CommandProcessor;
 
 import java.net.InetAddress;
@@ -7,13 +10,31 @@ import java.net.InetSocketAddress;
 import java.util.logging.Logger;
 
 public class EchoLogic implements CommandProcessor {
+    public EchoLogic(Cache cache){
+        this.cache = cache;
+    }
+
     public static Logger logger = Logger.getLogger(EchoLogic.class.getName());
+    Cache cache;
+    KVCommandProcessor CommProc = new KVCommandProcessor(new KVStoreProcessor(), this.cache);
+
+
 
     public String process(String command) {
 
         logger.info("received command: " + command.trim());
 
-        //Let the magic happen here
+        String[] input = command.split(" ");
+        switch (input[0]) {
+            // we have to make sure that the user uses minimum 2 components in the put
+            // request otherwise we have to make an exception class for the put and get to
+            // handle the unwanted requests but they should be thrown in the
+            // KVCommandProcessor
+            case "put":
+                CommProc.process(command);// normally here we need the KVStore processor
+            case "get":
+        }
+        // Let the magic happen here
 
         return command;
     }

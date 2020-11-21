@@ -1,6 +1,7 @@
 package de.tum.i13.server.threadperconnection;
 
 import de.tum.i13.server.echo.EchoLogic;
+import de.tum.i13.server.kv.Cache;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Config;
 
@@ -17,9 +18,18 @@ import static de.tum.i13.shared.LogSetup.setupLogging;
  */
 public class Main {
 
+    private static boolean isRunning = true;
+    private static Cache cache;
+
+    public void close() {
+        isRunning = false;
+    }
+
     public static void main(String[] args) throws IOException {
         Config cfg = parseCommandlineArgs(args);  //Do not change this
+        cfg.run();
         setupLogging(cfg.logfile);
+        System.out.println();
 
         final ServerSocket serverSocket = new ServerSocket();
 
@@ -40,7 +50,7 @@ public class Main {
 
         //Replace with your Key value server logic.
         // If you use multithreading you need locking
-        CommandProcessor logic = new EchoLogic();
+        CommandProcessor logic = new EchoLogic(cache);
 
         while (true) {
             Socket clientSocket = serverSocket.accept();

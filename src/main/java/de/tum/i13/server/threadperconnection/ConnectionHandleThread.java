@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 
 public class ConnectionHandleThread extends Thread {
@@ -23,6 +24,10 @@ public class ConnectionHandleThread extends Thread {
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
             PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
+
+            InetSocketAddress remote = (InetSocketAddress) clientSocket.getRemoteSocketAddress();
+
+            cp.connectionAccepted(new InetSocketAddress(clientSocket.getLocalPort()), remote);
 
             String firstLine;
             while ((firstLine = in.readLine()) != null) {
