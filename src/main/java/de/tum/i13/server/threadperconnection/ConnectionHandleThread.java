@@ -7,31 +7,42 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 
 public class ConnectionHandleThread extends Thread {
-    private CommandProcessor cp;
-    private Socket clientSocket;
 
-    public ConnectionHandleThread(CommandProcessor commandProcessor, Socket clientSocket) {
-        this.cp = commandProcessor;
-        this.clientSocket = clientSocket;
-    }
+	private CommandProcessor cp;
+	private Socket clientSocket;
+	private boolean isActive = false;
 
-    @Override
-    public void run() {
-        try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
-            PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
+	public ConnectionHandleThread(CommandProcessor commandProcessor, Socket clientSocket) {
+		this.cp = commandProcessor;
+		this.clientSocket = clientSocket;
+	}
 
-            String firstLine;
-            while ((firstLine = in.readLine()) != null) {
-                String res = cp.process(firstLine);
-                out.write(res);
-                out.flush();
-            }
-        } catch(Exception ex) {
-            ex.printStackTrace();
-        }
-    }
+	@Override
+	public void run() {
+		try {
+			BufferedReader in = new BufferedReader(
+					new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
+			PrintWriter out = new PrintWriter(
+					new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
+			// first we call the connection accepted method of the commandprocessor
+			InetSocketAddress remote = (InetSocketAddress) clientSocket.getRemoteSocketAddress();
+			cp.connectionAccepted(new InetSocketAddress(clientSocket.getLocalPort()), remote);
+
+			String firstLine;
+			while ((firstLine = in.readLine()) != null) {
+				// lehne bech takra el message eli jey mel client ou ta3malou l process
+				String res = cp.process(firstLine);
+				// tab3eth el resultat mte3 el process lil serveur
+				out.write(res);
+				out.flush();
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			// handle the exception and add finally block to close everything
+		}
+	}
 }

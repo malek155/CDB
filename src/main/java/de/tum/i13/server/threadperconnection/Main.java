@@ -16,38 +16,47 @@ import static de.tum.i13.shared.LogSetup.setupLogging;
  * Created by chris on 09.01.15.
  */
 public class Main {
+	private static boolean isRunning = true;
 
-    public static void main(String[] args) throws IOException {
-        Config cfg = parseCommandlineArgs(args);  //Do not change this
-        setupLogging(cfg.logfile);
+	// method to close the server
+	public void close() {
+		isRunning = false;
+	}
 
-        final ServerSocket serverSocket = new ServerSocket();
+	public static void main(String[] args) throws IOException {
+		Config cfg = parseCommandlineArgs(args); // Do not change this
+		setupLogging(cfg.logfile);
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                System.out.println("Closing thread per connection kv server");
-                try {
-                    serverSocket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+		final ServerSocket serverSocket = new ServerSocket();
 
-        //bind to localhost only
-        serverSocket.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				System.out.println("Closing thread per connection kv server");
+				try {
+					serverSocket.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		});
 
-        //Replace with your Key value server logic.
-        // If you use multithreading you need locking
-        CommandProcessor logic = new EchoLogic();
+		// bind to localhost only
+		serverSocket.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
 
-        while (true) {
-            Socket clientSocket = serverSocket.accept();
+		// Replace with your Key value server logic.
+		// If you use multithreading you need locking
+		CommandProcessor logic = new EchoLogic();
 
-            //When we accept a connection, we start a new Thread for this connection
-            Thread th = new ConnectionHandleThread(logic, clientSocket);
-            th.start();
-        }
-    }
+		// while (true) {
+		while (isRunning) {
+			// Waiting for client to connect
+			Socket clientSocket = serverSocket.accept();
+
+			// When we accept a connection, we start a new Thread for this connection
+			Thread th = new ConnectionHandleThread(logic, clientSocket);
+			th.start();
+		}
+
+	}
 }
