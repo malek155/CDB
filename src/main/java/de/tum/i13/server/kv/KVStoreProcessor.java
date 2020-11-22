@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class KVStoreProcessor implements KVStore {
-    private String path = "storage.txt";
-    private File storage = new File(path);
+    private Path path;
+    private File storage = new File(String.valueOf(path));
     private FileOutputStream fileOutputStream;
     private Scanner scanner;
     private KVMessageProcessor kvmessage;
@@ -19,8 +19,11 @@ public class KVStoreProcessor implements KVStore {
     private boolean change;
     private Cache cache;
 
-    public KVStoreProcessor(){}
+    public void setPath(Path path) {
+        this.path = path;
+    }
 
+    public KVStoreProcessor(){}
 
     @Override
     public KVMessageProcessor put(String key, String value) throws Exception {
@@ -35,7 +38,7 @@ public class KVStoreProcessor implements KVStore {
                 keyvalue = line.split(" ");
                 if (keyvalue[0].equals(key)) {
                     this.change = true;
-                    Path path1 = Paths.get(path);
+                    Path path1 = Paths.get(String.valueOf(path));
                     Stream<String> lines = Files.lines(path1);
                     String replacingLine = (value == null)?"": key + " " + value + "\r\n" ;
 

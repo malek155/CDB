@@ -26,7 +26,7 @@ public Config() {
     public String listenaddr;
 
     @CommandLine.Option(names = "-b", description = "bootstrap broker where clients and other brokers connect first to retrieve configuration, port and ip, e.g., 192.168.1.1:5153", defaultValue = "clouddatabases.i13.in.tum.de:5153")
-    public String bootstrap;
+    public InetSocketAddress bootstrap;
 
     @CommandLine.Option(names = "-d", description = "Directory for files", defaultValue = "data/")
     public Path dataDir;
@@ -50,10 +50,9 @@ public Config() {
     public static Config parseCommandlineArgs(String[] args) {
         Config cfg = new Config();
         CommandLine.ParseResult parseResult = new CommandLine(cfg).registerConverter(InetSocketAddress.class, new InetSocketAddressTypeConverter()).parseArgs(args);
-
 //handling bootstrap
-        String[] splits = cfg.bootstrap.split(":");
-        InetSocketAddress bootstrap = new InetSocketAddress(splits[0], Integer.parseInt(splits[1]));
+//        String[] splits = cfg.bootstrap.split(":");
+//        InetSocketAddress bootstrap = new InetSocketAddress(splits[0], Integer.parseInt(splits[1]));
 
         //handling loglevels
         Level level = Level.parse(cfg.loglevel);

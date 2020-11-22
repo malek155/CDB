@@ -2,6 +2,9 @@ package de.tum.i13.server.threadperconnection;
 
 import de.tum.i13.server.echo.EchoLogic;
 import de.tum.i13.server.kv.Cache;
+import de.tum.i13.server.kv.FIFOLRUCache;
+import de.tum.i13.server.kv.KVStoreProcessor;
+import de.tum.i13.server.kv.LFUCache;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Config;
 
@@ -20,6 +23,7 @@ public class Main {
 
     private static boolean isRunning = true;
     private static Cache cache;
+    private static KVStoreProcessor kvStore;
 
     public static void close() {
         isRunning = false;
@@ -29,6 +33,18 @@ public class Main {
         Config cfg = parseCommandlineArgs(args);  //Do not change this
         setupLogging(cfg.logfile);
         System.out.println();
+        KVStoreProcessor kvStore = new KVStoreProcessor();
+        kvStore.setPath(cfg.dataDir);
+
+        if(cfg.cache.equals("FIFO")){
+            cache = new FIFOLRUCache(cfg.cacheSize, false);
+        }
+        else if(cfg.cache.equals("LRU")){
+            cache = new FIFOLRUCache(cfg.cacheSize, true);
+        }
+        else if(cfg.cache.equals("LFU")) {
+            cache = new LFUCache(cfg.cacheSize);
+        }
 
         final ServerSocket serverSocket = new ServerSocket();
 
@@ -50,7 +66,7 @@ public class Main {
 
         //Replace with your Key value server logic.
         // If you use multithreading you need locking
-        CommandProcessor logic = new EchoLogic(cache);
+        CommandProcessor logic = new EchoLogic(cache, kvStore);
 
         while (isRunning) {
             Socket clientSocket = serverSocket.accept();
