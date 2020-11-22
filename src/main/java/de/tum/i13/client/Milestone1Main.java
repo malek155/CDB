@@ -1,19 +1,15 @@
 package de.tum.i13.client;
 
-import de.tum.i13.server.kv.KVStoreProcessor;
-import de.tum.i13.server.kv.KVCommandProcessor;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
 
 public class Milestone1Main {
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+
         ActiveConnection activeConnection = null;
-        KVStoreProcessor kvStoreProcessor = new KVStoreProcessor();
-        KVCommandProcessor kvCommandProcessor = new KVCommandProcessor(kvStoreProcessor);
         for(;;) {
             System.out.print("EchoClient> ");
             String line = reader.readLine();
@@ -26,15 +22,9 @@ public class Milestone1Main {
                 case "disconnect": closeConnection(activeConnection); break;
                 case "help": printHelp(); break;
                 case "quit": printEchoLine("Application exit!"); return;
-                case "put":
-                case "get": kvFunction(line, kvCommandProcessor); break;
                 default: printEchoLine("Unknown command");
             }
         }
-    }
-
-    private static void kvFunction(String line, KVCommandProcessor kvCommandProcessor){
-        kvCommandProcessor.process(line);
     }
 
     private static void printHelp() {
