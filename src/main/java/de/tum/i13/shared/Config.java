@@ -12,13 +12,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Level;
 
-public class Config implements Runnable{
+public class Config  {
+
 //        Runnable ?
 
-public Config(){
+public Config() {
 
 }
-    @CommandLine.Option(names = "-p", description = "sets the port of the server", interactive = true, defaultValue = "5153")
+    @CommandLine.Option(names = "-p", description = "sets the port of the server", interactive = true, arity = "0..1", defaultValue = "5153")
     public int port;
 
     @CommandLine.Option(names = "-a", description = "which address the server should listen to", defaultValue = "127.0.0.1")
@@ -37,20 +38,20 @@ public Config(){
     public boolean usagehelp;
 
     @CommandLine.Option(names = "-ll", description = "Sets loglevel", defaultValue = "ALL")
-    String loglevel;
+    public String loglevel;
 
     @CommandLine.Option(names = "-c", description = "Sets cache size", defaultValue = "100")
     public int cacheSize;
 
     @CommandLine.Option(names = "-s", description = "Sets cache strategy", defaultValue = "LRU")
-    String cacheString;
+    public String cache;
 
 
     public static Config parseCommandlineArgs(String[] args) {
         Config cfg = new Config();
         CommandLine.ParseResult parseResult = new CommandLine(cfg).registerConverter(InetSocketAddress.class, new InetSocketAddressTypeConverter()).parseArgs(args);
 
-        //handling bootstrap
+//handling bootstrap
         String[] splits = cfg.bootstrap.split(":");
         InetSocketAddress bootstrap = new InetSocketAddress(splits[0], Integer.parseInt(splits[1]));
 
@@ -58,13 +59,13 @@ public Config(){
         Level level = Level.parse(cfg.loglevel);
 
         //handling caches
-        if(cfg.cacheString.equals("FIFO")){
+        if(cfg.cache.equals("FIFO")){
             Cache cache = new FIFOLRUCache(cfg.cacheSize, false);
         }
-        else if(cfg.cacheString.equals("LRU")){
+        else if(cfg.cache.equals("LRU")){
             Cache cache = new FIFOLRUCache(cfg.cacheSize, true);
         }
-        else if(cfg.cacheString.equals("LFU")) {
+        else if(cfg.cache.equals("LFU")) {
             Cache cache = new LFUCache(cfg.cacheSize);
         }
         else System.out.println("Check your input and try setting a cache strategy again");
@@ -91,6 +92,7 @@ public Config(){
             }
         }
 
+
         //handling the errors
         if(!parseResult.errors().isEmpty()) {
             for(Exception ex : parseResult.errors()) {
@@ -115,9 +117,6 @@ public Config(){
                 '}';
     }
 
-    @Override
-    public void run() {
-        System.out.println("Ola" + port);
-    }
+
 }
 
