@@ -1,6 +1,10 @@
 package de.tum.i13.server.threadperconnection;
 
 import de.tum.i13.server.echo.EchoLogic;
+import de.tum.i13.server.kv.Cache;
+import de.tum.i13.server.kv.FIFOLRUCache;
+import de.tum.i13.server.kv.KVStoreProcessor;
+import de.tum.i13.server.kv.LFUCache;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Config;
 
@@ -18,6 +22,8 @@ import static de.tum.i13.shared.LogSetup.setupLogging;
 public class Main {
 	// used to shut down the server , maybe we need it
 	private static boolean isRunning = true;
+	private static Cache cache;
+	private static KVStoreProcessor kvStore;
 
 	// method to close the server
 	public void close() {
@@ -27,6 +33,17 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		Config cfg = parseCommandlineArgs(args); // Do not change this
 		setupLogging(cfg.logfile);
+
+		KVStoreProcessor kvStore = new KVStoreProcessor();
+		kvStore.setPath(cfg.dataDir);
+
+		if (cfg.cache.equals("FIFO")) {
+			cache = new FIFOLRUCache(cfg.cacheSize, false);
+		} else if (cfg.cache.equals("LRU")) {
+			cache = new FIFOLRUCache(cfg.cacheSize, true);
+		} else if (cfg.cache.equals("LFU")) {
+			cache = new LFUCache(cfg.cacheSize);
+		}
 
 		final ServerSocket serverSocket = new ServerSocket();
 
@@ -48,7 +65,8 @@ public class Main {
 		// Replace with your Key value server logic.
 		// If you use multithreading you need locking
 		// we can have
-		CommandProcessor logic = new EchoLogic();
+		// add the
+		CommandProcessor logic = new EchoLogic(cache, kvStore);
 		// as we are using the same instance of logic for all the threads then we need
 		// only to synchronize the accessed methods , and if we are about to lock an
 		// object we have to lock the KVStore object which is only accessed through the

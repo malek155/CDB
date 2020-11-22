@@ -1,8 +1,10 @@
 package de.tum.i13.server.echo;
 
+import de.tum.i13.server.kv.Cache;
 import de.tum.i13.server.kv.KVCommandProcessor;
 import de.tum.i13.server.kv.KVStore;
 import de.tum.i13.server.kv.KVStoreProcessor;
+import de.tum.i13.server.kv.ParameterException;
 import de.tum.i13.shared.CommandProcessor;
 
 import java.net.InetAddress;
@@ -12,10 +14,15 @@ import java.util.logging.Logger;
 public class EchoLogic implements CommandProcessor {
 	// as we will use only one instance of Echologic ( main Class) then we will be
 	// using only one instance of KVCommandProcessor and KVStore
-	public static Logger logger = Logger.getLogger(EchoLogic.class.getName());
-	KVCommandProcessor CommProc = new KVCommandProcessor(new KVStoreProcessor());
+	public EchoLogic(Cache cache, KVStore kvStore) {
+		this.cache = cache;
+	}
 
-	public String process(String command) {
+	public static Logger logger = Logger.getLogger(EchoLogic.class.getName());
+	Cache cache;
+	KVCommandProcessor CommProc = new KVCommandProcessor(new KVStoreProcessor(), this.cache);
+
+	public String process(String command) throws ParameterException {
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
@@ -29,15 +36,17 @@ public class EchoLogic implements CommandProcessor {
 
 			response = CommProc.process(command);// normally here we need the KVStore processor
 
-		} else if (input[0].equals("connect")) {
-			// Here we will use the connectionAccepted method but we don't have access to
-			// the remote and local socket , how should we implement it ?
-			// response = connectionAccepted() ;
-			// I think also we need an instance of active connection here to bind the client
-			// but we still don't have a clear client interface we have to integrate it
-		} else if (input[0].equals("disconnect")) {
+//		} else if (input[0].equals("connect")) {
+//			// Here we will use the connectionAccepted method but we don't have access to
+//			// the remote and local socket , how should we implement it ?
+//			// response = connectionAccepted() ;
+//			// I think also we need an instance of active connection here to bind the client
+//			// but we still don't have a clear client interface we have to integrate it
+//		} else if (input[0].equals("disconnect")) {
 			// same as connect matter
-		} else if (input[0].equals("loglevel")) {
+		} else if (input[0].equals("loglevel"))
+
+		{
 			//
 		} else if (input[0].equals("help")) {
 
@@ -61,5 +70,6 @@ public class EchoLogic implements CommandProcessor {
 	@Override
 	public void connectionClosed(InetAddress remoteAddress) {
 		logger.info("connection closed: " + remoteAddress.toString());
+
 	}
 }

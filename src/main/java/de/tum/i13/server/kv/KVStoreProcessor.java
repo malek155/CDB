@@ -10,15 +10,18 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class KVStoreProcessor implements KVStore {
-	private String path = "storage.txt";
-	private File storage = new File(path);
+	private Path path;
+	private File storage = new File(String.valueOf(path));
 	private FileOutputStream fileOutputStream;
 	private Scanner scanner;
 	private KVMessageProcessor kvmessage;
 	private String[] keyvalue;
 	private boolean change;
-	// what should this attribute do ?
 	private Cache cache;
+
+	public void setPath(Path path) {
+		this.path = path;
+	}
 
 	// l class hedhy tekhou el put wel get methods elli normalement el serveur
 	// yekhedhhom men kol thread w yraja3 KVMessageProcessor lil serveur eli
@@ -32,26 +35,19 @@ public class KVStoreProcessor implements KVStore {
 	// We have to put the both methods as synchronized because many threads will
 	// access them
 	@Override
-	public synchronized KVMessageProcessor put(String key, String value) throws Exception {
+	public KVMessageProcessor put(String key, String value) throws Exception {
 		this.change = false;
 		try {
 			if (!storage.exists())
 				storage.createNewFile();
 
 			scanner = new Scanner(new FileInputStream(storage));
-			// scanning the file line by line
 			while (scanner.hasNextLine()) {
-				// string the contant of each line
 				String line = scanner.nextLine();
-				// splitting the value inside an array
 				keyvalue = line.split(" ");
-				// if the key in the line equals the given key
 				if (keyvalue[0].equals(key)) {
-					// we are about to change the value
 					this.change = true;
-					// the same path of the storage file
-					Path path1 = Paths.get(path);
-					//
+					Path path1 = Paths.get(String.valueOf(path));
 					Stream<String> lines = Files.lines(path1);
 					String replacingLine = (value == null) ? "" : key + " " + value + "\r\n";
 
@@ -62,7 +58,6 @@ public class KVStoreProcessor implements KVStore {
 					kvmessage = (value == null) ? new KVMessageProcessor(KVMessage.StatusType.DELETE_SUCCESS, key, null)
 							: new KVMessageProcessor(KVMessage.StatusType.PUT_UPDATE, key, value);
 					break;
-
 				}
 			}
 			scanner.close();
@@ -74,14 +69,12 @@ public class KVStoreProcessor implements KVStore {
 				bw.write(message);
 				bw.close();
 				fileWriter.close();
-				// I changed the parameter to value because it was null
 				kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value);
 			}
 		} catch (FileNotFoundException fe) {
 			System.out.println(fe);
 			kvmessage = (value == null) ? new KVMessageProcessor(KVMessage.StatusType.DELETE_ERROR, key, null)
-					// here also
-					: new KVMessageProcessor(KVMessage.StatusType.PUT_ERROR, key, value);
+					: new KVMessageProcessor(KVMessage.StatusType.PUT_ERROR, key, null);
 		}
 		return kvmessage;
 	}
