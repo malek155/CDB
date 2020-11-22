@@ -28,8 +28,14 @@ public class FIFOLRUCache implements Cache {
 		return cache.get(key);
 	}
 
-	public synchronized void remove(String key) {
-		cache.remove(key);
+	@Override
+	public synchronized void removeKey(String key) {
+		this.cache.remove(key);
+	}
+
+	@Override
+	public boolean containsKey(String key){
+		return this.cache.containsKey(key);
 	}
 
 	public static void main(String[] args) {

@@ -17,6 +17,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache) {
 		this.kvStore = kvStore;
 		this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
+		kvStore.setCache(this.cache);
 	}
 
 	// if we will use the cache here it should be static so that only one instance
