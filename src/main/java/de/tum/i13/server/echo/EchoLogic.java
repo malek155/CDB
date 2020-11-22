@@ -26,7 +26,7 @@ public class EchoLogic implements CommandProcessor {
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
-		String response;
+		String response = "";
 		if (input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) {
 			// we have to make sure that the user uses minimum 2 components in the put
 			// request otherwise we have to make an exception class for the put, get and
@@ -44,12 +44,10 @@ public class EchoLogic implements CommandProcessor {
 //			// but we still don't have a clear client interface we have to integrate it
 //		} else if (input[0].equals("disconnect")) {
 			// same as connect matter
-		} else if (input[0].equals("loglevel"))
+		} else if (input[0].equals("logLevel"))
 
 		{
 			//
-		} else if (input[0].equals("help")) {
-
 		} else if (input[0].equals("quit")) {
 
 		} else {
@@ -57,7 +55,7 @@ public class EchoLogic implements CommandProcessor {
 		}
 		// Let the magic happen here
 
-		return command;
+		return response;
 	}
 
 	@Override
