@@ -21,13 +21,12 @@ public class Main {
     private static boolean isRunning = true;
     private static Cache cache;
 
-    public void close() {
+    public static void close() {
         isRunning = false;
     }
 
     public static void main(String[] args) throws IOException {
         Config cfg = parseCommandlineArgs(args);  //Do not change this
-        cfg.run();
         setupLogging(cfg.logfile);
         System.out.println();
 
@@ -39,6 +38,7 @@ public class Main {
                 System.out.println("Closing thread per connection kv server");
                 try {
                     serverSocket.close();
+                    close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -52,7 +52,7 @@ public class Main {
         // If you use multithreading you need locking
         CommandProcessor logic = new EchoLogic(cache);
 
-        while (true) {
+        while (isRunning) {
             Socket clientSocket = serverSocket.accept();
 
             //When we accept a connection, we start a new Thread for this connection
