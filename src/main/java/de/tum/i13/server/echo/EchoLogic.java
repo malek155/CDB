@@ -25,7 +25,7 @@ public class EchoLogic implements CommandProcessor {
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
-		String response;
+		String response = "";
 		if (input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) {
 			// we have to make sure that the user uses minimum 2 components in the put
 			// request otherwise we have to make an exception class for the put, get and
@@ -56,7 +56,7 @@ public class EchoLogic implements CommandProcessor {
 		}
 		// Let the magic happen here
 
-		return command;
+		return response;
 	}
 
 	@Override

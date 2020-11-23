@@ -5,7 +5,7 @@ import java.net.InetSocketAddress;
 
 public interface CommandProcessor {
 
-	String process(String command) throws ParameterException;
+	String process(String command);
 
     String connectionAccepted(InetSocketAddress address, InetSocketAddress remoteAddress);
 

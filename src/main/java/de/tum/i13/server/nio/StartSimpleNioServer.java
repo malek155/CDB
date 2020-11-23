@@ -1,6 +1,8 @@
 package de.tum.i13.server.nio;
 
 import de.tum.i13.server.echo.EchoLogic;
+import de.tum.i13.server.kv.Cache;
+import de.tum.i13.server.kv.KVStore;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Config;
 
@@ -15,6 +17,9 @@ public class StartSimpleNioServer {
     public static Logger logger = Logger.getLogger(StartSimpleNioServer.class.getName());
 
     public static void main(String[] args) throws IOException {
+        KVStore kvStore = null;
+        Cache cache = null;
+
         Config cfg = parseCommandlineArgs(args);  //Do not change this
         setupLogging(cfg.logfile);
         logger.info("Config: " + cfg.toString());
@@ -22,7 +27,7 @@ public class StartSimpleNioServer {
         logger.info("starting server");
 
         //Replace with your Key Value command processor
-        CommandProcessor echoLogic = new EchoLogic();
+        CommandProcessor echoLogic = new EchoLogic(cache, kvStore);
 
         SimpleNioServer sn = new SimpleNioServer(echoLogic);
         sn.bindSockets(cfg.listenaddr, cfg.port);

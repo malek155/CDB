@@ -1,5 +1,6 @@
 package de.tum.i13;
 
+import de.tum.i13.server.kv.Cache;
 import de.tum.i13.server.kv.KVCommandProcessor;
 import de.tum.i13.server.kv.KVStore;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,8 @@ public class TestKVCommandProcessor {
     public void correctParsingOfPut() throws Exception {
 
         KVStore kv = mock(KVStore.class);
-        KVCommandProcessor kvcp = new KVCommandProcessor(kv);
+        Cache cache = mock(Cache.class);
+        KVCommandProcessor kvcp = new KVCommandProcessor(kv, cache);
         kvcp.process("put key hello");
 
         verify(kv).put("key", "hello");

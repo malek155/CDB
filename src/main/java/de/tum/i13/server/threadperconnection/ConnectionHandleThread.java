@@ -4,6 +4,7 @@ import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Constants;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -29,14 +30,15 @@ public class ConnectionHandleThread extends Thread {
 		boolean done = true;
 		while (!clientSocket.isClosed()) {
 			try {
-				in = new BufferedReader(
-						new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
-				out = new PrintWriter(
-						new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
-				// first we call the connection accepted method of the commandprocessor
-				remote = (InetSocketAddress) clientSocket.getRemoteSocketAddress();
-				// So that we are sending the connectionaccepted msg only once in the beginning
 				if (done) {
+					in = new BufferedReader(
+							new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
+					out = new PrintWriter(
+							new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
+					// first we call the connection accepted method of the commandprocessor
+					remote = (InetSocketAddress) clientSocket.getRemoteSocketAddress();
+					// So that we are sending the connectionaccepted msg only once in the beginning
+
 					String firstMsg = cp.connectionAccepted(new InetSocketAddress(clientSocket.getLocalPort()), remote);
 					out.write(firstMsg);
 					out.flush();
@@ -56,8 +58,16 @@ public class ConnectionHandleThread extends Thread {
 			}
 		}
 		// We display the disconnection notification
-		// we maybe have to add sysout in te connectionClosed method in echoLogic
+		// we maybe have to add sysout in the connectionClosed method in echoLogic
 		cp.connectionClosed(remote.getAddress());
+		// I will close anything here
+		try {
+			in.close();
+			out.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 	}
 }
