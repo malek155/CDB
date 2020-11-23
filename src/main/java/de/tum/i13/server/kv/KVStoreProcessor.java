@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class KVStoreProcessor implements KVStore {
-    private String path = "storage.txt";
-    private File storage = new File(path);
+    private Path path;
+    private File storage = new File(String.valueOf(path));
     private FileOutputStream fileOutputStream;
     private Scanner scanner;
     private KVMessageProcessor kvmessage;
@@ -19,11 +19,21 @@ public class KVStoreProcessor implements KVStore {
     private boolean change;
     private Cache cache;
 
+    public void setPath(Path path) {
+        this.path = path;
+    }
 
+    // l class hedhy tekhou el put wel get methods elli normalement el serveur
+    // yekhedhhom men kol thread w yraja3 KVMessageProcessor lil serveur eli
+    // yab3athha lil client
+    // Normalement bech tkoun fama instance barka mel object hedha elli va gerer
+    // tout les clients mais kol thread bech tarja3lou msg a part ma3neha
+    // normalement kol thread 3andou instance anyway to nchouf n7otha static oualee
     public KVStoreProcessor() {
     }
 
-
+    // We have to put the both methods as synchronized because many threads will
+    // access them
     @Override
     public KVMessageProcessor put(String key, String value) throws Exception {
         this.change = false;
@@ -37,16 +47,16 @@ public class KVStoreProcessor implements KVStore {
                 keyvalue = line.split(" ");
                 if (keyvalue[0].equals(key)) {
                     this.change = true;
-                    Path path1 = Paths.get(path);
+                    Path path1 = Paths.get(String.valueOf(path));
                     Stream<String> lines = Files.lines(path1);
                     String replacingLine = (value == null) ? "" : key + " " + value + "\r\n";
 
-                    List<String> replaced = lines.map(row -> row.replaceAll(line, replacingLine)).collect(Collectors.toList());
+                    List<String> replaced = lines.map(row -> row.replaceAll(line, replacingLine))
+                            .collect(Collectors.toList());
                     Files.write(path1, replaced);
                     lines.close();
                     kvmessage = (value == null) ? new KVMessageProcessor(KVMessage.StatusType.DELETE_SUCCESS, key, null)
                             : new KVMessageProcessor(KVMessage.StatusType.PUT_UPDATE, key, value);
-
                     break;
                 }
             }
@@ -59,8 +69,7 @@ public class KVStoreProcessor implements KVStore {
                 bw.write(message);
                 bw.close();
                 fileWriter.close();
-                kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, null
-                );
+                kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value);
             }
         } catch (FileNotFoundException fe) {
             System.out.println(fe);
@@ -71,9 +80,11 @@ public class KVStoreProcessor implements KVStore {
     }
 
     @Override
-    public KVMessageProcessor get(String key) throws Exception {
-        kvmessage = new KVMessageProcessor(KVMessage.StatusType.GET_ERROR, null, null);
+    public synchronized KVMessageProcessor get(String key) throws Exception {
+        // we need the key for the response
+        kvmessage = new KVMessageProcessor(KVMessage.StatusType.GET_ERROR, key, null);
         Scanner scanner = new Scanner(new FileInputStream(storage));
+        // we can use the streams also here
         while (scanner.hasNextLine()) {
             String line = scanner.nextLine();
             keyvalue = line.split(" ");
@@ -86,11 +97,6 @@ public class KVStoreProcessor implements KVStore {
         return kvmessage;
     }
 
-    //added method to get the used Cache
-    public Cache getCache() {
-        return this.cache;
-    }
-
     public static void main(String[] args) throws Exception {
         KVStoreProcessor kvStoreProcessor = new KVStoreProcessor();
         kvStoreProcessor.put("key0", "value0");
@@ -99,7 +105,8 @@ public class KVStoreProcessor implements KVStore {
         kvStoreProcessor.put("key2", "value3");
         kvStoreProcessor.put("key1", "value3");
         kvStoreProcessor.put("key0", null);
-        System.out.println(kvStoreProcessor.put("key1", "value4").getStatus() + kvStoreProcessor.get("key1").getValue());
+        System.out
+                .println(kvStoreProcessor.put("key1", "value4").getStatus() + kvStoreProcessor.get("key1").getValue());
     }
 
 }

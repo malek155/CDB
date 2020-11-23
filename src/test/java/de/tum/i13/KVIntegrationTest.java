@@ -9,7 +9,7 @@ import java.net.Socket;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class KVIntegrationTest {
+public class  KVIntegrationTest {
 
     public static Integer port = 5153;
 

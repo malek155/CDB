@@ -3,11 +3,12 @@ package de.tum.i13.server.kv;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class FIFOLRUCache implements  Cache{
+public class FIFOLRUCache implements Cache {
     Map<String, String> cache;
     private static int size;
 
-    // if accessOrder is true -> lru, after get() visited elements move to the end of the list
+    // if accessOrder is true -> lru, after get() visited elements move to the end
+    // of the list
     // if accessOrder is false -> fifo principle
     public FIFOLRUCache(int size, boolean accessOrder) {
         this.size = size;
@@ -30,15 +31,6 @@ public class FIFOLRUCache implements  Cache{
     public synchronized void remove(String key) {
         cache.remove(key);
     }
-public synchronized void setSize(int size){
-        this.size=size;
-}
-
-    public synchronized int getSize() {
-        return this.size;
-    }
-
-
 
     public static void main(String[] args) {
         FIFOLRUCache cache = new FIFOLRUCache(5, true);

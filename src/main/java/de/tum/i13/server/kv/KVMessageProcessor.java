@@ -1,12 +1,12 @@
 package de.tum.i13.server.kv;
 
-public class KVMessageProcessor implements KVMessage{
+public class KVMessageProcessor implements KVMessage {
     KVMessage kv;
     private StatusType status;
     private String key;
     private String value;
 
-    public KVMessageProcessor(StatusType status, String key, String value){
+    public KVMessageProcessor(StatusType status, String key, String value) {
         this.key = key;
         this.status = status;
         this.value = value;

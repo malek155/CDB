@@ -17,7 +17,8 @@ public class LFUCache implements Cache {
     Map<String, CacheEntry> cache;
     private int size;
 
-    // if accessOrder is true -> lru, after get() visited elements move to the end of the list
+    // if accessOrder is true -> lru, after get() visited elements move to the end
+    // of the list
     // if accessOrder is false -> fifo principle
     public LFUCache(int size) {
         this.size = size;
@@ -55,15 +56,8 @@ public class LFUCache implements Cache {
             CacheEntry nomiss = cache.get(key);
             nomiss.frequency++;
             return nomiss.value;
-        } else return null;
-    }
-
-    public synchronized void setSize(int size) {
-        this.size = size;
-    }
-
-    public synchronized int getSize() {
-        return this.size;
+        } else
+            return null;
     }
 
     public static void main(String[] args) {

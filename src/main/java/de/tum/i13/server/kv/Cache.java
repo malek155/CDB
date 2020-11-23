@@ -1,6 +1,5 @@
 package de.tum.i13.server.kv;
 
-
 import java.util.Map;
 
 public interface Cache {
@@ -8,9 +7,5 @@ public interface Cache {
     public void put(String key, String value);
 
     public String get(String key);
-
-    public int getSize();
-
-    public void setSize(int size);
 
 }

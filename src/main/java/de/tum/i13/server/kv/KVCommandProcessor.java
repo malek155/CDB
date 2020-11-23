@@ -1,48 +1,79 @@
 package de.tum.i13.server.kv;
 
+import de.tum.i13.server.kv.KVMessage.StatusType;
 import de.tum.i13.shared.CommandProcessor;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 public class KVCommandProcessor implements CommandProcessor {
+    // we forward the lines that have put , get , delete from the Echologic to this
+    // class because it is responsible to interact with the KVStore and handle those
+    // commands
     private KVStore kvStore;
     private Cache cache;
 
-    public void setCacheStrategy(Cache cache){
-        if (cache.getClass().equals(LFUCache.class))
-            this.cache = (LFUCache) cache;
-        else this.cache = (FIFOLRUCache) cache;
-    }
-
-    public KVCommandProcessor(KVStore kvStore) {
+    public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache) {
         this.kvStore = kvStore;
+        this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
     }
 
+    // if we will use the cache here it should be static so that only one instance
+    // is accessed by all the KVCommandProcessors
+    @Override
     public String process(String command) {
-        int keyDelimiter = 0;
-        if (command.substring(0, 3).toLowerCase() == "put")
-            keyDelimiter = command.substring(4).indexOf(' ');
+        // TODO
+        // Parse message "put message", call kvstore.put
+        KVMessage msg;
+        String response;
         try {
-            this.kvStore.put(command.substring(4, keyDelimiter), command.substring(keyDelimiter + 1));
+            // the return value will be a KVMessageProcessor here and the methods can only
+            // be put or get or delete
+            // I will change it as a return
+            String[] array = command.split(" ");
+            // put request
+            if (array[0].equals("put")) {
+                if (array.length < 3) {
+                    throw new Exception("Put Request needs a key and a value !");
+                }
+                msg = this.kvStore.put(array[1], array[2]);
+                if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
+                    response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
+                } else {
+                    response = msg.getStatus().toString() + " " + msg.getKey();
+                }
+
+            }
+            // get request
+            else if (array[0].equals("get")) {
+                if (array.length != 2) {
+                    throw new Exception("Get Request needs only a key !");
+                }
+                msg = this.kvStore.get(array[1]);
+                if (msg.getStatus().equals(StatusType.GET_ERROR)) {
+                    response = msg.getStatus().toString() + " " + msg.getKey();
+                } else {
+                    response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
+                }
+
+            }
+            // delete request
+            else if (array[0].equals("delete")) {
+                if (array.length != 2) {
+                    throw new Exception("Delete Request needs only a key ! ");
+                }
+                msg = this.kvStore.put(array[1], null);
+                response = msg.getStatus().toString() + " " + msg.getKey();
+            } else {
+                // normally we will have nothing here because we are only forward the msg if it
+                // already contains put, get or delete
+                System.out.println("also exception here");
+            }
+
+            // this.kvStore.put("key", "hello");
+
         } catch (Exception e) {
             e.printStackTrace();
-        }
-        if (command.substring(0, 3).toLowerCase() == "get") {
-            keyDelimiter = command.substring(4).indexOf(' ');
-            if (cache.get(command.substring(4))==null) {
-                try {
-                    this.kvStore.get(command.substring(4));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            else{
-
-            }
-        } else {
-
-
         }
 
         return null;
@@ -50,14 +81,14 @@ public class KVCommandProcessor implements CommandProcessor {
 
     @Override
     public String connectionAccepted(InetSocketAddress address, InetSocketAddress remoteAddress) {
-        //TODO
+        // TODO
 
         return null;
     }
 
     @Override
     public void connectionClosed(InetAddress address) {
-        //TODO
+        // TODO
 
     }
 }
