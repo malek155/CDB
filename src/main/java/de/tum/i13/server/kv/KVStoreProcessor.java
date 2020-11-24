@@ -39,7 +39,7 @@ public class KVStoreProcessor implements KVStore {
 	// We have to put the both methods as synchronized because many threads will
 	// access them
 	@Override
-	public KVMessageProcessor put(String key, String value) throws Exception {
+	public synchronized KVMessageProcessor put(String key, String value) throws Exception {
 		this.change = false;
 		try {
 

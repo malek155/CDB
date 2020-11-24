@@ -4,7 +4,7 @@ import de.tum.i13.server.kv.Cache;
 import de.tum.i13.server.kv.KVCommandProcessor;
 import de.tum.i13.server.kv.KVStore;
 import de.tum.i13.server.kv.KVStoreProcessor;
-import de.tum.i13.server.kv.ParameterException;
+
 import de.tum.i13.shared.CommandProcessor;
 
 import java.net.InetAddress;
@@ -23,7 +23,7 @@ public class EchoLogic implements CommandProcessor {
 	Cache cache;
 	KVCommandProcessor CommProc = new KVCommandProcessor(new KVStoreProcessor(), this.cache);
 
-	public String process(String command) throws ParameterException {
+	public String process(String command) {
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
