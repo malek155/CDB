@@ -12,6 +12,8 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
 import static de.tum.i13.shared.LogSetup.setupLogging;
@@ -24,6 +26,7 @@ public class Main {
 	private static boolean isRunning = true;
 	private static Cache cache;
 	private static KVStoreProcessor kvStore;
+	public static Logger logger = Logger.getLogger(EchoLogic.class.getName());
 
 	// method to close the server
 	public void close() {
@@ -33,8 +36,9 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		Config cfg = parseCommandlineArgs(args); // Do not change this
 		setupLogging(cfg.logfile);
+		logger.setLevel(Level.parse(cfg.loglevel));
 
-		KVStoreProcessor kvStore = new KVStoreProcessor();
+		kvStore = new KVStoreProcessor();
 		kvStore.setPath(cfg.dataDir);
 
 		if (cfg.cache.equals("FIFO")) {
@@ -50,9 +54,11 @@ public class Main {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
-				System.out.println("Closing thread per connection kv server");
+				//sout
+				logger.info("Closing thread per connection kv server");
 				try {
 					serverSocket.close();
+					logger.info("Closed the server");
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -78,7 +84,7 @@ public class Main {
 		while (isRunning) {
 			// Waiting for client to connect
 			Socket clientSocket = serverSocket.accept();
-
+			logger.info("New client connected");
 			// When we accept a connection, we start a new Thread for this connection
 			Thread th = new ConnectionHandleThread(logic, clientSocket);
 			th.start();

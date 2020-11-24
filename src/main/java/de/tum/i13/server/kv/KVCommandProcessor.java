@@ -14,10 +14,10 @@ public class KVCommandProcessor implements CommandProcessor {
 	private KVStore kvStore;
 	private Cache cache;
 
-	public KVCommandProcessor(KVStore kvStore, Cache cache) {
+	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache) {
 		this.kvStore = kvStore;
-		this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
-		kvStore.setCache(this.cache);
+		this.cache = cache;
+		kvStore.setCache(cache);
 	}
 
 	// if we will use the cache here it should be static so that only one instance
@@ -27,7 +27,7 @@ public class KVCommandProcessor implements CommandProcessor {
 		// TODO
 		// Parse message "put message", call kvstore.put
 		KVMessage msg;
-		String response;
+		String response = "";
 		try {
 			// the return value will be a KVMessageProcessor here and the methods can only
 			// be put or get or delete
@@ -57,28 +57,12 @@ public class KVCommandProcessor implements CommandProcessor {
 				} else {
 					response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 				}
-
 			}
-			// delete request
-			else if (array[0].equals("delete")) {
-				if (array.length != 2) {
-					throw new IOException("Delete Request needs only a key ! ");
-				}
-				msg = this.kvStore.put(array[1], null);
-				response = msg.getStatus().toString() + " " + msg.getKey();
-			} else {
-				// normally we will have nothing here because we are only forward the msg if it
-				// already contains put, get or delete
-				System.out.println("also exception here");
-			}
-
-			// this.kvStore.put("key", "hello");
 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
-		return null;
+		return response;
 	}
 
 	@Override

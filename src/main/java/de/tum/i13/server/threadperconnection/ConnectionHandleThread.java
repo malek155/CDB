@@ -65,7 +65,6 @@ public class ConnectionHandleThread extends Thread {
 			in.close();
 			out.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

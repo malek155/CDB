@@ -3,16 +3,18 @@ package de.tum.i13.server.kv;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static java.lang.StrictMath.ceil;
+
 public class FIFOLRUCache implements Cache {
 	Map<String, String> cache;
-	private static int size;
+	private int size;
 
 	// if accessOrder is true -> lru, after get() visited elements move to the end
 	// of the list
 	// if accessOrder is false -> fifo principle
 	public FIFOLRUCache(int size, boolean accessOrder) {
 		this.size = size;
-		cache = new LinkedHashMap<String, String>(size, 1, accessOrder) {
+		cache = new LinkedHashMap<String, String>((int) Math.ceil(size / 0.75) + 1, 0.75f, accessOrder) {
 			@Override
 			protected boolean removeEldestEntry(Map.Entry eldest) {
 				return this.size() == size;

@@ -1,8 +1,7 @@
 package de.tum.i13.server.nio;
 
 import de.tum.i13.server.echo.EchoLogic;
-import de.tum.i13.server.kv.Cache;
-import de.tum.i13.server.kv.KVStore;
+import de.tum.i13.server.kv.*;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Config;
 
@@ -17,11 +16,17 @@ public class StartSimpleNioServer {
     public static Logger logger = Logger.getLogger(StartSimpleNioServer.class.getName());
 
     public static void main(String[] args) throws IOException {
-        KVStore kvStore = null;
-        Cache cache = null;
-
         Config cfg = parseCommandlineArgs(args);  //Do not change this
         setupLogging(cfg.logfile);
+
+        KVStoreProcessor kvStore = new KVStoreProcessor();
+        Cache cache;
+        if (cfg.cache.getClass().equals(LFUCache.class)) {
+            cache = new LFUCache(cfg.cacheSize);
+        } else {
+            cache = new FIFOLRUCache(cfg.cacheSize, true);
+        }
+
         logger.info("Config: " + cfg.toString());
 
         logger.info("starting server");
