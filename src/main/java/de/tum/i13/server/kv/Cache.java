@@ -8,4 +8,8 @@ public interface Cache {
 
     public String get(String key);
 
+    public void removeKey(String key);
+
+    public boolean containsKey(String key);
+
 }

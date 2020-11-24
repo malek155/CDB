@@ -29,6 +29,11 @@ public class LFUCache implements Cache {
         return this.cache.size() >= this.size;
     }
 
+    @Override
+    public boolean containsKey(String key) {
+        return this.cache.containsKey(key);
+    }
+
     public String getToRemove() {
         String key = "";
         int minFreq = Integer.MAX_VALUE;
@@ -58,6 +63,11 @@ public class LFUCache implements Cache {
             return nomiss.value;
         } else
             return null;
+    }
+
+    @Override
+    public synchronized void removeKey(String key) {
+        this.cache.remove(key);
     }
 
     public static void main(String[] args) {

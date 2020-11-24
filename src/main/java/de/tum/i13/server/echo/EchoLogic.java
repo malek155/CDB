@@ -4,14 +4,16 @@ import de.tum.i13.server.kv.Cache;
 import de.tum.i13.server.kv.KVCommandProcessor;
 import de.tum.i13.server.kv.KVStore;
 import de.tum.i13.server.kv.KVStoreProcessor;
+
 import de.tum.i13.shared.CommandProcessor;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class EchoLogic implements CommandProcessor {
-    // as we will use only one instance of Echologic (main Class) then we will be
+    // as we will use only one instance of Echologic ( main Class) then we will be
     // using only one instance of KVCommandProcessor and KVStore
     public EchoLogic(Cache cache, KVStore kvStore) {
         this.cache = cache;
@@ -21,16 +23,14 @@ public class EchoLogic implements CommandProcessor {
     Cache cache;
     KVCommandProcessor CommProc = new KVCommandProcessor(new KVStoreProcessor(), this.cache);
 
-    public EchoLogic() {
-
-    }
-
     public String process(String command) throws Exception {
 
         logger.info("received command: " + command.trim());
         String[] input = command.split(" ");
-        String response;
-        if (input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) {
+
+        // So that if the client wants only to send message he gets what he sent back
+        String response = command;
+        if (input[0].equals("put") || input[0].equals("get")) {
             // we have to make sure that the user uses minimum 2 components in the put
             // request otherwise we have to make an exception class for the put, get and
             // delete to
@@ -47,20 +47,17 @@ public class EchoLogic implements CommandProcessor {
 //			// but we still don't have a clear client interface we have to integrate it
 //		} else if (input[0].equals("disconnect")) {
             // same as connect matter
-        } else if (input[0].equals("loglevel"))
+        } else if (input[0].equals("logLevel")) {
+            logger.setLevel(Level.parse(input[1]));
+        }
+        //
 
-        {
-            //
-        } else if (input[0].equals("help")) {
-
-        } else if (input[0].equals("quit")) {
-
-        } else {
-            System.out.println("we have an exception here ");
+        else {
+            logger.warning("Please check your input and try again.");
         }
         // Let the magic happen here
 
-        return command;
+        return response;
     }
 
     @Override

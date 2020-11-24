@@ -12,7 +12,7 @@ public class FIFOLRUCache implements Cache {
     // if accessOrder is false -> fifo principle
     public FIFOLRUCache(int size, boolean accessOrder) {
         this.size = size;
-        cache = new LinkedHashMap<String, String>(size, 1, accessOrder) {
+        cache = new LinkedHashMap<String, String>((int) Math.ceil(size / 0.75) + 1, 0.75f, accessOrder) {
             @Override
             protected boolean removeEldestEntry(Map.Entry eldest) {
                 return this.size() == size;
@@ -28,8 +28,14 @@ public class FIFOLRUCache implements Cache {
         return cache.get(key);
     }
 
-    public synchronized void remove(String key) {
-        cache.remove(key);
+    @Override
+    public synchronized void removeKey(String key) {
+        this.cache.remove(key);
+    }
+
+    @Override
+    public boolean containsKey(String key) {
+        return this.cache.containsKey(key);
     }
 
     public static void main(String[] args) {
