@@ -1,5 +1,6 @@
 package de.tum.i13.client;
 
+import de.tum.i13.server.kv.KVCommandProcessor;
 import de.tum.i13.server.kv.KVStoreProcessor;
 
 import java.io.BufferedReader;

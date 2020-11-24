@@ -11,7 +11,7 @@ import java.net.InetSocketAddress;
 import java.util.logging.Logger;
 
 public class EchoLogic implements CommandProcessor {
-    // as we will use only one instance of Echologic ( main Class) then we will be
+    // as we will use only one instance of Echologic (main Class) then we will be
     // using only one instance of KVCommandProcessor and KVStore
     public EchoLogic(Cache cache, KVStore kvStore) {
         this.cache = cache;
@@ -20,6 +20,10 @@ public class EchoLogic implements CommandProcessor {
     public static Logger logger = Logger.getLogger(EchoLogic.class.getName());
     Cache cache;
     KVCommandProcessor CommProc = new KVCommandProcessor(new KVStoreProcessor(), this.cache);
+
+    public EchoLogic() {
+
+    }
 
     public String process(String command) throws Exception {
 

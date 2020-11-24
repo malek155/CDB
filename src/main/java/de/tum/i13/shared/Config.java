@@ -14,7 +14,7 @@ import java.util.logging.Level;
 
 public class Config {
 
-//        Runnable ?
+
 
     public Config() {
 

@@ -6,6 +6,8 @@ import de.tum.i13.shared.CommandProcessor;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
+
+
 public class KVCommandProcessor implements CommandProcessor {
     // we forward the lines that have put , get , delete from the Echologic to this
     // class because it is responsible to interact with the KVStore and handle those
@@ -13,9 +15,14 @@ public class KVCommandProcessor implements CommandProcessor {
     private KVStore kvStore;
     private Cache cache;
 
+
+
     public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache) {
         this.kvStore = kvStore;
         this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
+    }
+
+    public KVCommandProcessor(KVStoreProcessor kvStoreProcessor) {
     }
 
     // if we will use the cache here it should be static so that only one instance

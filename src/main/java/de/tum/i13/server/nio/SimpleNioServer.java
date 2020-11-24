@@ -238,6 +238,8 @@ public class SimpleNioServer {
 
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
