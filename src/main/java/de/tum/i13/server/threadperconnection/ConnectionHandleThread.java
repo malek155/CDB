@@ -11,6 +11,12 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+/**
+ * ConnectionHandleThread that will handle each client
+ * 
+ * @author gr9
+ *
+ */
 public class ConnectionHandleThread extends Thread {
 
 	private CommandProcessor cp;
@@ -26,10 +32,15 @@ public class ConnectionHandleThread extends Thread {
 	}
 
 	@Override
+	/**
+	 * run() method of the thread
+	 */
 	public void run() {
 		boolean done = true;
 		while (!clientSocket.isClosed()) {
 			try {
+				// initializing the in/ output streams only once and sending the confirmation to
+				// the client
 				if (done) {
 					in = new BufferedReader(
 							new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));

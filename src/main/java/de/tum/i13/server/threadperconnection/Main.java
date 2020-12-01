@@ -3,6 +3,7 @@ package de.tum.i13.server.threadperconnection;
 import de.tum.i13.server.echo.EchoLogic;
 import de.tum.i13.server.kv.Cache;
 import de.tum.i13.server.kv.FIFOLRUCache;
+import de.tum.i13.server.kv.KVCommandProcessor;
 import de.tum.i13.server.kv.KVStoreProcessor;
 import de.tum.i13.server.kv.LFUCache;
 import de.tum.i13.shared.CommandProcessor;
@@ -66,7 +67,8 @@ public class Main {
 		// If you use multithreading you need locking
 		// we can have
 		// add the
-		CommandProcessor logic = new EchoLogic(cache, kvStore);
+		// CommandProcessor logic = new EchoLogic(cache, kvStore);
+		KVCommandProcessor CommProc = new KVCommandProcessor(new KVStoreProcessor(), cache);
 		// as we are using the same instance of logic for all the threads then we need
 		// only to synchronize the accessed methods , and if we are about to lock an
 		// object we have to lock the KVStore object which is only accessed through the
@@ -80,7 +82,7 @@ public class Main {
 			Socket clientSocket = serverSocket.accept();
 
 			// When we accept a connection, we start a new Thread for this connection
-			Thread th = new ConnectionHandleThread(logic, clientSocket);
+			Thread th = new ConnectionHandleThread(CommProc, clientSocket);
 			th.start();
 		}
 
