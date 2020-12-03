@@ -3,10 +3,10 @@ package de.tum.i13.shared;
 public class Metadata {
     private String ip;
     private int port;
-    private int start;
-    private int end;
+    private String start;
+    private String end;
 
-    public Metadata(String ip, int port, int start, int end){
+    public Metadata(String ip, int port, String start, String end){
         this.ip = ip;
         this.port = port;
         this.start = start;

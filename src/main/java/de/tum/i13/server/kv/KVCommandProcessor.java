@@ -44,7 +44,7 @@ public class KVCommandProcessor implements CommandProcessor {
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
-//
+
 		String reply = command;
 
 		// TODO

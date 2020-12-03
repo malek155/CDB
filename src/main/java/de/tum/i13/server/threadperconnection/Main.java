@@ -4,11 +4,15 @@ import de.tum.i13.server.echo.EchoLogic;
 import de.tum.i13.server.kv.*;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Config;
+import de.tum.i13.shared.Metadata;
+import org.graalvm.compiler.nodes.memory.MemoryAccess;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
 import static de.tum.i13.shared.LogSetup.setupLogging;
@@ -21,13 +25,18 @@ public class Main {
 	private static boolean isRunning = true;
 	private static Cache cache;
 	private static KVStoreProcessor kvStore;
+	private String start;
+	private String end;
+	private Metadata metadata;
 
-	public Main(Cache cache){
+	public Main(Cache cache, String start, String end){
 		if (cache.getClass().equals(FIFOLRUCache.class)){
 			cache = (FIFOLRUCache) cache;
 		} else if (cache.getClass().equals(LFUCache.class)){
 			cache = (LFUCache) cache;
 		}
+		this.start = start;
+		this.end = end;
 	}
 
 	/**
@@ -36,6 +45,12 @@ public class Main {
 	public void close(){
 		isRunning = false;
 	}
+
+	public void setMetadata(Metadata metadata){
+		this.metadata = metadata;
+	}
+
+
 
 	/**
 	 * main() method where our serversocket will be initialized

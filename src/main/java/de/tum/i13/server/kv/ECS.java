@@ -29,7 +29,7 @@ import static de.tum.i13.shared.LogSetup.setupLogging;
 public class ECS {
 
     //Servers repository
-    LinkedList<ServerSocket> serverRepository = new LinkedList<>();
+    LinkedList<Main> serverRepository = new LinkedList<>();
 
     //metadata
     Map<Main, Metadata> metadataMap = new HashMap<>();
@@ -74,15 +74,55 @@ public class ECS {
     private void addServer(ServerSocket ss) throws NoSuchAlgorithmException {
         moved = true;
         buckets++;
-        Main newMain = new Main(cache);
-        this.serverRepository.add(ss);
+        int startIndex;
+        String startHash;
+
+        //get hashvalue of a server (ip+port)
         String hash = this.hashServer(ss);
-        this.metadataMap.put(newMain, new Metadata(ss.getInetAddress().getHostAddress(), ss.getLocalPort());
+
+        //getting an index and a hashvalue of a predessecor to be -> startrange
+        //if indexes == null -> we have a first server to add
+        Map<Integer, String> indexes = this.locate(hash);
+        if(indexes == null){
+            startIndex = 0;
+            //the beginning of th range is an incremented hashvalue
+            startHash = Integer.toHexString((int) Long.parseLong(hash, 16)+1);
+        }
+        else{
+            startIndex = (int) indexes.keySet().stream().findFirst().get()+1;
+            startHash = indexes.get(startIndex);
+        }
+
+        Main newMain = new Main(cache, startHash, hash);
+
+        this.metadataMap.put(newMain, new Metadata(ss.getInetAddress().getHostAddress(), ss.getLocalPort(), startHash, hash));
+        this.serverRepository.add(startIndex, newMain);
     }
 
-    private void removeServer(ServerSocket ss) {
+    private void removeServer(Main main) {
         moved = true;
         buckets--;
+
+    }
+
+    private Map<Integer, String> locate(String hash){
+        Map<Integer, String> returnIndexes = new HashMap();
+        int count = 0;
+        String previous = "";
+        int hashedValue = (int) Long.parseLong(hash, 16);
+        //looking for an intervall for our new hashed value
+        for(Map.Entry element : metadataMap.entrySet()){
+            String hashString = (String) element.getKey();
+            int intHash = (int) Long.parseLong(hashString, 16);
+            if (hashedValue < intHash){
+                // start index
+                returnIndexes.put((Integer) count, previous);
+                break;
+            }
+            count++;
+            previous = Integer.toHexString(intHash+1);
+        }
+        return returnIndexes;
     }
 
     private void reallocate() {
