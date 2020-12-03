@@ -9,8 +9,7 @@ import java.net.Socket;
 /**
  * Created by chris on 19.10.15.
  */
-// ma3neha lena ta3tih el host wel port number ou t3ayet lil methode connect li ta3tic ActiveConnection instance li 
-// hya thandli el inputstream ou outputstream b write() ou readline() methods
+
 public class EchoConnectionBuilder {
 
 	private final String host;

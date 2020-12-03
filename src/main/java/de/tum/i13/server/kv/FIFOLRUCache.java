@@ -3,11 +3,9 @@ package de.tum.i13.server.kv;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static java.lang.StrictMath.ceil;
-
 public class FIFOLRUCache implements Cache {
 	Map<String, String> cache;
-	private int size;
+	private static int size;
 
 	// if accessOrder is true -> lru, after get() visited elements move to the end
 	// of the list
@@ -36,7 +34,7 @@ public class FIFOLRUCache implements Cache {
 	}
 
 	@Override
-	public boolean containsKey(String key){
+	public boolean containsKey(String key) {
 		return this.cache.containsKey(key);
 	}
 

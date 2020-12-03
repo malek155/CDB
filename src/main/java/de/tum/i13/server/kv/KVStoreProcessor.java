@@ -9,6 +9,12 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * KVStoreProcessor class to handle the storage file and the cach
+ * 
+ * @author gr9
+ *
+ */
 public class KVStoreProcessor implements KVStore {
 	private Path path;
 	private File storage = new File(String.valueOf(path));
@@ -23,25 +29,27 @@ public class KVStoreProcessor implements KVStore {
 		this.path = path;
 	}
 
-	public void setCache(Cache cache){
+	public void setCache(Cache cache) {
 		this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
 	}
 
-	// l class hedhy tekhou el put wel get methods elli normalement el serveur
-	// yekhedhhom men kol thread w yraja3 KVMessageProcessor lil serveur eli
-	// yab3athha lil client
-	// Normalement bech tkoun fama instance barka mel object hedha elli va gerer
-	// tout les clients mais kol thread bech tarja3lou msg a part ma3neha
-	// normalement kol thread 3andou instance anyway to nchouf n7otha static oualee
 	public KVStoreProcessor() {
 	}
 
 	// We have to put the both methods as synchronized because many threads will
 	// access them
+	/**
+	 * put method adds a key value pair to the cache (local file).
+	 *
+	 * @param key, value to be inserted .
+	 * @return kvMessage for the status of the operation
+	 *
+	 */
 	@Override
-	public KVMessageProcessor put(String key, String value) throws Exception {
+	public synchronized KVMessageProcessor put(String key, String value) throws Exception {
 		this.change = false;
 		try {
+
 			scanner = new Scanner(new FileInputStream(storage));
 			while (scanner.hasNextLine()) {
 				String line = scanner.nextLine();
@@ -56,14 +64,12 @@ public class KVStoreProcessor implements KVStore {
 							.collect(Collectors.toList());
 					Files.write(path1, replaced);
 					lines.close();
-
 					this.cache.removeKey(key);
 					if (value != null) {
 						this.cache.put(key, value);
 						kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_UPDATE, key, value);
-					}
-					else{
-						//already deleted in cache
+					} else {
+						// already deleted in cache
 						kvmessage = new KVMessageProcessor(KVMessage.StatusType.DELETE_SUCCESS, key, null);
 					}
 
@@ -86,11 +92,22 @@ public class KVStoreProcessor implements KVStore {
 			System.out.println(fe);
 			kvmessage = (value == null) ? new KVMessageProcessor(KVMessage.StatusType.DELETE_ERROR, key, null)
 					: new KVMessageProcessor(KVMessage.StatusType.PUT_ERROR, key, null);
+
 		}
 		return kvmessage;
+		// nothing
+
 	}
 
+	/**
+	 * get method gets the value of the given key if there is one.
+	 *
+	 * @param key given .
+	 * @return kvMessage for the status of the operation
+	 * @throws exception if key not found
+	 */
 	@Override
+	//// nnana
 	public synchronized KVMessageProcessor get(String key) throws Exception {
 		// we need the key for the response
 		kvmessage = new KVMessageProcessor(KVMessage.StatusType.GET_ERROR, key, null);
@@ -101,7 +118,7 @@ public class KVStoreProcessor implements KVStore {
 			keyvalue = line.split(" ");
 			if (keyvalue[0].equals(key)) {
 				kvmessage = new KVMessageProcessor(KVMessage.StatusType.GET_SUCCESS, keyvalue[0], keyvalue[1]);
-				if(!this.cache.containsKey(key))
+				if (!this.cache.containsKey(key))
 					this.cache.put(key, keyvalue[1]);
 				break;
 			}

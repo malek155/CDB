@@ -11,6 +11,12 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+/**
+ * ConnectionHandleThread class that will handle the thread of each client
+ * 
+ * @author gr9
+ *
+ */
 public class ConnectionHandleThread extends Thread {
 
 	private CommandProcessor cp;
@@ -26,6 +32,9 @@ public class ConnectionHandleThread extends Thread {
 	}
 
 	@Override
+	/*
+	 * run() method
+	 */
 	public void run() {
 		boolean done = true;
 		while (!clientSocket.isClosed()) {
@@ -65,6 +74,7 @@ public class ConnectionHandleThread extends Thread {
 			in.close();
 			out.close();
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

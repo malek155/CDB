@@ -30,7 +30,7 @@ public class LFUCache implements Cache {
 	}
 
 	@Override
-	public boolean containsKey(String key){
+	public boolean containsKey(String key) {
 		return this.cache.containsKey(key);
 	}
 
@@ -66,7 +66,7 @@ public class LFUCache implements Cache {
 	}
 
 	@Override
-	public synchronized void removeKey(String key){
+	public synchronized void removeKey(String key) {
 		this.cache.remove(key);
 	}
 
