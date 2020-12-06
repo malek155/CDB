@@ -112,13 +112,16 @@ public class ECS {
                 newMain.nextServer = prevServer.nextServer;
             }
             prevServer.nextServer = newMain;
+
+            //change next server startrange
+            this.serverRepository.get(startIndex+1).start = Integer.toHexString((int) Long.parseLong(hash, 16)+1);
+            //change prev server endrange
+            prevServer.end = Integer.toHexString((int) Long.parseLong(startHash, 16)-1);
         }
 
         this.metadataMap.put(hash, new Metadata(ss.getInetAddress().getHostAddress(), ss.getLocalPort(), startHash, hash));
         this.serverRepository.add(startIndex, newMain);
 
-        //change next server startrange
-        this.serverRepository.get(startIndex+1).start = Integer.toHexString((int) Long.parseLong(hash, 16)+1);
     }
 
     private void removeServer(Main main) {
