@@ -28,8 +28,10 @@ import static de.tum.i13.shared.LogSetup.setupLogging;
 //assigns a position to both servers and Tuples on the ring
 public class ECS {
 
-    //Servers repository
+    //Servers repository, also a circular structure? meh we'll see
     LinkedList<Main> serverRepository = new LinkedList<>();
+
+    // chaining servers in a circle
     private Main headServer;
     private Main tailServer;
 
@@ -116,12 +118,13 @@ public class ECS {
             //change next server startrange
             this.serverRepository.get(startIndex+1).start = Integer.toHexString((int) Long.parseLong(hash, 16)+1);
             //change prev server endrange
-            prevServer.end = Integer.toHexString((int) Long.parseLong(startHash, 16)-1);
+            String endrangeOfPrev = Integer.toHexString((int) Long.parseLong(startHash, 16)-1);
+            prevServer.end = endrangeOfPrev;
         }
 
         this.metadataMap.put(hash, new Metadata(ss.getInetAddress().getHostAddress(), ss.getLocalPort(), startHash, hash));
         this.serverRepository.add(startIndex, newMain);
-
+        this.updateMetadata();
     }
 
     private void removeServer(Main main) {
@@ -157,7 +160,9 @@ public class ECS {
 
     //update metadata in servers
     private void updateMetadata() {
-        this.serverRepository
+        for(Main main: serverRepository){
+            main.setMetadata(metadataMap);
+        }
     }
 
     /**

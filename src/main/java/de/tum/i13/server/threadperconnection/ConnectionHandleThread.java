@@ -55,9 +55,7 @@ public class ConnectionHandleThread extends Thread {
 				}
 				String firstLine;
 				while ((firstLine = in.readLine()) != null) {
-					// lehne bech takra el message eli jey mel client ou ta3malou l process
 					String res = cp.process(firstLine);
-					// tab3eth el resultat mte3 el process lil serveur
 					out.write(res);
 					out.flush();
 				}

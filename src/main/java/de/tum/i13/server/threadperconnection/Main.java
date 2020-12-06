@@ -8,6 +8,8 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
 import static de.tum.i13.shared.LogSetup.setupLogging;
@@ -22,7 +24,7 @@ public class Main {
 	private static KVStoreProcessor kvStore;
 	public String start;
 	public String end;
-	private Metadata metadata;
+	private Map<String, Metadata> metadata;
 
 	public Main nextServer;
 
@@ -36,7 +38,7 @@ public class Main {
 		this.end = end;
 	}
 
-	public void setMetadata(Metadata metadata){
+	public void setMetadata(Map<String, Metadata> metadata){
 		this.metadata = metadata;
 	}
 

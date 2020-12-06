@@ -47,7 +47,6 @@ public class KVCommandProcessor implements CommandProcessor {
 
 		String reply = command;
 
-		// TODO
 		// Parse message "put message", call kvstore.put
 		if (input[0].equals("put") || input[0].equals("get")) {
 			KVMessage msg;
@@ -108,6 +107,5 @@ public class KVCommandProcessor implements CommandProcessor {
 	@Override
 	public void connectionClosed(InetAddress address) {
 		logger.info("connection closed: " + address.toString());
-
 	}
 }
