@@ -104,7 +104,7 @@ public class ECS {
 
             newMain = new Main(cache, startHash, hash);
 
-            if(this.tailServer == prevServer.nextServer){
+            if(this.tailServer == prevServer){
                 this.tailServer = newMain;
                 newMain.nextServer = headServer;
             }
