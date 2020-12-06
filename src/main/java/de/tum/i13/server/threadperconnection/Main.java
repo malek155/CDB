@@ -1,18 +1,13 @@
 package de.tum.i13.server.threadperconnection;
 
-import de.tum.i13.server.echo.EchoLogic;
 import de.tum.i13.server.kv.*;
-import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Config;
 import de.tum.i13.shared.Metadata;
-import org.graalvm.compiler.nodes.memory.MemoryAccess;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.Map;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
 import static de.tum.i13.shared.LogSetup.setupLogging;
@@ -25,9 +20,11 @@ public class Main {
 	private static boolean isRunning = true;
 	private static Cache cache;
 	private static KVStoreProcessor kvStore;
-	private String start;
-	private String end;
+	public String start;
+	public String end;
 	private Metadata metadata;
+
+	public Main nextServer;
 
 	public Main(Cache cache, String start, String end){
 		if (cache.getClass().equals(FIFOLRUCache.class)){
@@ -39,6 +36,10 @@ public class Main {
 		this.end = end;
 	}
 
+	public void setMetadata(Metadata metadata){
+		this.metadata = metadata;
+	}
+
 	/**
 	 * Closing the server
 	 */
@@ -46,9 +47,7 @@ public class Main {
 		isRunning = false;
 	}
 
-	public void setMetadata(Metadata metadata){
-		this.metadata = metadata;
-	}
+
 
 
 

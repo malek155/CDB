@@ -1,4 +1,4 @@
-package de.tum.i13.server.kv;
+package de.tum.i13.server.circle;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -30,9 +30,11 @@ public class ECS {
 
     //Servers repository
     LinkedList<Main> serverRepository = new LinkedList<>();
+    private Main headServer;
+    private Main tailServer;
 
-    //metadata
-    Map<Main, Metadata> metadataMap = new HashMap<>();
+    //metadata, String is a hashkey
+    Map<String, Metadata> metadataMap = new HashMap<>();
 
     //One cache to rule them all
     private static Cache cache;
@@ -74,53 +76,74 @@ public class ECS {
     private void addServer(ServerSocket ss) throws NoSuchAlgorithmException {
         moved = true;
         buckets++;
-        int startIndex;
-        String startHash;
+        int startIndex;     // number if starthash
+        String startHash;   // startHash
+        Main newMain;       // new added server
 
         //get hashvalue of a server (ip+port)
         String hash = this.hashServer(ss);
 
-        //getting an index and a hashvalue of a predessecor to be -> startrange
-        //if indexes == null -> we have a first server to add
-        Map<Integer, String> indexes = this.locate(hash);
-        if(indexes == null){
+        //getting an index and a hashvalue of a predecessor to be -> startrange
+
+        if(headServer == null){     // means we have no servers in rep yet
             startIndex = 0;
             //the beginning of th range is an incremented hashvalue
             startHash = Integer.toHexString((int) Long.parseLong(hash, 16)+1);
+
+            newMain = new Main(cache, startHash, hash);
+            this.headServer = newMain;
+            this.tailServer = newMain;
+            this.tailServer.nextServer = headServer;
         }
         else{
-            startIndex = (int) indexes.keySet().stream().findFirst().get()+1;
-            startHash = indexes.get(startIndex);
+            Map<Integer, String> indexes = this.locate(hash);
+            //findfirst because we have there only one keyvalue :/
+            startIndex = (int) indexes.keySet().stream().findFirst().get();
+            startHash = indexes.get(startIndex);        // already incremented hashvalue
+            Main prevServer = this.serverRepository.get(startIndex-1);
+
+            newMain = new Main(cache, startHash, hash);
+
+            if(this.tailServer == prevServer.nextServer){
+                this.tailServer = newMain;
+                newMain.nextServer = headServer;
+            }
+            else{
+                newMain.nextServer = prevServer.nextServer;
+            }
+            prevServer.nextServer = newMain;
         }
 
-        Main newMain = new Main(cache, startHash, hash);
-
-        this.metadataMap.put(newMain, new Metadata(ss.getInetAddress().getHostAddress(), ss.getLocalPort(), startHash, hash));
+        this.metadataMap.put(hash, new Metadata(ss.getInetAddress().getHostAddress(), ss.getLocalPort(), startHash, hash));
         this.serverRepository.add(startIndex, newMain);
+
+        //change next server startrange
+        this.serverRepository.get(startIndex+1).start = Integer.toHexString((int) Long.parseLong(hash, 16)+1);
     }
 
     private void removeServer(Main main) {
         moved = true;
         buckets--;
-
     }
 
+
+    // find the right location of a new server
     private Map<Integer, String> locate(String hash){
         Map<Integer, String> returnIndexes = new HashMap();
         int count = 0;
         String previous = "";
         int hashedValue = (int) Long.parseLong(hash, 16);
-        //looking for an intervall for our new hashed value
-        for(Map.Entry element : metadataMap.entrySet()){
+        //looking for an interval for our new hashed value
+        for(Map.Entry element : metadataMap.entrySet()) {
             String hashString = (String) element.getKey();
             int intHash = (int) Long.parseLong(hashString, 16);
-            if (hashedValue < intHash){
+            if (hashedValue < intHash) {
                 // start index
                 returnIndexes.put((Integer) count, previous);
                 break;
             }
             count++;
-            previous = Integer.toHexString(intHash+1);
+            previous = Integer.toHexString(intHash + 1);
         }
         return returnIndexes;
     }
@@ -129,8 +152,9 @@ public class ECS {
 
     }
 
+    //update metadata in servers
     private void updateMetadata() {
-
+        this.serverRepository
     }
 
     /**

@@ -21,11 +21,11 @@ public class Metadata {
         return this.port;
     }
 
-    public int getStart(){
+    public String getStart(){
         return this.start;
     }
 
-    public int getEnd(){
+    public String getEnd(){
         return this.end;
     }
 }
