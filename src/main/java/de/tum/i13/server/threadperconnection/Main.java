@@ -8,6 +8,7 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.Buffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,17 +44,6 @@ public class Main {
 	}
 
 	/**
-	 * Closing the server
-	 */
-	public void close(){
-		isRunning = false;
-	}
-
-
-
-
-
-	/**
 	 * main() method where our serversocket will be initialized
 	 *
 	 * @param args
@@ -62,9 +52,38 @@ public class Main {
 	public static void main(String[] args) throws IOException {
 		Config cfg = parseCommandlineArgs(args); // Do not change this
 		setupLogging(cfg.logfile);
-
 		KVStoreProcessor kvStore = new KVStoreProcessor();
 		kvStore.setPath(cfg.dataDir);
+
+		// for now, we'll make it more elegant later
+		boolean shuttingDown = false;
+		boolean shutDown = false;
+		boolean transferred = false;
+
+		// at first create a connection to ecs
+		try(Socket socket = new Socket(cfg.bootstrap.getAddress(), cfg.bootstrap.getPort())){
+			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			PrintWriter out = new PrintWriter(socket.getOutputStream());
+			while(!shutDown){
+				if(transferred){
+					out.write("tranferred" + "\r\n");
+					out.flush();
+				}
+				if(shuttingDown){
+					out.write("mayishutdownplz" + "\r\n");
+					out.flush();
+					if(in.readLine().equals("yesyoumay")){
+						shutDown = true;
+					}
+				}
+			}
+			in.close();
+			out.close();
+		}catch(IOException ie){
+			ie.printStackTrace();
+		}
+
+		// now we can open a listening serversocket
 
 		final ServerSocket serverSocket = new ServerSocket();
 

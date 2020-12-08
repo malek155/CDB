@@ -1,21 +1,18 @@
 package de.tum.i13.server.circle;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 // import MD5 for the hashing
 import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
 //import Maven dependency
-import de.tum.i13.server.echo.EchoLogic;
 import de.tum.i13.server.kv.*;
-import de.tum.i13.server.threadperconnection.ConnectionHandleThread;
 import de.tum.i13.server.threadperconnection.Main;
 import de.tum.i13.shared.Config;
 import de.tum.i13.shared.Metadata;
@@ -36,7 +33,7 @@ public class ECS {
     private Main tailServer;
 
     //metadata, String is a hashkey
-    Map<String, Metadata> metadataMap = new HashMap<>();
+    private Map<String, Metadata> metadataMap = new HashMap<>();
 
     //One cache to rule them all
     private static Cache cache;
@@ -48,6 +45,7 @@ public class ECS {
     boolean moved = false;
 
     //this method hashes adr and port with md5
+
     /**
      * hashServer method hashes the IP address and port
      * of a ServerSocket to its Hexadecimal value with md5
@@ -87,38 +85,36 @@ public class ECS {
 
         //getting an index and a hashvalue of a predecessor to be -> startrange
 
-        if(headServer == null){     // means we have no servers in rep yet
+        if (headServer == null) {     // means we have no servers in rep yet
             startIndex = 0;
             //the beginning of th range is an incremented hashvalue
-            startHash = Integer.toHexString((int) Long.parseLong(hash, 16)+1);
+            startHash = Integer.toHexString((int) Long.parseLong(hash, 16) + 1);
 
             newMain = new Main(cache, startHash, hash);
             this.headServer = newMain;
             this.tailServer = newMain;
             this.tailServer.nextServer = headServer;
-        }
-        else{
+        } else {
             Map<Integer, String> indexes = this.locate(hash);
             //findfirst because we have there only one keyvalue :/
             startIndex = (int) indexes.keySet().stream().findFirst().get();
             startHash = indexes.get(startIndex);        // already incremented hashvalue
-            Main prevServer = this.serverRepository.get(startIndex-1);
+            Main prevServer = this.serverRepository.get(startIndex - 1);
 
             newMain = new Main(cache, startHash, hash);
 
-            if(this.tailServer == prevServer){
+            if (this.tailServer == prevServer) {
                 this.tailServer = newMain;
                 newMain.nextServer = headServer;
-            }
-            else{
+            } else {
                 newMain.nextServer = prevServer.nextServer;
             }
             prevServer.nextServer = newMain;
 
             //change next server startrange
-            this.serverRepository.get(startIndex+1).start = Integer.toHexString((int) Long.parseLong(hash, 16)+1);
+            this.serverRepository.get(startIndex + 1).start = Integer.toHexString((int) Long.parseLong(hash, 16) + 1);
             //change prev server endrange
-            String endrangeOfPrev = Integer.toHexString((int) Long.parseLong(startHash, 16)-1);
+            String endrangeOfPrev = Integer.toHexString((int) Long.parseLong(startHash, 16) - 1);
             prevServer.end = endrangeOfPrev;
         }
 
@@ -132,15 +128,22 @@ public class ECS {
         buckets--;
     }
 
+    public boolean shuttingDown(){
+        return true;
+    }
+
+    public void transferred(boolean check){
+
+    }
 
     // find the right location of a new server
-    private Map<Integer, String> locate(String hash){
+    private Map<Integer, String> locate(String hash) {
         Map<Integer, String> returnIndexes = new HashMap();
         int count = 0;
         String previous = "";
         int hashedValue = (int) Long.parseLong(hash, 16);
         //looking for an interval for our new hashed value
-        for(Map.Entry element : metadataMap.entrySet()) {
+        for (Map.Entry element : metadataMap.entrySet()) {
             String hashString = (String) element.getKey();
             int intHash = (int) Long.parseLong(hashString, 16);
             if (hashedValue < intHash) {
@@ -160,7 +163,7 @@ public class ECS {
 
     //update metadata in servers
     private void updateMetadata() {
-        for(Main main: serverRepository){
+        for (Main main : serverRepository) {
             main.setMetadata(metadataMap);
         }
     }
@@ -172,46 +175,55 @@ public class ECS {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
+
+        ECS ecs = new ECS();
+
         Config cfg = parseCommandlineArgs(args); // Do not change this
         setupLogging(cfg.logfile);
 
         //configuring cache for all servers
-        if (cfg.cache.equals("FIFO")){
+        if (cfg.cache.equals("FIFO")) {
             cache = new FIFOLRUCache(cfg.cacheSize, false);
-        }
-        else if(cfg.cache.equals("LRU")){
+        } else if (cfg.cache.equals("LRU")) {
             cache = new FIFOLRUCache(cfg.cacheSize, true);
-        }
-        else if(cfg.cache.equals("LFU")){
+        } else if (cfg.cache.equals("LFU")) {
             cache = new LFUCache(cfg.cacheSize);
-        }
-        else System.out.println("Please check your input for a cache strategy and try again.");
+        } else System.out.println("Please check your input for a cache strategy and try again.");
 
-        final ServerSocket serverSocket = new ServerSocket();
+        ServerSocket serverSocket = new ServerSocket();
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                System.out.println("Closing thread per connection kv server");
                 try {
-                    serverSocket.close();
+                    if(serverSocket != null)
+                        serverSocket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         });
 
-        // binding to the server through specified bootstrap ip and port
-        serverSocket.bind(new InetSocketAddress(cfg.bootstrap.getAddress(), cfg.bootstrap.getPort()));
+        try {
+            // binding to the server through specified bootstrap ip and port
+            serverSocket.bind(new InetSocketAddress(cfg.bootstrap.getAddress(), cfg.bootstrap.getPort()));
 
-        while (true) {
-            // Waiting for a server to connect
-            Socket clientSocket = serverSocket.accept();
+            while (true) {
+                // Waiting for a server to connect
+                Socket clientSocket = serverSocket.accept();
 
-            // When we accept a connection, we start a new Thread for this connection
-            Thread th = new ConnectionHandleThread(logic, clientSocket);
-            th.start();
+                // When we accept a connection, we start a new Thread for this connection
+                ECSConnection connection = new ECSConnection(clientSocket, ecs);
+
+                new Thread(connection).start();
+            }
+        }catch(IOException ie){
+            ie.printStackTrace();
         }
-
     }
 }
+
+
+
+
+
