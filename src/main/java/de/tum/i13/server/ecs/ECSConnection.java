@@ -1,22 +1,10 @@
 package de.tum.i13.server.circle;
 
-import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Constants;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.InetSocketAddress;
+import java.io.*;
 import java.net.Socket;
 
-/**
- * ConnectionHandleThread class that will handle the thread of each client
- *
- * @author gr9
- *
- */
 public class ECSConnection implements Runnable {
     private Socket clientSocket;
     private ECS bigECS; // is watching you
