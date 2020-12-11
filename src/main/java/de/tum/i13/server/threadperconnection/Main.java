@@ -11,6 +11,7 @@ import java.net.Socket;
 import java.nio.Buffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
 import static de.tum.i13.shared.LogSetup.setupLogging;
@@ -22,10 +23,15 @@ public class Main {
 	// used to shut down the server , maybe we need it
 	private static boolean isRunning = true;
 	private static Cache cache;
-	private static KVStoreProcessor kvStore;
-	public String start;
-	public String end;
+	private KVStoreProcessor kvStore;
+	public static String start;
+	public static String end;
 	private Map<String, Metadata> metadata;
+	private static boolean shuttingDown = false;
+	private static boolean shutDown = false;
+	private static String nextIP;
+	private static int nextPort;
+	private static File storage;
 
 	public Main nextServer;
 
@@ -37,6 +43,27 @@ public class Main {
 		}
 		this.start = start;
 		this.end = end;
+
+	}
+
+	public void findNextIP(){
+		this.nextIP = metadata.get(nextServer).getIP();
+	}
+
+	public void findNextPort(){
+		this.nextPort = metadata.get(nextServer).getPort();
+	}
+
+	public void setStart(String newstart){
+		start = newstart;
+	}
+
+	public void setEnd(String newend){
+		end = newend;
+	}
+
+	public void setStorage(){
+		storage = kvStore.getStorage();
 	}
 
 	public void setMetadata(Map<String, Metadata> metadata){
@@ -55,44 +82,38 @@ public class Main {
 		KVStoreProcessor kvStore = new KVStoreProcessor();
 		kvStore.setPath(cfg.dataDir);
 
-		// for now, we'll make it more elegant later
-		boolean shuttingDown = false;
-		boolean shutDown = false;
-		boolean transferred = false;
-
-		// at first create a connection to ecs
+		// now you can connect to ecs
 		try(Socket socket = new Socket(cfg.bootstrap.getAddress(), cfg.bootstrap.getPort())){
-			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			PrintWriter out = new PrintWriter(socket.getOutputStream());
+			BufferedReader inECS = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			PrintWriter outECS = new PrintWriter(socket.getOutputStream());
 			while(!shutDown){
-				if(transferred){
-					out.write("tranferred" + "\r\n");
-					out.flush();
-				}
 				if(shuttingDown){
-					out.write("mayishutdownplz" + "\r\n");
-					out.flush();
-					if(in.readLine().equals("yesyoumay")){
+					outECS.write("mayishutdownplz " + end + "\r\n");
+					outECS.flush();
+					if(inECS.readLine().equals("yesyoumay")){
+						transfer();
+						outECS.write("transferred" + "\r\n");
+						outECS.flush();
 						shutDown = true;
 					}
 				}
 			}
-			in.close();
-			out.close();
+			inECS.close();
+			outECS.close();
 		}catch(IOException ie){
 			ie.printStackTrace();
 		}
 
 		// now we can open a listening serversocket
-
 		final ServerSocket serverSocket = new ServerSocket();
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
-				System.out.println("Closing thread per connection kv server");
+				shuttingDown = true;
 				try {
-					serverSocket.close();
+					if(shutDown)
+						serverSocket.close();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -111,6 +132,23 @@ public class Main {
 			Thread th = new ConnectionHandleThread(logic, clientSocket);
 			th.start();
 		}
-
 	}
+
+	public static void transfer(){
+		try(Socket socket = new Socket(nextIP, nextPort)){
+			PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
+			Scanner scanner = new Scanner(new FileInputStream(storage));
+
+			while (scanner.hasNextLine()) {
+				String line = scanner.nextLine();
+				outTransfer.write("transferring " + scanner.nextLine() + "\r\n");
+				outTransfer.flush();
+			}
+			scanner.close();
+			outTransfer.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 }

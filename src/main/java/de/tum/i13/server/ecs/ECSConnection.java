@@ -1,4 +1,4 @@
-package de.tum.i13.server.circle;
+package de.tum.i13.server.ecs;
 
 import de.tum.i13.shared.Constants;
 
@@ -52,9 +52,9 @@ public class ECSConnection implements Runnable {
 
     private String process(String line) {
         String reply = "";
-
-        if (line.equals("mayishutdownplz")) {
-            boolean may = this.bigECS.shuttingDown();
+        String[] lines = line.split(" ");
+        if (lines[0].equals("mayishutdownplz")) {
+            boolean may = this.bigECS.shuttingDown(lines[1]);
             reply = (may)?"yesyoumay":"";
         } else if (line.equals("transferred")) {
             this.bigECS.transferred(true);

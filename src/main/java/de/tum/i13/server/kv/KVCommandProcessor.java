@@ -17,9 +17,6 @@ import java.util.logging.Logger;
  *
  */
 public class KVCommandProcessor implements CommandProcessor {
-	// we forward the lines that have put , get , delete from the Echologic to this
-	// class because it is responsible to interact with the KVStore and handle those
-	// commands
 	private KVStore kvStore;
 	private Cache cache;
 
@@ -34,8 +31,6 @@ public class KVCommandProcessor implements CommandProcessor {
 
 	public static Logger logger = Logger.getLogger(KVCommandProcessor.class.getName());
 
-	// if we will use the cache here it should be static so that only one instance
-	// is accessed by all the KVCommandProcessors
 	/**
 	 * process() method that handles the requests
 	 */
@@ -47,18 +42,12 @@ public class KVCommandProcessor implements CommandProcessor {
 
 		String reply = command;
 
-		// Parse message "put message", call kvstore.put
-		if (input[0].equals("put") || input[0].equals("get")) {
+		if (input[0].equals("put") || input[0].equals("get")){
 			KVMessage msg;
 			String response = "";
 			try {
-				// the return value will be a KVMessageProcessor here and the methods can only
-				// be put or get or delete
-				// I will change it as a return
-
-				// put request
-				if (input[0].equals("put")) {
-					if (input.length < 3) {
+				if (input[0].equals("put")){
+					if (input.length != 3) {
 						throw new IOException("Put Request needs a key and a value !");
 					}
 					msg = this.kvStore.put(input[1], input[2]);
@@ -67,9 +56,7 @@ public class KVCommandProcessor implements CommandProcessor {
 					} else {
 						response = msg.getStatus().toString() + " " + msg.getKey();
 					}
-
 				}
-				// get request
 				else if (input[0].equals("get")) {
 					if (input.length != 2) {
 						throw new Exception("Get Request needs only a key !");
@@ -81,7 +68,6 @@ public class KVCommandProcessor implements CommandProcessor {
 						response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 					}
 				}
-
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -89,6 +75,8 @@ public class KVCommandProcessor implements CommandProcessor {
 		} else if (input[0].equals("logLevel")) {
 			logger.setLevel(Level.parse(input[1]));
 			// here should be a msg !
+		}else if(input[0].equals("transferring")){
+
 		} else {
 			// here should be the send request because a wrong request will be handled in
 			// the client side

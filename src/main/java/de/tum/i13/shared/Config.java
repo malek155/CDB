@@ -70,7 +70,7 @@ public class Config {
 			try {
 				Files.createDirectory(cfg.logfile);
 			} catch (IOException e) {
-				System.out.println("Could not create directory");
+				System.out.println("Could not create directory" + e.getMessage());
 				e.printStackTrace();
 				System.exit(-1);
 			}

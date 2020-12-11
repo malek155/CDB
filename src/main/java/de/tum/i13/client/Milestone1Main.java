@@ -1,8 +1,12 @@
 package de.tum.i13.client;
 
+import de.tum.i13.server.threadperconnection.ConnectionHandleThread;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
 
 public class Milestone1Main {
 	public static void main(String[] args) throws IOException {
@@ -121,8 +125,7 @@ public class Milestone1Main {
 				printEchoLine(confirmation);
 				return ac;
 			} catch (Exception e) {
-				// Todo: separate between could not connect, unknown host and invalid port
-				printEchoLine("Could not connect to server");
+				printEchoLine(e.getMessage());
 			}
 		}
 		return null;

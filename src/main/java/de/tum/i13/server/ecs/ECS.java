@@ -1,4 +1,4 @@
-package de.tum.i13.server.circle;
+package de.tum.i13.server.ecs;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -28,7 +28,7 @@ public class ECS {
     //Servers repository, also a circular structure? meh we'll see
     LinkedList<Main> serverRepository = new LinkedList<>();
 
-    // chaining servers in a circle
+    // chaining servers in a ecs
     private Main headServer;
     private Main tailServer;
 
@@ -128,7 +128,8 @@ public class ECS {
         buckets--;
     }
 
-    public boolean shuttingDown(){
+    public boolean shuttingDown(String hash){
+        this.reallocate();
         return true;
     }
 
