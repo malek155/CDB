@@ -1,17 +1,17 @@
 package de.tum.i13.server.threadperconnection;
 
-import de.tum.i13.server.echo.EchoLogic;
-import de.tum.i13.server.kv.Cache;
-import de.tum.i13.server.kv.FIFOLRUCache;
-import de.tum.i13.server.kv.KVStoreProcessor;
-import de.tum.i13.server.kv.LFUCache;
-import de.tum.i13.shared.CommandProcessor;
+import de.tum.i13.server.kv.*;
 import de.tum.i13.shared.Config;
+import de.tum.i13.shared.Metadata;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.Buffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
 import static de.tum.i13.shared.LogSetup.setupLogging;
@@ -23,58 +23,120 @@ public class Main {
     // used to shut down the server , maybe we need it
     private static boolean isRunning = true;
     private static Cache cache;
-    private static KVStoreProcessor kvStore;
+    private KVStoreProcessor kvStore;
+    public static String start;
+    public static String end;
+    private Map<String, Metadata> metadata;
+    private static boolean shuttingDown = false;
+    private static boolean shutDown = false;
+    private static String nextIP;
+    private static int nextPort;
+    private static File storage;
 
-    // method to close the server
-    public void close() {
-        isRunning = false;
+    public Main nextServer;
+
+    public Main(Cache cache, String start, String end) throws IOException {
+        if (cache.getClass().equals(FIFOLRUCache.class)){
+            cache = (FIFOLRUCache) cache;
+        } else if (cache.getClass().equals(LFUCache.class)){
+            cache = (LFUCache) cache;
+        }
+        this.start = start;
+        this.end = end;
+
     }
 
+    public void findNextIP(){
+        this.nextIP = metadata.get(nextServer).getIP();
+    }
+
+    public void findNextPort(){
+        this.nextPort = metadata.get(nextServer).getPort();
+    }
+
+    public void setStart(String newstart){
+        start = newstart;
+    }
+
+    public void setEnd(String newend){
+        end = newend;
+    }
+
+    public void setStorage(){
+        storage = kvStore.getStorage();
+    }
+
+    public void setMetadata(Map<String, Metadata> metadata){
+        this.metadata = metadata;
+    }
+
+    public ServerSocket getServerSocket(){
+        return serverSocket;
+    }
+
+     static ServerSocket serverSocket=null;
+
+    static {
+        try {
+            serverSocket = new ServerSocket();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * main() method where our serversocket will be initialized
+     *
+     * @param args
+     * @throws IOException
+     */
     public static void main(String[] args) throws IOException {
         Config cfg = parseCommandlineArgs(args); // Do not change this
         setupLogging(cfg.logfile);
-
         KVStoreProcessor kvStore = new KVStoreProcessor();
         kvStore.setPath(cfg.dataDir);
 
-        if (cfg.cache.equals("FIFO")) {
-            cache = new FIFOLRUCache(cfg.cacheSize, false);
-        } else if (cfg.cache.equals("LRU")) {
-            cache = new FIFOLRUCache(cfg.cacheSize, true);
-        } else if (cfg.cache.equals("LFU")) {
-            cache = new LFUCache(cfg.cacheSize);
+        // now you can connect to ecs
+        try(Socket socket = new Socket(cfg.bootstrap.getAddress(), cfg.bootstrap.getPort())){
+            BufferedReader inECS = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            PrintWriter outECS = new PrintWriter(socket.getOutputStream());
+            while(!shutDown){
+                if(shuttingDown){
+                    outECS.write("mayishutdownplz " + end + "\r\n");
+                    outECS.flush();
+                    if(inECS.readLine().equals("yesyoumay")){
+                        transfer();
+                        outECS.write("transferred" + "\r\n");
+                        outECS.flush();
+                        shutDown = true;
+                    }
+                }
+            }
+            inECS.close();
+            outECS.close();
+        }catch(IOException ie){
+            ie.printStackTrace();
         }
 
-        final ServerSocket serverSocket = new ServerSocket();
-
+        // now we can open a listening serversocket
+// changed declaration of server socket outside main method
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                System.out.println("Closing thread per connection kv server");
+                shuttingDown = true;
                 try {
-                    serverSocket.close();
+                    if(shutDown)
+                        serverSocket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         });
-
-        // bind to localhost only
+        // binding to the server
         serverSocket.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
 
-        // Replace with your Key value server logic.
-        // If you use multithreading you need locking
-        // we can have
-        // add the
-        CommandProcessor logic = new EchoLogic(cache, kvStore);
-        // as we are using the same instance of logic for all the threads then we need
-        // only to synchronize the accessed methods , and if we are about to lock an
-        // object we have to lock the KVStore object which is only accessed through the
-        // KVCommandProcessor the we want have an access to it so I think we can only
-        // use the synchronized methods , otherwise we can change it and that will
-        // affect the structure that I am working with
+        KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache);
 
-        // while (true) {
         while (isRunning) {
             // Waiting for client to connect
             Socket clientSocket = serverSocket.accept();
@@ -83,6 +145,23 @@ public class Main {
             Thread th = new ConnectionHandleThread(logic, clientSocket);
             th.start();
         }
-
     }
+
+    public static void transfer(){
+        try(Socket socket = new Socket(nextIP, nextPort)){
+            PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
+            Scanner scanner = new Scanner(new FileInputStream(storage));
+
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                outTransfer.write("transferring " + scanner.nextLine() + "\r\n");
+                outTransfer.flush();
+            }
+            scanner.close();
+            outTransfer.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }
