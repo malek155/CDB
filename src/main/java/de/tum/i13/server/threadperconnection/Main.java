@@ -8,8 +8,6 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.Buffer;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -36,9 +34,9 @@ public class Main {
     public Main nextServer;
 
     public Main(Cache cache, String start, String end) throws IOException {
-        if (cache.getClass().equals(FIFOLRUCache.class)){
+        if (cache.getClass().equals(FIFOLRUCache.class)) {
             cache = (FIFOLRUCache) cache;
-        } else if (cache.getClass().equals(LFUCache.class)){
+        } else if (cache.getClass().equals(LFUCache.class)) {
             cache = (LFUCache) cache;
         }
         this.start = start;
@@ -46,35 +44,39 @@ public class Main {
 
     }
 
-    public void findNextIP(){
+    public String getNextIP() {
+        return metadata.get(nextServer).getIP();
+    }
+
+    public void findNextIP() {
         this.nextIP = metadata.get(nextServer).getIP();
     }
 
-    public void findNextPort(){
+    public void findNextPort() {
         this.nextPort = metadata.get(nextServer).getPort();
     }
 
-    public void setStart(String newstart){
+    public void setStart(String newstart) {
         start = newstart;
     }
 
-    public void setEnd(String newend){
+    public void setEnd(String newend) {
         end = newend;
     }
 
-    public void setStorage(){
+    public void setStorage() {
         storage = kvStore.getStorage();
     }
 
-    public void setMetadata(Map<String, Metadata> metadata){
+    public void setMetadata(Map<String, Metadata> metadata) {
         this.metadata = metadata;
     }
 
-    public ServerSocket getServerSocket(){
+    public ServerSocket getServerSocket() {
         return serverSocket;
     }
 
-     static ServerSocket serverSocket=null;
+    static ServerSocket serverSocket = null;
 
     static {
         try {
@@ -97,14 +99,14 @@ public class Main {
         kvStore.setPath(cfg.dataDir);
 
         // now you can connect to ecs
-        try(Socket socket = new Socket(cfg.bootstrap.getAddress(), cfg.bootstrap.getPort())){
+        try (Socket socket = new Socket(cfg.bootstrap.getAddress(), cfg.bootstrap.getPort())) {
             BufferedReader inECS = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter outECS = new PrintWriter(socket.getOutputStream());
-            while(!shutDown){
-                if(shuttingDown){
+            while (!shutDown) {
+                if (shuttingDown) {
                     outECS.write("mayishutdownplz " + end + "\r\n");
                     outECS.flush();
-                    if(inECS.readLine().equals("yesyoumay")){
+                    if (inECS.readLine().equals("yesyoumay")) {
                         transfer();
                         outECS.write("transferred" + "\r\n");
                         outECS.flush();
@@ -114,7 +116,7 @@ public class Main {
             }
             inECS.close();
             outECS.close();
-        }catch(IOException ie){
+        } catch (IOException ie) {
             ie.printStackTrace();
         }
 
@@ -125,7 +127,7 @@ public class Main {
             public void run() {
                 shuttingDown = true;
                 try {
-                    if(shutDown)
+                    if (shutDown)
                         serverSocket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -147,8 +149,8 @@ public class Main {
         }
     }
 
-    public static void transfer(){
-        try(Socket socket = new Socket(nextIP, nextPort)){
+    public static void transfer() {
+        try (Socket socket = new Socket(nextIP, nextPort)) {
             PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
             Scanner scanner = new Scanner(new FileInputStream(storage));
 

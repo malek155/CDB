@@ -133,7 +133,7 @@ public class ECS {
         moved = true;
         buckets--;
 
-        //locate the server
+        //locate the server for the metadata
         Map<Integer, String> indexes = this.locate(this.hashServer(ss));
 
         //this is the older start value
@@ -141,10 +141,17 @@ public class ECS {
 
         String startHash = indexes.get(startValue);
 
-        /*this is the predecessor = the server that will be responsible for
+        Main predMain = null;
+        for (Main main : serverRepository) {
+            //find predecessor
+            if (main.getNextIP().equals(ss.getInetAddress().toString())) {
+                /*this is the predecessor = the server that will be responsible for
          the new range (his older range and the range of the deleted server)*/
+                predMain=main;
+            }
+        }
+        Main newRespServer = new Main(cache, hashMD5(predMain.getServerSocket().getInetAddress().toString()), hashMD5(ss.getInetAddress().toString()));
 
-        Main newRespServer = this.serverRepository.get(startValue - 1);
 
         //delete the actual server
         //this.serverRepository.remove(startValue); // not possible in circular structure
