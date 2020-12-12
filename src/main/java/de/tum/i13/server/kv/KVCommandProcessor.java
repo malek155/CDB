@@ -1,6 +1,5 @@
 package de.tum.i13.server.kv;
 
-import de.tum.i13.server.echo.EchoLogic;
 import de.tum.i13.server.kv.KVMessage.StatusType;
 import de.tum.i13.shared.CommandProcessor;
 
@@ -10,12 +9,22 @@ import java.net.InetSocketAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * KVCommandProcessor to handle the client requests that contains put or get
+ * requests
+ * 
+ * @author gr9
+ *
+ */
 public class KVCommandProcessor implements CommandProcessor {
 	// we forward the lines that have put , get , delete from the Echologic to this
 	// class because it is responsible to interact with the KVStore and handle those
 	// commands
 	private KVStore kvStore;
 	private Cache cache;
+
+	public KVCommandProcessor() {
+	}
 
 	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache) {
 		this.kvStore = kvStore;
@@ -27,15 +36,17 @@ public class KVCommandProcessor implements CommandProcessor {
 
 	// if we will use the cache here it should be static so that only one instance
 	// is accessed by all the KVCommandProcessors
+	/**
+	 * process() method that handles the requests
+	 */
 	@Override
 	public String process(String command) {
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
-//
+
 		String reply = command;
 
-		// TODO
 		// Parse message "put message", call kvstore.put
 		if (input[0].equals("put") || input[0].equals("get")) {
 			KVMessage msg;
@@ -47,7 +58,7 @@ public class KVCommandProcessor implements CommandProcessor {
 
 				// put request
 				if (input[0].equals("put")) {
-					if (input.length < 3) {
+					if (input.length != 3) {
 						throw new IOException("Put Request needs a key and a value !");
 					}
 					msg = this.kvStore.put(input[1], input[2]);
@@ -78,6 +89,9 @@ public class KVCommandProcessor implements CommandProcessor {
 		} else if (input[0].equals("logLevel")) {
 			logger.setLevel(Level.parse(input[1]));
 			// here should be a msg !
+			// why this transferring ??
+		} else if (input[0].equals("transferring")) {
+
 		} else {
 			// here should be the send request because a wrong request will be handled in
 			// the client side
@@ -96,6 +110,5 @@ public class KVCommandProcessor implements CommandProcessor {
 	@Override
 	public void connectionClosed(InetAddress address) {
 		logger.info("connection closed: " + address.toString());
-
 	}
 }

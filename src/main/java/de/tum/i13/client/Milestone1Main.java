@@ -3,9 +3,46 @@ package de.tum.i13.client;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.ServerSocket;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.codec.binary.Hex;
+
+import de.tum.i13.shared.Metadata;
 
 public class Milestone1Main {
+private  Map<String, Metadata> metadataMap = new HashMap<>(); 
+/**
+ * hashKey method hashes the key a keyvalue to its
+ * Hexadecimal value with md5
+ *
+ * @return String of hashvalue in Hexadecimal
+ */
+private String hashKey(String key) throws NoSuchAlgorithmException {
+	
+
+	return hashMD5(key);
+}
+
+/**
+ * hashTupel method hashes a given key to its Hexadecimal value with md5
+ *
+ * @return String of hashvalue in Hexadecimal
+ */
+private String hashMD5(String key) throws NoSuchAlgorithmException {
+	byte[] msgToHash = key.getBytes();
+	byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
+
+	// get the result in hexadecimal
+	String result = new String(Hex.encodeHex(hashedMsg));
+	return result;
+}
+
 	public static void main(String[] args) throws IOException {
+		
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
 		ActiveConnection activeConnection = null;
@@ -24,7 +61,7 @@ public class Milestone1Main {
 				break;
 			case "put":
 			case "get":
-				
+             
 				sendrequest(activeConnection, command, line);
 				break;
 			case "disconnect":
@@ -128,4 +165,10 @@ public class Milestone1Main {
 		}
 		return null;
 	}
+
+	// we need a method where we give the key and the map of the metadata and it
+	// returns a ServerSocket containing the server which is responsible of this key
+	// and then we compare it to the server that we are already connected to and if
+	// it is not the same we reconnect to the appropriate server and resend the last
+	// request
 }

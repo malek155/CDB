@@ -14,10 +14,7 @@ import java.util.logging.Level;
 
 public class Config {
 
-//        Runnable ?
-
 	public Config() {
-
 	}
 
 	@CommandLine.Option(names = "-p", description = "sets the port of the server", interactive = true, arity = "0..1", defaultValue = "5153")
