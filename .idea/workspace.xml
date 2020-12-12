@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="AutoImportSettings">
-    <option name="autoReloadType" value="SELECTIVE" />
+    <option name="autoReloadType" value="ALL" />
   </component>
   <component name="BranchesTreeState">
     <expand>
@@ -9,28 +9,21 @@
         <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
         <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
       </path>
-      <path>
-        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
-        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
-      </path>
-      <path>
-        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
-        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
-        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
-      </path>
     </expand>
     <select>
       <path>
         <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
-        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
-        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
-        <item name="BRANCH:origin/Sarras_branch" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="BRANCH:Sarras_branch" type="e8cecc67:BranchNodeDescriptor" />
       </path>
     </select>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6fcb5e85-ac1f-46f5-a664-6c470115760f" name="Default Changelist" comment="last">
+    <list default="true" id="6fcb5e85-ac1f-46f5-a664-6c470115760f" name="Default Changelist" comment="removeServer">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cdbms1.iml" beforeDir="false" afterPath="$PROJECT_DIR$/cdbms1.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,10 +38,16 @@
       </list>
     </option>
   </component>
+  <component name="Git.Pull.Settings">
+    <option name="BRANCH" value="Sarras_branch" />
+  </component>
+  <component name="Git.Rebase.Settings">
+    <option name="NEW_BASE" value="Sarras_branch" />
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="Sarra's_branch" />
+        <entry key="$PROJECT_DIR$" value="Sarras_branch" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -58,6 +57,13 @@
       <set>
         <option value="https://github.com/AiinaR2D2/milestone2" />
       </set>
+    </option>
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHome" value="$APPLICATION_HOME_DIR$/plugins/maven/lib/maven3" />
+      </MavenGeneralSettings>
     </option>
   </component>
   <component name="ProjectId" id="1kQjQfDt0z5iUFeIvE5SIGy4n4P" />
@@ -70,8 +76,9 @@
   </component>
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="com.intellij.openapi.externalSystem.service.settings.ExternalSystemGroupConfigurable" value="ALL" />
     <property name="last_directory_selection" value="$PROJECT_DIR$/src/test/java/de/tum/i13" />
-    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
+    <property name="settings.editor.selected.configurable" value="build.tools" />
   </component>
   <component name="RunManager" selected="Application.Main">
     <configuration name="TestKVCommandProcessor" type="AndroidJUnit" factoryName="Android JUnit" temporary="true" nameIsGenerated="true">
@@ -228,7 +235,21 @@
       <option name="project" value="LOCAL" />
       <updated>1606254830923</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="trying with ecs">
+      <created>1606757753241</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1606757753241</updated>
+    </task>
+    <task id="LOCAL-00013" summary="trying with ecs v">
+      <created>1606758884184</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1606758884184</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -242,7 +263,7 @@
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="origin/Sarras_branch" />
+                        <option value="Sarras_branch" />
                       </list>
                     </value>
                   </entry>
@@ -262,16 +283,19 @@
     <MESSAGE value="caches class implements interface cache for method&#10;tried some methods in echoLogic" />
     <MESSAGE value="tests" />
     <MESSAGE value="last" />
-    <option name="LAST_COMMIT_MESSAGE" value="last" />
+    <MESSAGE value="trying with ecs" />
+    <MESSAGE value="trying with ecs v" />
+    <option name="LAST_COMMIT_MESSAGE" value="trying with ecs v" />
   </component>
   <component name="WindowStateProjectService">
     <state x="208" y="60" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1606242416145">
       <screen x="0" y="23" width="1440" height="832" />
     </state>
     <state x="208" y="60" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.23.1440.832@0.23.1440.832" timestamp="1606242416145" />
-    <state x="801" y="152" key="#com.intellij.ide.util.MemberChooser" timestamp="1606061639501">
-      <screen x="0" y="23" width="1440" height="832" />
+    <state x="801" y="151" key="#com.intellij.ide.util.MemberChooser" timestamp="1607686531171">
+      <screen x="0" y="22" width="1440" height="833" />
     </state>
+    <state x="801" y="151" key="#com.intellij.ide.util.MemberChooser/0.22.1440.833@0.22.1440.833" timestamp="1607686531171" />
     <state x="801" y="152" key="#com.intellij.ide.util.MemberChooser/0.23.1440.832@0.23.1440.832" timestamp="1606061639501" />
     <state x="801" y="152" key="#com.intellij.ide.util.MemberChooser/0.23.1440.833@0.23.1440.833" timestamp="1605905121812" />
     <state x="706" y="135" key="#com.intellij.ide.util.frameworkSupport.AddFrameworkSupportDialog" timestamp="1605686478641">
@@ -282,35 +306,61 @@
       <screen x="0" y="23" width="1440" height="832" />
     </state>
     <state x="611" y="363" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.23.1440.832@0.23.1440.832" timestamp="1606076447782" />
-    <state width="1398" height="229" key="GridCell.Tab.0.bottom" timestamp="1606247260482">
+    <state width="1398" height="229" key="GridCell.Tab.0.bottom" timestamp="1606297077238">
       <screen x="0" y="23" width="1440" height="832" />
     </state>
-    <state width="1398" height="229" key="GridCell.Tab.0.bottom/0.23.1440.832@0.23.1440.832" timestamp="1606247260482" />
-    <state width="1398" height="229" key="GridCell.Tab.0.center" timestamp="1606247260482">
+    <state width="1398" height="229" key="GridCell.Tab.0.bottom/0.23.1440.832@0.23.1440.832" timestamp="1606297077238" />
+    <state width="1398" height="229" key="GridCell.Tab.0.center" timestamp="1606297077237">
       <screen x="0" y="23" width="1440" height="832" />
     </state>
-    <state width="1398" height="229" key="GridCell.Tab.0.center/0.23.1440.832@0.23.1440.832" timestamp="1606247260482" />
-    <state width="1398" height="229" key="GridCell.Tab.0.left" timestamp="1606247260481">
+    <state width="1398" height="229" key="GridCell.Tab.0.center/0.23.1440.832@0.23.1440.832" timestamp="1606297077237" />
+    <state width="1398" height="229" key="GridCell.Tab.0.left" timestamp="1606297077235">
       <screen x="0" y="23" width="1440" height="832" />
     </state>
-    <state width="1398" height="229" key="GridCell.Tab.0.left/0.23.1440.832@0.23.1440.832" timestamp="1606247260481" />
-    <state width="1398" height="229" key="GridCell.Tab.0.right" timestamp="1606247260482">
+    <state width="1398" height="229" key="GridCell.Tab.0.left/0.23.1440.832@0.23.1440.832" timestamp="1606297077235" />
+    <state width="1398" height="229" key="GridCell.Tab.0.right" timestamp="1606297077237">
       <screen x="0" y="23" width="1440" height="832" />
     </state>
-    <state width="1398" height="229" key="GridCell.Tab.0.right/0.23.1440.832@0.23.1440.832" timestamp="1606247260482" />
-    <state x="443" y="78" key="SettingsEditor" timestamp="1606241790157">
-      <screen x="0" y="23" width="1440" height="832" />
+    <state width="1398" height="229" key="GridCell.Tab.0.right/0.23.1440.832@0.23.1440.832" timestamp="1606297077237" />
+    <state x="516" y="100" key="Maven.ArtifactSearchDialog" timestamp="1607773912937">
+      <screen x="0" y="22" width="1440" height="835" />
     </state>
+    <state x="516" y="100" key="Maven.ArtifactSearchDialog/0.22.1440.833@0.22.1440.833" timestamp="1606738937772" />
+    <state x="516" y="100" key="Maven.ArtifactSearchDialog/0.22.1440.835@0.22.1440.835" timestamp="1607773912937" />
+    <state x="288" y="94" key="MergeDialog" timestamp="1607772242133">
+      <screen x="0" y="22" width="1440" height="834" />
+    </state>
+    <state x="288" y="94" key="MergeDialog/0.22.1440.834@0.22.1440.834" timestamp="1607772242133" />
+    <state x="667" y="148" key="RollbackChangesDialog" timestamp="1607772427494">
+      <screen x="0" y="22" width="1440" height="834" />
+    </state>
+    <state x="667" y="148" key="RollbackChangesDialog/0.22.1440.834@0.22.1440.834" timestamp="1607772427494" />
+    <state x="443" y="77" key="SettingsEditor" timestamp="1607024119210">
+      <screen x="0" y="22" width="1440" height="833" />
+    </state>
+    <state x="443" y="77" key="SettingsEditor/0.22.1440.833@0.22.1440.833" timestamp="1607024119210" />
     <state x="443" y="78" key="SettingsEditor/0.23.1440.832@0.23.1440.832" timestamp="1606241790157" />
-    <state x="588" y="179" key="Vcs.Push.Dialog.v2" timestamp="1606254885071">
-      <screen x="0" y="23" width="1440" height="832" />
+    <state x="588" y="178" key="Vcs.Push.Dialog.v2" timestamp="1607773740735">
+      <screen x="0" y="22" width="1440" height="835" />
     </state>
-    <state x="588" y="179" key="Vcs.Push.Dialog.v2/0.23.1440.832@0.23.1440.832" timestamp="1606254885071" />
+    <state x="588" y="178" key="Vcs.Push.Dialog.v2/0.22.1440.833@0.22.1440.833" timestamp="1607773046745" />
+    <state x="588" y="178" key="Vcs.Push.Dialog.v2/0.22.1440.834@0.22.1440.834" timestamp="1607772452394" />
+    <state x="588" y="178" key="Vcs.Push.Dialog.v2/0.22.1440.835@0.22.1440.835" timestamp="1607773740735" />
+    <state x="588" y="179" key="Vcs.Push.Dialog.v2/0.23.1440.832@0.23.1440.832" timestamp="1606258360830" />
     <state x="588" y="179" key="Vcs.Push.Dialog.v2/0.23.1440.833@0.23.1440.833" timestamp="1605718885578" />
     <state x="652" y="224" key="chooseDestDirectoryDialog" timestamp="1606246985788">
       <screen x="0" y="23" width="1440" height="832" />
     </state>
     <state x="652" y="224" key="chooseDestDirectoryDialog/0.23.1440.832@0.23.1440.832" timestamp="1606246985788" />
+    <state x="722" y="158" key="git4idea.branch.GitSmartOperationDialog" timestamp="1607772198912">
+      <screen x="0" y="22" width="1440" height="834" />
+    </state>
+    <state x="722" y="158" key="git4idea.branch.GitSmartOperationDialog/0.22.1440.834@0.22.1440.834" timestamp="1607772198912" />
+    <state x="763" y="335" key="git4idea.remote.GitConfigureRemotesDialog" timestamp="1607774146087">
+      <screen x="0" y="22" width="1440" height="835" />
+    </state>
+    <state x="763" y="334" key="git4idea.remote.GitConfigureRemotesDialog/0.22.1440.833@0.22.1440.833" timestamp="1607772817703" />
+    <state x="763" y="335" key="git4idea.remote.GitConfigureRemotesDialog/0.22.1440.835@0.22.1440.835" timestamp="1607774146087" />
     <state x="674" y="179" width="670" height="676" key="search.everywhere.popup" timestamp="1606242011764">
       <screen x="0" y="23" width="1440" height="832" />
     </state>
