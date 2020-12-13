@@ -14,38 +14,38 @@ import org.apache.commons.codec.binary.Hex;
 import de.tum.i13.shared.Metadata;
 
 public class Milestone1Main {
-private  Map<String, Metadata> metadataMap = new HashMap<>(); 
-/**
- * hashKey method hashes the key a keyvalue to its
- * Hexadecimal value with md5
- *
- * @return String of hashvalue in Hexadecimal
- */
-private String hashKey(String key) throws NoSuchAlgorithmException {
-	
+	private Map<String, Metadata> metadataMap = new HashMap<>();
 
-	return hashMD5(key);
-}
+	/**
+	 * hashKey method hashes the key a keyvalue to its Hexadecimal value with md5
+	 *
+	 * @return String of hashvalue in Hexadecimal
+	 */
+	private String hashKey(String key) throws NoSuchAlgorithmException {
 
-/**
- * hashTupel method hashes a given key to its Hexadecimal value with md5
- *
- * @return String of hashvalue in Hexadecimal
- */
-private String hashMD5(String key) throws NoSuchAlgorithmException {
-	byte[] msgToHash = key.getBytes();
-	byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
+		return hashMD5(key);
+	}
 
-	// get the result in hexadecimal
-	String result = new String(Hex.encodeHex(hashedMsg));
-	return result;
-}
+	/**
+	 * hashTupel method hashes a given key to its Hexadecimal value with md5
+	 *
+	 * @return String of hashvalue in Hexadecimal
+	 */
+	private String hashMD5(String key) throws NoSuchAlgorithmException {
+		byte[] msgToHash = key.getBytes();
+		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
+
+		// get the result in hexadecimal
+		String result = new String(Hex.encodeHex(hashedMsg));
+		return result;
+	}
 
 	public static void main(String[] args) throws IOException {
-		
+
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
 		ActiveConnection activeConnection = null;
+
 		for (;;) {
 			System.out.print("EchoClient> ");
 			String line = reader.readLine();
@@ -61,8 +61,16 @@ private String hashMD5(String key) throws NoSuchAlgorithmException {
 				break;
 			case "put":
 			case "get":
-             
-				sendrequest(activeConnection, command, line);
+				int count = 0;
+				while (true) {
+					sendrequest(activeConnection, command, line);
+					String result = activeConnection.readline();
+					if (result.equals("server_write_lock") || result.equals("server_stopped")) {
+						count++;
+					}
+
+				}
+
 				break;
 			case "disconnect":
 				closeConnection(activeConnection);

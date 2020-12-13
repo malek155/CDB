@@ -91,6 +91,7 @@ public class ECS {
 		if (headServer == null) { // means we have no servers in rep yet
 			startIndex = 0;
 			// the beginning of th range is an incremented hashvalue
+			//
 			startHash = Integer.toHexString((int) Long.parseLong(hash, 16) + 1);
 
 			newMain = new Main(cache, startHash, hash);

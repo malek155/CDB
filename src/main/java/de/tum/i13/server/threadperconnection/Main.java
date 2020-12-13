@@ -25,7 +25,7 @@ public class Main {
 	private static KVStoreProcessor kvStore;
 	public String start;
 	public String end;
-	private Map<String, Metadata> metadata;
+	private static Map<String, Metadata> metadata;
 	private static boolean shuttingDown = false;
 	private static boolean shutDown = false;
 	private static String nextIP;
@@ -67,6 +67,14 @@ public class Main {
 
 	public void setMetadata(Map<String, Metadata> metadata) {
 		this.metadata = metadata;
+	}
+
+	public String getStart() {
+		return this.start;
+	}
+
+	public String getEnd() {
+		return this.end;
 	}
 
 	/**
@@ -129,8 +137,10 @@ public class Main {
 		});
 		// binding to the server
 		serverSocket.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
-
-		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache);
+		// I can not add the begin and end because of the static reference !!
+		// I am thinking about new object in main that contain the begin and end but
+		// they will be changing every time so I have to check it with aiina !
+		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache,metadata, start , end);
 
 		while (isRunning) {
 			// Waiting for client to connect
