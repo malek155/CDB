@@ -2,10 +2,13 @@ package de.tum.i13.server.kv;
 
 import de.tum.i13.server.kv.KVMessage.StatusType;
 import de.tum.i13.shared.CommandProcessor;
+import de.tum.i13.shared.Metadata;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,6 +22,7 @@ import java.util.logging.Logger;
 public class KVCommandProcessor implements CommandProcessor {
 	private KVStore kvStore;
 	private Cache cache;
+	private static Map<String, Metadata> metadataMap = new HashMap<>();
 
 	public KVCommandProcessor(){
 	}
@@ -87,19 +91,27 @@ public class KVCommandProcessor implements CommandProcessor {
 		return reply;
 	}
 
+	// ip port start end
+	/**
+	 * processMetadata method parses the command with  metadata from ecs
+	 * 	and updated global metadata
+	 *
+	 * @param command given .
+	 */
 	public void processMetadata(String command){
+		Map<String, Metadata> tempMap = new HashMap<>();
 		String[] input = command.split("\r\n");
 		String[] entry;
 		String hash;
-		String ip;
-		int port;
-		String start;
-		String end;
+		String[] metadata;
+
 		for (int i=0; i<input.length; i++){
 			entry = input[i].split("=");
 			hash = entry[0];
-			ip
+			metadata = entry[1].split(" ");
+			tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]), metadata[2], metadata[3]));
 		}
+		metadataMap = tempMap;
 	}
 
 	@Override

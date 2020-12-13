@@ -122,6 +122,8 @@ public class KVStoreProcessor implements KVStore {
 
 	/**
 	 * getStorage returns a whole storage if removing, part of it by adding a new one
+	 * @param hash cutting the storage to transfer only one of the parts to another server
+	 *             if empty, we merge by removing a server and getting the whole storage
 	 *
 	 * @return File of a data to transfer
 	 * @throws IOException
