@@ -6,26 +6,34 @@ public class Metadata {
     private String start;
     private String end;
 
-    public Metadata(String ip, int port, String start, String end){
+    public Metadata(String ip, int port, String start, String end) {
         this.ip = ip;
         this.port = port;
         this.start = start;
         this.end = end;
     }
 
-    public String getIP(){
+    public String getIP() {
         return this.ip;
     }
 
-    public int getPort(){
+    public int getPort() {
         return this.port;
     }
 
-    public String getStart(){
+    public String getStart() {
         return this.start;
     }
 
-    public String getEnd(){
+    public String getEnd() {
         return this.end;
+    }
+
+    public void setStart(String start) {
+        this.start = start;
+    }
+
+    public void setEnd(String end) {
+        this.end = end;
     }
 }

@@ -1,24 +1,18 @@
 package de.tum.i13.server.circle;
 
-import de.tum.i13.server.threadperconnection.*;
-import de.tum.i13.shared.*;
-
-import java.io.IOException;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 // import MD5 for the hashing
 import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
 //import Maven dependency
-import de.tum.i13.server.echo.EchoLogic;
 import de.tum.i13.server.kv.*;
-import de.tum.i13.server.threadperconnection.ConnectionHandleThread;
 import de.tum.i13.server.threadperconnection.Main;
 import de.tum.i13.shared.Config;
 import de.tum.i13.shared.Metadata;
@@ -34,7 +28,7 @@ public class ECS {
     //Servers repository, also a circular structure? meh we'll see
     LinkedList<Main> serverRepository = new LinkedList<>();
 
-    // chaining servers in a circle
+    // chaining servers in a ecs
     private Main headServer;
     private Main tailServer;
 
@@ -103,7 +97,7 @@ public class ECS {
         } else {
             Map<Integer, String> indexes = this.locate(hash);
             //findfirst because we have there only one keyvalue :/
-            startIndex = (int) indexes.keySet().stream().findFirst().get();//the start of range
+            startIndex = (int) indexes.keySet().stream().findFirst().get();
             startHash = indexes.get(startIndex);        // already incremented hashvalue
             Main prevServer = this.serverRepository.get(startIndex - 1);
 
@@ -133,73 +127,82 @@ public class ECS {
         moved = true;
         buckets--;
 
-        //locate the server for the metadata
-        Map<Integer, String> indexes = this.locate(this.hashServer(ss));
+        //locate the server to be removed
+        Map<Integer, String> returnIndexes = new HashMap();
+        Metadata mdToRemove = null;
+        Metadata mdNext = null;
 
-        //this is the older start value
-        int startValue = (int) indexes.keySet().stream().findFirst().get();
-
-        String startHash = indexes.get(startValue);
-
-        Main predMain = null;
-        for (Main main : serverRepository) {
-            //find predecessor
-            if (main.getNextIP().equals(ss.getInetAddress().toString())) {
-                /*this is the predecessor = the server that will be responsible for
-         the new range (his older range and the range of the deleted server)*/
-                predMain=main;
+        //count is used to define the next server
+        int count = 0;
+        for (Map.Entry entry : metadataMap.entrySet()) {
+            count++;
+            if (entry.getKey().toString().equals(hashServer(ss))) {
+                //the metadata of the server to be removed
+                mdToRemove = (Metadata) entry.getValue();
             }
         }
-        Main newRespServer = new Main(cache, hashMD5(predMain.getServerSocket().getInetAddress().toString()), hashMD5(ss.getInetAddress().toString()));
+        //end>start
+        String startToRemove = mdToRemove.getStart();
+        String newEnd = mdToRemove.getEnd();
 
+        //case differentiation
+
+        //removing the server
+        metadataMap.remove(hashServer(ss));
+
+        //updating the metadata of the next server IN THE METADATA
+        metadataMap.get(count + 1).setEnd(newEnd);
+
+
+        //now deleting the mains in server respository
+        Main predMain = null;
+        //find the main to be deleted
+        Main tempServer = headServer;
+        while (!(tempServer.getNextIP().equals(ss.getInetAddress()))){
+            predMain=tempServer;
+            tempServer=tempServer.nextServer;
+            //if ss isn't found
+            if (tempServer.nextServer.equals(headServer)){
+                System.out.println("Server to be removed not in the repository");
+                break;//quit because wrong server entered
+            }
+        }
+        //Main newRespServer = new Main(cache, hashMD5(predMain.getServerSocket().getInetAddress().toString()), hashMD5(ss.getInetAddress().toString()));
 
         //delete the actual server
         //this.serverRepository.remove(startValue); // not possible in circular structure
-        //reallocation in the servers repository
 
-        //this means the respository is empty
+        //if respository is empty
         if (this.headServer == null) {
             return;
         }
-        //find the main to be deleted
-        Main tempServer = headServer;
 
-        //if we only have one server
+        //if we only have one server in the ring
         if (tempServer.equals(headServer) && tempServer.nextServer.equals(headServer)) {
             headServer = null;
             System.out.println("There no servers left"); //maybe exception here ?
+            //where does the storage go?
         }
 
-        while (!(hashServer(tempServer.getServerSocket()).equals(hashServer(ss)))) {
-            //if wrong server is given
-            if (tempServer.nextServer.equals(headServer)) {
-                System.out.println("Server not found");
-                break; //quit because wrong server entered
-            }
 
-            //circular structure of serverRespository (normal case)
-            newRespServer = tempServer;
-            tempServer = tempServer.nextServer;
-        }
-
-        //if it is the first server in the ring
+        //if ss is the first server in the ring
         if (tempServer.equals(headServer)) {
-            newRespServer = headServer;
-            while (!(newRespServer.nextServer.equals(headServer))) {
-                newRespServer = newRespServer.nextServer;
+            predMain = headServer;
+            while (!(predMain.nextServer.equals(headServer))) {
+                predMain = predMain.nextServer;
             }
             //close the circle
             headServer = tempServer.nextServer;
-            newRespServer.nextServer = headServer;
+            predMain.nextServer = headServer;
         }
 
+        //if ss is the last server in the ring
         if (tempServer.nextServer.equals(headServer))
-            newRespServer.nextServer = headServer;
+            predMain.nextServer = headServer;
 
-        else newRespServer.nextServer = tempServer.nextServer;
+        //if ss in the middle (normal case)
+        else predMain.nextServer = tempServer.nextServer;
 
-//not very sure abt this part
-        Metadata newRange = new Metadata(newRespServer.getServerSocket().getInetAddress().toString(), newRespServer.getServerSocket().getLocalPort(), startHash, newRespServer.nextServer.end);
 
     }
 
@@ -212,28 +215,38 @@ public class ECS {
 
     }
 
+    //gave up on trying to understand the logic of this
     // find the right location of a new server
     private Map<Integer, String> locate(String hash) {
+        //integer count mtaa eli 9ablou
+        //string serveur ejdid men yebda, from mtaa jdid
+
         Map<Integer, String> returnIndexes = new HashMap();
         int count = 0;
         String previous = "";
+
+        //value of md5 hex in integer
         int hashedValue = (int) Long.parseLong(hash, 16);
+
         //looking for an interval for our new hashed value
         for (Map.Entry element : metadataMap.entrySet()) {
             String hashString = (String) element.getKey();
+
+            //going through the hashvalues of the elements
             int intHash = (int) Long.parseLong(hashString, 16);
             if (hashedValue < intHash) {
                 // start index
                 returnIndexes.put((Integer) count, previous);
                 break;
             }
+            //eli 9bal
             count++;
             previous = Integer.toHexString(intHash + 1);
         }
         return returnIndexes;
     }
 
-    //reallocate method should return the updated datastructure
+    //reallocation done when a server is removed but i guess we can change it idk
     private void reallocate() {
 
     }

@@ -29,10 +29,13 @@
     </select>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6fcb5e85-ac1f-46f5-a664-6c470115760f" name="Default Changelist" comment="g">
+    <list default="true" id="6fcb5e85-ac1f-46f5-a664-6c470115760f" name="Default Changelist" comment="f">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/client/Milestone1Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/client/Milestone1Main.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/circle/ECS.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/circle/ECS.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/threadperconnection/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/threadperconnection/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/circle/ECSIterator.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/kv/KVStoreProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/kv/KVStoreProcessor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/shared/Metadata.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/shared/Metadata.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -279,7 +282,14 @@
       <option name="project" value="LOCAL" />
       <updated>1607775402873</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="f">
+      <created>1607784932803</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1607784932803</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -331,7 +341,8 @@
     <MESSAGE value="trying with ecs" />
     <MESSAGE value="trying with ecs v" />
     <MESSAGE value="g" />
-    <option name="LAST_COMMIT_MESSAGE" value="g" />
+    <MESSAGE value="f" />
+    <option name="LAST_COMMIT_MESSAGE" value="f" />
   </component>
   <component name="WindowStateProjectService">
     <state x="208" y="60" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1606242416145">
@@ -386,12 +397,12 @@
     </state>
     <state x="443" y="77" key="SettingsEditor/0.22.1440.833@0.22.1440.833" timestamp="1607024119210" />
     <state x="443" y="78" key="SettingsEditor/0.23.1440.832@0.23.1440.832" timestamp="1606241790157" />
-    <state x="588" y="178" key="Vcs.Push.Dialog.v2" timestamp="1607775411795">
-      <screen x="0" y="22" width="1440" height="837" />
+    <state x="588" y="178" key="Vcs.Push.Dialog.v2" timestamp="1607784939516">
+      <screen x="0" y="22" width="1440" height="835" />
     </state>
     <state x="588" y="178" key="Vcs.Push.Dialog.v2/0.22.1440.833@0.22.1440.833" timestamp="1607773046745" />
     <state x="588" y="178" key="Vcs.Push.Dialog.v2/0.22.1440.834@0.22.1440.834" timestamp="1607772452394" />
-    <state x="588" y="178" key="Vcs.Push.Dialog.v2/0.22.1440.835@0.22.1440.835" timestamp="1607773740735" />
+    <state x="588" y="178" key="Vcs.Push.Dialog.v2/0.22.1440.835@0.22.1440.835" timestamp="1607784939516" />
     <state x="588" y="178" key="Vcs.Push.Dialog.v2/0.22.1440.836@0.22.1440.836" timestamp="1607774831240" />
     <state x="588" y="178" key="Vcs.Push.Dialog.v2/0.22.1440.837@0.22.1440.837" timestamp="1607775411795" />
     <state x="588" y="179" key="Vcs.Push.Dialog.v2/0.23.1440.832@0.23.1440.832" timestamp="1606258360830" />

@@ -9,10 +9,15 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * KVStoreProcessor class to handle the storage file and the cach
+ *
+ * @author gr9
+ *
+ */
 public class KVStoreProcessor implements KVStore {
     private Path path;
-    private File storage = new File(String.valueOf(path));
-    private FileOutputStream fileOutputStream;
+    private File storage;
     private Scanner scanner;
     private KVMessageProcessor kvmessage;
     private String[] keyvalue;
@@ -28,10 +33,18 @@ public class KVStoreProcessor implements KVStore {
     }
 
     public KVStoreProcessor() {
+        storage = new File(String.valueOf(path));
     }
 
     // We have to put the both methods as synchronized because many threads will
     // access them
+    /**
+     * put method adds a key value pair to the cache (local file).
+     *
+     * @param key, value to be inserted .
+     * @return kvMessage for the status of the operation
+     *
+     */
     @Override
     public synchronized KVMessageProcessor put(String key, String value) throws Exception {
         this.change = false;
@@ -56,7 +69,6 @@ public class KVStoreProcessor implements KVStore {
                         this.cache.put(key, value);
                         kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_UPDATE, key, value);
                     } else {
-                        // already deleted in cache
                         kvmessage = new KVMessageProcessor(KVMessage.StatusType.DELETE_SUCCESS, key, null);
                     }
 
@@ -79,16 +91,24 @@ public class KVStoreProcessor implements KVStore {
             System.out.println(fe);
             kvmessage = (value == null) ? new KVMessageProcessor(KVMessage.StatusType.DELETE_ERROR, key, null)
                     : new KVMessageProcessor(KVMessage.StatusType.PUT_ERROR, key, null);
+
         }
         return kvmessage;
+        // nothing
+
     }
 
+    /**
+     * get method gets the value of the given key if there is one.
+     *
+     * @param key given .
+     * @return kvMessage for the status of the operation
+     * @throws Exception if key not found
+     */
     @Override
     public synchronized KVMessageProcessor get(String key) throws Exception {
-        // we need the key for the response
         kvmessage = new KVMessageProcessor(KVMessage.StatusType.GET_ERROR, key, null);
         Scanner scanner = new Scanner(new FileInputStream(storage));
-        // we can use the streams also here
         while (scanner.hasNextLine()) {
             String line = scanner.nextLine();
             keyvalue = line.split(" ");
@@ -103,16 +123,7 @@ public class KVStoreProcessor implements KVStore {
         return kvmessage;
     }
 
-    public static void main(String[] args) throws Exception {
-        KVStoreProcessor kvStoreProcessor = new KVStoreProcessor();
-        kvStoreProcessor.put("key0", "value0");
-        System.out.println(kvStoreProcessor.get("key0").getValue());
-        kvStoreProcessor.put("key1", "value1");
-        kvStoreProcessor.put("key2", "value3");
-        kvStoreProcessor.put("key1", "value3");
-        kvStoreProcessor.put("key0", null);
-        System.out
-                .println(kvStoreProcessor.put("key1", "value4").getStatus() + kvStoreProcessor.get("key1").getValue());
+    public File getStorage() {
+        return storage;
     }
-
 }
