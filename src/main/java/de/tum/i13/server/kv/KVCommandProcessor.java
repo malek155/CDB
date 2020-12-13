@@ -71,8 +71,6 @@ public class KVCommandProcessor implements CommandProcessor {
 					} else {
 						response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 					}
-				}else if(input[0].equals("metadata")){
-					this.processMetadata(command);
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -83,7 +81,11 @@ public class KVCommandProcessor implements CommandProcessor {
 			// here should be a msg !
 		}else if(input[0].equals("transferring")){
 
-		} else {
+		}
+		else if(input[0].equals("metadata")){
+			this.processMetadata(command);
+
+		}else {
 			// here should be the send request because a wrong request will be handled in
 			// the client side
 			// logger.warning("Please check your input and try again.");

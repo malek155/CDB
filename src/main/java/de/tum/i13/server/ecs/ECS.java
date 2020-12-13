@@ -90,7 +90,7 @@ public class ECS {
             //the beginning of th range is an incremented hashvalue
             startHash = Integer.toHexString((int) Long.parseLong(hash, 16) + 1);
 
-            newMain = new Main(cache, startHash, hash);
+            newMain = new Main(cache, metadataMap, hash);
             this.headServer = newMain;
             this.tailServer = newMain;
             this.tailServer.nextServer = headServer;
@@ -101,7 +101,7 @@ public class ECS {
             startHash = indexes.get(startIndex);        // already incremented hashvalue
             Main prevServer = this.serverRepository.get(startIndex - 1);
 
-            newMain = new Main(cache, startHash, hash);
+            newMain = new Main(cache, metadataMap, hash);
 
             if (this.tailServer == prevServer) {
                 this.tailServer = newMain;
