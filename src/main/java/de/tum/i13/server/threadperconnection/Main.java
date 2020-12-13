@@ -21,17 +21,15 @@ import static de.tum.i13.shared.LogSetup.setupLogging;
  */
 public class Main {
 	// used to shut down the server , maybe we need it
-	private static boolean isRunning = true;
+	private boolean isRunning = true;
 	private static Cache cache;
 	private KVStoreProcessor kvStore;
-	public static String start;
-	public static String end;
-	private Map<String, Metadata> metadata;
-	private static boolean shuttingDown = false;
-	private static boolean shutDown = false;
-	private static String nextIP;
-	private static int nextPort;
-	private static File storage;
+	public String start;
+	public String end;
+	private static Map<String, Metadata> metadata;
+	private String nextIP;
+	private int nextPort;
+	private File storage;
 
 	public Main nextServer;
 
@@ -43,31 +41,6 @@ public class Main {
 		}
 		this.start = start;
 		this.end = end;
-
-	}
-
-	public void findNextIP(){
-		this.nextIP = metadata.get(nextServer).getIP();
-	}
-
-	public void findNextPort(){
-		this.nextPort = metadata.get(nextServer).getPort();
-	}
-
-	public void setStart(String newstart){
-		start = newstart;
-	}
-
-	public void setEnd(String newend){
-		end = newend;
-	}
-
-	public void setStorage(){
-		storage = kvStore.getStorage();
-	}
-
-	public void setMetadata(Map<String, Metadata> metadata){
-		this.metadata = metadata;
 	}
 
 	/**
@@ -77,35 +50,18 @@ public class Main {
 	 * @throws IOException
 	 */
 	public static void main(String[] args) throws IOException {
+
 		Config cfg = parseCommandlineArgs(args); // Do not change this
 		setupLogging(cfg.logfile);
 		KVStoreProcessor kvStore = new KVStoreProcessor();
 		kvStore.setPath(cfg.dataDir);
 
-		// now you can connect to ecs
-		try(Socket socket = new Socket(cfg.bootstrap.getAddress(), cfg.bootstrap.getPort())){
-			BufferedReader inECS = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			PrintWriter outECS = new PrintWriter(socket.getOutputStream());
-			while(!shutDown){
-				if(shuttingDown){
-					outECS.write("mayishutdownplz " + end + "\r\n");
-					outECS.flush();
-					if(inECS.readLine().equals("yesyoumay")){
-						transfer();
-						outECS.write("transferred" + "\r\n");
-						outECS.flush();
-						shutDown = true;
-					}
-				}
-			}
-			inECS.close();
-			outECS.close();
-		}catch(IOException ie){
-			ie.printStackTrace();
-		}
+		// first we connect to the ecs
+
 
 		// now we can open a listening serversocket
 		final ServerSocket serverSocket = new ServerSocket();
+
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
@@ -124,7 +80,7 @@ public class Main {
 
 		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache);
 
-		while (isRunning) {
+		while (true) {
 			// Waiting for client to connect
 			Socket clientSocket = serverSocket.accept();
 
@@ -134,8 +90,42 @@ public class Main {
 		}
 	}
 
-	public static void transfer(){
+	public void ecsConnect(String ip, int port){
+		boolean notShutDown = true;
+		boolean shuttingDown = false;
+
+		try(Socket socket = new Socket(ip, port)){
+			BufferedReader inECS = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			PrintWriter outECS = new PrintWriter(socket.getOutputStream());
+			while(notShutDown){
+				if(shuttingDown){
+					outECS.write("mayishutdownplz " + this.end + "\r\n");
+					outECS.flush();
+					if(inECS.readLine().equals("yesyoumay")){
+						this.transfer("");
+						outECS.write("merged" + "\r\n");
+						outECS.flush();
+						notShutDown = false;
+					}
+				}
+//				if(inECS.readLine().equals("newServer")){
+//					transfer(inECS.readLine());
+//					outECS.write("transferred" + "\r\n");
+//					outECS.flush();
+//				}
+			}
+			inECS.close();
+			outECS.close();
+		}catch(IOException ie){
+			ie.printStackTrace();
+		}
+	}
+
+	public void transfer(String hash){
+		nextIP = metadata.get(nextServer).getIP();
+		nextPort = metadata.get(nextServer).getPort();
 		try(Socket socket = new Socket(nextIP, nextPort)){
+			storage = this.kvStore.getStorage(hash);
 			PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
 			Scanner scanner = new Scanner(new FileInputStream(storage));
 

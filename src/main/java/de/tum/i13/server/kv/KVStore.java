@@ -11,7 +11,7 @@ public interface KVStore {
      * @throws Exception if put command cannot be executed (e.g. not connected to any
      *                   KV server).
      */
-    public KVMessage put(String key, String value) throws Exception;
+    public KVMessage put(String key, String value, String hash) throws Exception;
 
     /**
      * Retrieves the value for a given key from the KVServer.

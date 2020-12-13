@@ -47,10 +47,10 @@ public class KVCommandProcessor implements CommandProcessor {
 			String response = "";
 			try {
 				if (input[0].equals("put")){
-					if (input.length != 3) {
+					if (input.length < 4) {
 						throw new IOException("Put Request needs a key and a value !");
 					}
-					msg = this.kvStore.put(input[1], input[2]);
+					msg = this.kvStore.put(input[1], input[2], input[3]);
 					if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
 						response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 					} else {
@@ -67,6 +67,8 @@ public class KVCommandProcessor implements CommandProcessor {
 					} else {
 						response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 					}
+				}else if(input[0].equals("metadata")){
+					this.processMetadata(command);
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -83,6 +85,21 @@ public class KVCommandProcessor implements CommandProcessor {
 			// logger.warning("Please check your input and try again.");
 		}
 		return reply;
+	}
+
+	public void processMetadata(String command){
+		String[] input = command.split("\r\n");
+		String[] entry;
+		String hash;
+		String ip;
+		int port;
+		String start;
+		String end;
+		for (int i=0; i<input.length; i++){
+			entry = input[i].split("=");
+			hash = entry[0];
+			ip
+		}
 	}
 
 	@Override

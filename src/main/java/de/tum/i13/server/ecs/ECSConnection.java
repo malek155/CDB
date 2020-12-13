@@ -1,9 +1,12 @@
 package de.tum.i13.server.ecs;
 
 import de.tum.i13.shared.Constants;
+import de.tum.i13.shared.Metadata;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ECSConnection implements Runnable {
     private Socket clientSocket;
@@ -30,6 +33,14 @@ public class ECSConnection implements Runnable {
                 String message = this.process(line);
                 if(!message.equals("")){
                     out.write(message);
+                    out.flush();
+                }
+                if(bigECS.moved){
+                    Map<String, Metadata> map = bigECS.getMetadataMap();
+                    String metadata = map.keySet().stream()
+                            .map(key -> key + "=" + map.get(key).toString())
+                            .collect(Collectors.joining("\r\n"));
+                    out.write("metadata \r\n" + metadata);
                     out.flush();
                 }
             }

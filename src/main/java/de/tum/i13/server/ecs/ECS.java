@@ -42,7 +42,7 @@ public class ECS {
     private int buckets;
 
     /*moved is a flag that is set to true when the ranges on the ring must be upadated*/
-    boolean moved = false;
+    boolean moved;
 
     //this method hashes adr and port with md5
 
@@ -120,7 +120,8 @@ public class ECS {
 
         this.metadataMap.put(hash, new Metadata(ss.getInetAddress().getHostAddress(), ss.getLocalPort(), startHash, hash));
         this.serverRepository.add(startIndex, newMain);
-        this.updateMetadata();
+
+
     }
 
     private void removeServer(Main main) {
@@ -137,11 +138,15 @@ public class ECS {
 
     }
 
+    public Map<String, Metadata> getMetadataMap() {
+        return metadataMap;
+    }
+
     // find the right location of a new server
     private Map<Integer, String> locate(String hash) {
         Map<Integer, String> returnIndexes = new HashMap();
         int count = 0;
-        String previous = "";
+        String startRange = "";
         int hashedValue = (int) Long.parseLong(hash, 16);
         //looking for an interval for our new hashed value
         for (Map.Entry element : metadataMap.entrySet()) {
@@ -149,11 +154,11 @@ public class ECS {
             int intHash = (int) Long.parseLong(hashString, 16);
             if (hashedValue < intHash) {
                 // start index
-                returnIndexes.put((Integer) count, previous);
+                returnIndexes.put((Integer) count, startRange);
                 break;
             }
             count++;
-            previous = Integer.toHexString(intHash + 1);
+            startRange = Integer.toHexString(intHash + 1);
         }
         return returnIndexes;
     }
@@ -162,11 +167,9 @@ public class ECS {
 
     }
 
-    //update metadata in servers
-    private void updateMetadata() {
-        for (Main main : serverRepository) {
-            main.setMetadata(metadataMap);
-        }
+    //update metadata in servers if true
+    public void setMoved(boolean update) {
+        this.moved = update;
     }
 
     /**
