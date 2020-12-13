@@ -121,19 +121,32 @@ public class KVStoreProcessor implements KVStore {
 	}
 
 	/**
-	 * getStorage returns a storage connected to this server
+	 * getStorage returns a whole storage if removing, part of it by adding a new one
 	 *
 	 * @return File of a data to transfer
-	 * @throws Exception if key not found
+	 * @throws IOException
 	 */
-	public File getStorage(String hash) {
+	public File getStorage(String hash) throws IOException {
 		File toReturn;
-		if (hash.equals(""))
-			toReturn = storage;
+		File toStay;
+		if (hash.equals("")){
+			return storage;
+		}
 		else {
 			int hashEdge = (int) Long.parseLong(hash, 16);
 			int hashToCompare;
-			toReturn = new File(String.valueOf(path));
+
+			//creating tmp paths
+			Path returnPath = Files.createTempFile("rebalancing", ".txt");
+			Path stayPath = Files.createTempFile("rebalancing", ".txt");
+			toReturn = new File(String.valueOf(returnPath));
+			toStay = new File(String.valueOf(stayPath));
+
+			FileWriter fwToReturn = new FileWriter(toReturn.getName(), true);
+			FileWriter fwToStay = new FileWriter(toStay.getName(), false);
+			BufferedWriter bw1 = new BufferedWriter(fwToReturn);
+			BufferedWriter bw2 = new BufferedWriter(fwToStay);
+
 			try {
 				scanner = new Scanner(new FileInputStream(storage));
 				while (scanner.hasNextLine()) {
@@ -141,17 +154,25 @@ public class KVStoreProcessor implements KVStore {
 					keyvalue = line.split(" ");
 					hashToCompare = (int) Long.parseLong(keyvalue[2], 16);
 					if(hashEdge >= hashToCompare){
-						break;
+						bw2.write(line);
 					}
-					FileWriter fileWriter = new FileWriter(toReturn.getName(), true);
-					BufferedWriter bw = new BufferedWriter(fileWriter);
-					bw.write(line);
+					else{
+						bw1.write(line);
+					}
 				}
-
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+			Path path1 = Paths.get(String.valueOf(stayPath));
+			List <String> lines = Files.lines(path1).collect(Collectors.toList());
+			Files.write(path, lines);
+
+			fwToReturn.close();
+			fwToStay.close();
+			bw1.close();
+			bw2.close();
+
+			return toReturn;
 		}
-		return toReturn;
 	}
 }
