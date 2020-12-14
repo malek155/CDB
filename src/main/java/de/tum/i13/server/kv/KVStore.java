@@ -22,5 +22,5 @@ public interface KVStore {
      *                   KV server).
      */
     public KVMessage get(String key) throws Exception;
-
+    void setCache(Cache cache);
 }

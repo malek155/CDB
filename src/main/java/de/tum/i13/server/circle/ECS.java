@@ -1,4 +1,4 @@
-package de.tum.i13.server.circle;
+package de.tum.i13.server.ecs;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -42,7 +42,7 @@ public class ECS {
     private int buckets;
 
     /*moved is a flag that is set to true when the ranges on the ring must be upadated*/
-    boolean moved = false;
+    boolean moved;
 
     //this method hashes adr and port with md5
 
@@ -73,7 +73,7 @@ public class ECS {
         return result;
     }
 
-    private void addServer(ServerSocket ss) throws NoSuchAlgorithmException, IOException {
+    private void addServer(ServerSocket ss) throws NoSuchAlgorithmException {
         moved = true;
         buckets++;
         int startIndex;     // number if starthash
@@ -90,7 +90,7 @@ public class ECS {
             //the beginning of th range is an incremented hashvalue
             startHash = Integer.toHexString((int) Long.parseLong(hash, 16) + 1);
 
-            newMain = new Main(cache, startHash, hash);
+            newMain = new Main(cache, metadataMap, hash);
             this.headServer = newMain;
             this.tailServer = newMain;
             this.tailServer.nextServer = headServer;
@@ -101,7 +101,7 @@ public class ECS {
             startHash = indexes.get(startIndex);        // already incremented hashvalue
             Main prevServer = this.serverRepository.get(startIndex - 1);
 
-            newMain = new Main(cache, startHash, hash);
+            newMain = new Main(cache, metadataMap, hash);
 
             if (this.tailServer == prevServer) {
                 this.tailServer = newMain;
@@ -120,7 +120,8 @@ public class ECS {
 
         this.metadataMap.put(hash, new Metadata(ss.getInetAddress().getHostAddress(), ss.getLocalPort(), startHash, hash));
         this.serverRepository.add(startIndex, newMain);
-        this.updateMetadata();
+
+
     }
 
     private void removeServer(ServerSocket ss) throws Exception {
@@ -141,11 +142,16 @@ public class ECS {
                 mdToRemove = (Metadata) entry.getValue();
             }
         }
-        //end>start
+        //end and start of the server to be removed
         String startToRemove = mdToRemove.getStart();
         String newEnd = mdToRemove.getEnd();
 
         //case differentiation
+
+        //Storage
+        Main mainObjStorage = new Main(cache, startToRemove, newEnd);
+        File oldFile = mainObjStorage.getStorage();
+
 
         //removing the server
         metadataMap.remove(hashServer(ss));
@@ -158,11 +164,11 @@ public class ECS {
         Main predMain = null;
         //find the main to be deleted
         Main tempServer = headServer;
-        while (!(tempServer.getNextIP().equals(ss.getInetAddress()))){
-            predMain=tempServer;
-            tempServer=tempServer.nextServer;
+        while (!(tempServer.getNextIP().equals(ss.getInetAddress()))) {
+            predMain = tempServer;
+            tempServer = tempServer.nextServer;
             //if ss isn't found
-            if (tempServer.nextServer.equals(headServer)){
+            if (tempServer.nextServer.equals(headServer)) {
                 System.out.println("Server to be removed not in the repository");
                 break;//quit because wrong server entered
             }
@@ -184,7 +190,6 @@ public class ECS {
             //where does the storage go?
         }
 
-
         //if ss is the first server in the ring
         if (tempServer.equals(headServer)) {
             predMain = headServer;
@@ -200,62 +205,52 @@ public class ECS {
         if (tempServer.nextServer.equals(headServer))
             predMain.nextServer = headServer;
 
-        //if ss in the middle (normal case)
+            //if ss in the middle (normal case)
         else predMain.nextServer = tempServer.nextServer;
 
 
     }
 
-
-    public boolean shuttingDown() {
+    public boolean shuttingDown(String hash){
+        this.reallocate();
         return true;
     }
 
-    public void transferred(boolean check) {
+    public void transferred(boolean check){
 
     }
+    public Map<String, Metadata> getMetadataMap() {
+        return metadataMap;
+    }
 
-    //gave up on trying to understand the logic of this
     // find the right location of a new server
     private Map<Integer, String> locate(String hash) {
-        //integer count mtaa eli 9ablou
-        //string serveur ejdid men yebda, from mtaa jdid
-
         Map<Integer, String> returnIndexes = new HashMap();
         int count = 0;
-        String previous = "";
-
-        //value of md5 hex in integer
+        String startRange = "";
         int hashedValue = (int) Long.parseLong(hash, 16);
-
         //looking for an interval for our new hashed value
         for (Map.Entry element : metadataMap.entrySet()) {
             String hashString = (String) element.getKey();
-
-            //going through the hashvalues of the elements
             int intHash = (int) Long.parseLong(hashString, 16);
             if (hashedValue < intHash) {
                 // start index
-                returnIndexes.put((Integer) count, previous);
+                returnIndexes.put((Integer) count, startRange);
                 break;
             }
-            //eli 9bal
             count++;
-            previous = Integer.toHexString(intHash + 1);
+            startRange = Integer.toHexString(intHash + 1);
         }
         return returnIndexes;
     }
 
-    //reallocation done when a server is removed but i guess we can change it idk
     private void reallocate() {
 
     }
 
-    //update metadata in servers
-    private void updateMetadata() {
-        for (Main main : serverRepository) {
-            main.setMetadata(metadataMap);
-        }
+    //update metadata in servers if true
+    public void setMoved(boolean update) {
+        this.moved = update;
     }
 
     /**
@@ -286,7 +281,7 @@ public class ECS {
             @Override
             public void run() {
                 try {
-                    if (serverSocket != null)
+                    if(serverSocket != null)
                         serverSocket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -307,7 +302,7 @@ public class ECS {
 
                 new Thread(connection).start();
             }
-        } catch (IOException ie) {
+        }catch(IOException ie){
             ie.printStackTrace();
         }
     }

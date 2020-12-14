@@ -1,5 +1,6 @@
 package de.tum.i13.server.threadperconnection;
 
+import com.sun.tools.jdeprscan.scan.Scan;
 import de.tum.i13.server.kv.*;
 import de.tum.i13.shared.Config;
 import de.tum.i13.shared.Metadata;
@@ -149,13 +150,16 @@ public class Main {
         }
     }
 
+    //transfer method in ConnectionHandleThread
+
     public static void transfer() {
         try (Socket socket = new Socket(nextIP, nextPort)) {
             PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
+            //read through storage
             Scanner scanner = new Scanner(new FileInputStream(storage));
 
             while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
+                //String line = scanner.nextLine();
                 outTransfer.write("transferring " + scanner.nextLine() + "\r\n");
                 outTransfer.flush();
             }
@@ -165,5 +169,47 @@ public class Main {
             e.printStackTrace();
         }
     }
+
+    //mergeFiles method to add two files, needed when a server is being removed
+    //file1 is the storage of the server to be removed
+    //file2 is the storage of the server that will have his files merged = his path is the destination
+    private File mergeFiles(File file1, File file2) throws IOException {
+        File mergedFile = null;
+        //not gonna use scanner i think
+        //Scanner scan1 = new Scanner(file1);
+        //Scanner scan2 = new Scanner(file2);
+        //are we even gonna keep nextIP and nextPort in Main ?
+        Socket destSocket = new Socket(nextIP, nextPort);
+mergedFile
+        //pw_mergedFile to write in the file of destination
+        PrintWriter pw_mergedFile = new PrintWriter(destSocket.getOutputStream());
+        BufferedReader br1 = new BufferedReader(new FileReader(storage));//which storage???
+        String line1 = br1.readLine();
+
+        //putting each line of file1 into des
+        while (line1 != null) {
+            pw_mergedFile.println(line1);
+            line1 = br1.readLine();
+        }
+        br1.close();
+//buff for second file
+        BufferedReader br2 = new BufferedReader(new FileReader(storage));//which storage??
+        String line2 = br2.readLine();
+        while (line2 != null) {
+            pw_mergedFile.println(line2);
+            line2 = br2.readLine();
+        }
+        pw_mergedFile.flush();
+        br2.close();
+        pw_mergedFile.close();
+//maybe we can assign a new path to the merged file or in the same file ?
+        return mergedFile;
+    }
+
+    //to update the storage of particular server
+    //public void setStorage(File newFile) {
+    // this.kvStore. = newFile;
+    //}
+
 
 }

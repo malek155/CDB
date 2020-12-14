@@ -1,22 +1,13 @@
 package de.tum.i13.server.circle;
 
-import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Constants;
+import de.tum.i13.shared.Metadata;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.InetSocketAddress;
+import java.io.*;
 import java.net.Socket;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-/**
- * ConnectionHandleThread class that will handle the thread of each client
- *
- * @author gr9
- *
- */
 public class ECSConnection implements Runnable {
     private Socket clientSocket;
     private ECS bigECS; // is watching you
@@ -44,6 +35,14 @@ public class ECSConnection implements Runnable {
                     out.write(message);
                     out.flush();
                 }
+                if(bigECS.moved){
+                    Map<String, Metadata> map = bigECS.getMetadataMap();
+                    String metadata = map.keySet().stream()
+                            .map(key -> key + "=" + map.get(key).toString())
+                            .collect(Collectors.joining("\r\n"));
+                    out.write("metadata \r\n" + metadata);
+                    out.flush();
+                }
             }
         } catch (IOException ie) {
             ie.printStackTrace();
@@ -64,9 +63,9 @@ public class ECSConnection implements Runnable {
 
     private String process(String line) {
         String reply = "";
-
-        if (line.equals("mayishutdownplz")) {
-            boolean may = this.bigECS.shuttingDown();
+        String[] lines = line.split(" ");
+        if (lines[0].equals("mayishutdownplz")) {
+            boolean may = this.bigECS.shuttingDown(lines[1]);
             reply = (may)?"yesyoumay":"";
         } else if (line.equals("transferred")) {
             this.bigECS.transferred(true);
