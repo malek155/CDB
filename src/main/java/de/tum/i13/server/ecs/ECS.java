@@ -25,7 +25,7 @@ import static de.tum.i13.shared.LogSetup.setupLogging;
 //assigns a position to both servers and Tuples on the ring
 public class ECS {
     public String newServer;
-    public String neighbour;
+    public String neghbourHash;
     public boolean newlyAdded;
 
 
@@ -86,10 +86,6 @@ public class ECS {
         //get hashvalue of a server (ip+port)
         String hash = this.hashServer(ss);
 
-        //for ecs connection
-        newlyAdded = true;
-        newServer = hash;
-
         newMain = new Main(cache, metadataMap);
 
         //getting an index and a hashvalue of a predecessor to be -> startrange
@@ -125,6 +121,11 @@ public class ECS {
 
         this.metadataMap.put(hash, new Metadata(ss.getInetAddress().getHostAddress(), ss.getLocalPort(), startHash, hash));
         this.serverRepository.add(startIndex, newMain);
+
+        //for ecs connection
+        newlyAdded = true;
+        newServer = hash;
+        neghbourHash =newMain.nextServer.end;
     }
 
     private void removeServer(ServerSocket ss) throws Exception {

@@ -49,8 +49,7 @@ public class ECSConnection implements Runnable {
                     this.bigECS.setMoved(false);
                 }
                 if(bigECS.newlyAdded){
-                    String hashNew = bigECS.newServer;
-                    out.write("newserver\r\n" + hashNew);
+                    out.write("newserver\r\n" + bigECS.newServer + "\r\n" + bigECS.neghbourHash + "\r\n");
                     out.flush();
                     bigECS.newlyAdded = false;
                 }

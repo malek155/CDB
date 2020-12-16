@@ -116,6 +116,13 @@ public class ConnectionHandleThread extends Thread {
 			BufferedReader inECS = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			PrintWriter outECS = new PrintWriter(socket.getOutputStream());
 			while(notShutDown){
+				if(inECS.readLine().equals("newServer")){
+					cutter = inECS.readLine();
+					neighbour = inECS.readLine();
+					transfer(cutter, neighbour);
+					outECS.write("transferred" + "\r\n");
+					outECS.flush();
+				}
 				if(shuttingDown){
 					outECS.write("mayishutdownplz " + this.hash + "\r\n");
 					outECS.flush();
@@ -125,13 +132,6 @@ public class ConnectionHandleThread extends Thread {
 						notShutDown = false;
 					}
 				}
-				if(inECS.readLine().equals("newServer")){
-					cutter = inECS.readLine();
-					neighbour = inECS.readLine();
-					transfer(cutter, neighbour);
-					outECS.write("transferred" + "\r\n");
-					outECS.flush();
-				}
 			}
 			inECS.close();
 			outECS.close();
@@ -140,10 +140,10 @@ public class ConnectionHandleThread extends Thread {
 		}
 	}
 
-	private void transfer(String cutter, String neighbourHash) {
+	private void transfer(String cutter, String neighbourHash){
 		nextIP = metadata.get(neighbourHash).getIP();
 		nextPort = metadata.get(neighbourHash).getPort();
-		try (Socket socket = new Socket(nextIP, nextPort)) {
+		try (Socket socket = new Socket(nextIP, nextPort)){
 			storage = this.cp.getKVStore().getStorage(cutter);
 			PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
 			Scanner scanner = new Scanner(new FileInputStream(storage));
