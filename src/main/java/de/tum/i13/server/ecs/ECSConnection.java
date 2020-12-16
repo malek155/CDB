@@ -2,15 +2,19 @@ package de.tum.i13.server.ecs;
 
 import de.tum.i13.shared.Constants;
 import de.tum.i13.shared.Metadata;
+import org.apache.commons.codec.binary.Hex;
 
 import java.io.*;
 import java.net.Socket;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ECSConnection implements Runnable {
     private Socket clientSocket;
     private ECS bigECS; // is watching you
+    private static Map<String, Metadata> metadata;
 
     public ECSConnection(Socket clientSocket, ECS bigECS){
         this.clientSocket = clientSocket;
@@ -18,7 +22,7 @@ public class ECSConnection implements Runnable {
     }
 
     @Override
-    public void run() {
+    public void run(){
         BufferedReader in = null;
         PrintWriter out = null;
 
@@ -42,6 +46,13 @@ public class ECSConnection implements Runnable {
                             .collect(Collectors.joining("\r\n"));
                     out.write("metadata \r\n" + metadata);
                     out.flush();
+                    this.bigECS.setMoved(false);
+                }
+                if(bigECS.newlyAdded){
+                    String hashNew = bigECS.newServer;
+                    out.write("newserver\r\n" + hashNew);
+                    out.flush();
+                    bigECS.newlyAdded = false;
                 }
             }
         } catch (IOException ie) {
@@ -65,8 +76,8 @@ public class ECSConnection implements Runnable {
         String reply = "";
         String[] lines = line.split(" ");
         if (lines[0].equals("mayishutdownplz")) {
-            boolean may = this.bigECS.shuttingDown(lines[1]);
-            reply = (may)?"yesyoumay":"";
+            String serverTransferTo = this.bigECS.shuttingDown(lines[1]);
+            reply = "yesyoumay\r\n" + serverTransferTo;
         } else if (line.equals("transferred")) {
             this.bigECS.transferred(true);
         }

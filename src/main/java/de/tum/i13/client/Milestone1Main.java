@@ -1,14 +1,33 @@
 package de.tum.i13.client;
 
-import de.tum.i13.server.threadperconnection.ConnectionHandleThread;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.ConnectException;
-import java.net.UnknownHostException;
+import de.tum.i13.shared.Metadata;
+import org.apache.commons.codec.binary.Hex;
+
+import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Milestone1Main {
+
+	private Map<String, Metadata> metadataMap = new HashMap<>();
+
+	/**
+	 * hashTupel method hashes a given key to its Hexadecimal value with md5
+	 *
+	 * @return String of hashvalue in Hexadecimal
+	 */
+	private String hashMD5(String key) throws NoSuchAlgorithmException, NoSuchAlgorithmException {
+		byte[] msgToHash = key.getBytes();
+		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
+
+		// get the result in hexadecimal
+		String result = new String(Hex.encodeHex(hashedMsg));
+		return result;
+	}
+
 	public static void main(String[] args) throws IOException {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
@@ -17,8 +36,7 @@ public class Milestone1Main {
 			System.out.print("EchoClient> ");
 			String line = reader.readLine();
 			String[] command = line.split(" ");
-			// System.out.print("command:");
-			// System.out.println(line);
+
 			switch (command[0]) {
 			case "connect":
 				activeConnection = buildconnection(command);
@@ -28,8 +46,16 @@ public class Milestone1Main {
 				break;
 			case "put":
 			case "get":
-				sendrequest(activeConnection, command, line);
-				break;
+				int count = 0;
+				while (true) {
+					sendrequest(activeConnection, command, line);
+					String result = activeConnection.readline();
+					if (result.equals("server_write_lock") || result.equals("server_stopped")) {
+						count++;
+					}
+				}
+//				break;
+
 			case "disconnect":
 				closeConnection(activeConnection);
 				break;

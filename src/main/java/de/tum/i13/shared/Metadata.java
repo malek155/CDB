@@ -29,6 +29,10 @@ public class Metadata {
         return this.end;
     }
 
+    public void setStart(String start) {
+        this.start = start;
+    }
+
     public String toString(){
         return ip + " " + port + " " + start + " " + end;
     }

@@ -1,6 +1,7 @@
 package de.tum.i13.server.threadperconnection;
 
 import de.tum.i13.server.kv.Cache;
+import de.tum.i13.server.kv.KVCommandProcessor;
 import de.tum.i13.server.kv.KVStoreProcessor;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Constants;
@@ -23,7 +24,7 @@ import java.util.Scanner;
  */
 public class ConnectionHandleThread extends Thread {
 
-	private CommandProcessor cp;
+	private KVCommandProcessor cp;
 	private Socket clientSocket;
 
 	private BufferedReader in = null;
@@ -39,7 +40,7 @@ public class ConnectionHandleThread extends Thread {
 	private InetSocketAddress bootstrap;
 	private String hash;
 
-	public ConnectionHandleThread(CommandProcessor commandProcessor, Socket clientSocket, Map<String, Metadata> metadata,
+	public ConnectionHandleThread(KVCommandProcessor commandProcessor, Socket clientSocket, Map<String, Metadata> metadata,
 								  InetSocketAddress bootstrap, String ip, int port) throws NoSuchAlgorithmException {
 		this.cp = commandProcessor;
 		this.clientSocket = clientSocket;
@@ -108,6 +109,8 @@ public class ConnectionHandleThread extends Thread {
 	private void ecsConnect(String ip, int port){
 		boolean notShutDown = true;
 		boolean shuttingDown = false;
+		String neighbour;
+		String cutter;
 
 		try(Socket socket = new Socket(ip, port)){
 			BufferedReader inECS = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -117,17 +120,18 @@ public class ConnectionHandleThread extends Thread {
 					outECS.write("mayishutdownplz " + this.hash + "\r\n");
 					outECS.flush();
 					if(inECS.readLine().equals("yesyoumay")){
-						this.transfer("");
-						outECS.write("merged" + "\r\n");
-						outECS.flush();
+						neighbour = inECS.readLine();
+						this.transfer("", neighbour);
 						notShutDown = false;
 					}
 				}
-//				if(inECS.readLine().equals("newServer")){
-//					transfer(inECS.readLine());
-//					outECS.write("transferred" + "\r\n");
-//					outECS.flush();
-//				}
+				if(inECS.readLine().equals("newServer")){
+					cutter = inECS.readLine();
+					neighbour = inECS.readLine();
+					transfer(cutter, neighbour);
+					outECS.write("transferred" + "\r\n");
+					outECS.flush();
+				}
 			}
 			inECS.close();
 			outECS.close();
@@ -136,16 +140,15 @@ public class ConnectionHandleThread extends Thread {
 		}
 	}
 
-	private void transfer(String hash){
-		nextIP = metadata.get(nextServer).getIP();
-		nextPort = metadata.get(nextServer).getPort();
-		try(Socket socket = new Socket(nextIP, nextPort)){
-			storage = this.kvStore.getStorage(hash);
+	private void transfer(String cutter, String neighbourHash) {
+		nextIP = metadata.get(neighbourHash).getIP();
+		nextPort = metadata.get(neighbourHash).getPort();
+		try (Socket socket = new Socket(nextIP, nextPort)) {
+			storage = this.cp.getKVStore().getStorage(cutter);
 			PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
 			Scanner scanner = new Scanner(new FileInputStream(storage));
 
 			while (scanner.hasNextLine()) {
-				String line = scanner.nextLine();
 				outTransfer.write("transferring " + scanner.nextLine() + "\r\n");
 				outTransfer.flush();
 			}
@@ -154,10 +157,6 @@ public class ConnectionHandleThread extends Thread {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
-
-	private String locate(){
-
 	}
 
 	private String hashMD5(String key) throws NoSuchAlgorithmException {

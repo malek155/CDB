@@ -9,6 +9,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.Buffer;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -22,23 +23,14 @@ import static de.tum.i13.shared.LogSetup.setupLogging;
 public class Main {
 
 	public Main nextServer;
-
 	private static Cache cache;
 	private static Map<String, Metadata> metadata;
-	private String hash;
 	public String start;
 	public String end;
 
-	public Main(Cache cache, Map<String, Metadata> metadata, String hash){
-		if (cache.getClass().equals(FIFOLRUCache.class)){
-			this.cache = (FIFOLRUCache) cache;
-		} else if (cache.getClass().equals(LFUCache.class)){
-			this.cache = (LFUCache) cache;
-		}
+	public Main(Cache cache, Map<String, Metadata> metadata){
 		this.metadata = metadata;
-		this.hash = hash;
-		this.start = metadata.get(hash).getStart();
-		this.end = metadata.get(hash).getEnd();
+		this.cache = cache;
 	}
 
 	/**
@@ -47,7 +39,7 @@ public class Main {
 	 * @param args
 	 * @throws IOException
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
 
 		Config cfg = parseCommandlineArgs(args); // Do not change this
 		setupLogging(cfg.logfile);
@@ -73,7 +65,7 @@ public class Main {
 		// binding to the server
 		serverSocket.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
 
-		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache);
+		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache, metadata, cfg.listenaddr, cfg.port);
 
 		while (true) {
 			// Waiting for client to connect

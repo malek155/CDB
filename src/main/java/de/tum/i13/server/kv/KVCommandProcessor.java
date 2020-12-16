@@ -3,10 +3,13 @@ package de.tum.i13.server.kv;
 import de.tum.i13.server.kv.KVMessage.StatusType;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Metadata;
+import org.apache.commons.codec.binary.Hex;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -20,67 +23,95 @@ import java.util.logging.Logger;
  *
  */
 public class KVCommandProcessor implements CommandProcessor {
-	private KVStore kvStore;
+	private KVStoreProcessor kvStore;
 	private Cache cache;
-	private static Map<String, Metadata> metadataMap = new HashMap<>();
-
+	// static instance of metadata
+	private static Map<String, Metadata> metadata;
+	// start and end (for now I suppose that I am able to get them from the main)
+	private String start;
+	private String end;
+	private String hash;
+	// static boolean variable for read only
+	private static boolean readOnly;
+	// boolean variable to know if the server is initiated from the ECS
+	private boolean initiated = false;
 	public KVCommandProcessor(){
 	}
 
-	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache) {
+	// new constructor having the metadata instance and start end of the range
+	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache, Map<String, Metadata> metadata, String ip, int port) throws NoSuchAlgorithmException {
 		this.kvStore = kvStore;
 		this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
 		kvStore.setCache(this.cache);
+		this.metadata = metadata;
+		this.hash = this.hashMD5(ip+port);
+		this.start = metadata.get(hash).getStart();
+		this.end = metadata.get(hash).getEnd();
 	}
 
 	public static Logger logger = Logger.getLogger(KVCommandProcessor.class.getName());
+
+	public KVStoreProcessor getKVStore(){
+		return this.kvStore;
+	}
 
 	/**
 	 * process() method that handles the requests
 	 */
 	@Override
-	public String process(String command) {
+	public String process(String command) throws Exception {
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
 
 		String reply = command;
 
-		if (input[0].equals("put") || input[0].equals("get")){
-			KVMessage msg;
-			String response = "";
-			try {
-				if (input[0].equals("put")){
-					if (input.length < 4) {
-						throw new IOException("Put Request needs a key and a value !");
+		if (input[0].equals("put") || input[0].equals("get")) {
+			if (isInTheRange(input[1], start, end)) {
+				KVMessage msg;
+				String response = "";
+
+				try {
+					// the return value will be a KVMessageProcessor here and the methods can only
+					// be put or get or delete
+					// I will change it as a return
+
+					// put request
+					// adding new read only functionality
+					if (input[0].equals("put") && !readOnly) {
+						if (input.length < 4) {
+							throw new IOException("Put Request needs a key and a value !");
+						}
+						msg = this.kvStore.put(input[1], input[2], input[3]);
+						if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
+							response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
+						} else {
+							response = msg.getStatus().toString() + " " + msg.getKey();
+						}
+					} else if (input[0].equals("get")) {
+						if (input.length != 2) {
+							throw new Exception("Get Request needs only a key !");
+						}
+						msg = this.kvStore.get(input[1]);
+						if (msg.getStatus().equals(StatusType.GET_ERROR)) {
+							response = msg.getStatus().toString() + " " + msg.getKey();
+						} else {
+							response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
+						}
 					}
-					msg = this.kvStore.put(input[1], input[2], input[3]);
-					if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
-						response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
-					} else {
-						response = msg.getStatus().toString() + " " + msg.getKey();
-					}
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
-				else if (input[0].equals("get")) {
-					if (input.length != 2) {
-						throw new Exception("Get Request needs only a key !");
-					}
-					msg = this.kvStore.get(input[1]);
-					if (msg.getStatus().equals(StatusType.GET_ERROR)) {
-						response = msg.getStatus().toString() + " " + msg.getKey();
-					} else {
-						response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
-					}
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
+				reply = response;
+			} else {
+				reply = "server_not_responsible";
 			}
-			reply = response;
-		} else if (input[0].equals("logLevel")) {
+		}
+		else if (input[0].equals("logLevel")) {
 			logger.setLevel(Level.parse(input[1]));
 			// here should be a msg !
 		}else if(input[0].equals("transferring")){
-
+			this.kvStore.put(input[1], input[1], input[2]);
 		}
 		else if(input[0].equals("metadata")){
 			this.processMetadata(command);
@@ -90,6 +121,8 @@ public class KVCommandProcessor implements CommandProcessor {
 			// the client side
 			// logger.warning("Please check your input and try again.");
 		}
+		if (readOnly && reply.length() == 0)
+			reply = "the server is read only at the moment and can not handle any put request please try later ";
 		return reply;
 	}
 
@@ -107,13 +140,48 @@ public class KVCommandProcessor implements CommandProcessor {
 		String hash;
 		String[] metadata;
 
-		for (int i=0; i<input.length; i++){
-			entry = input[i].split("=");
+		for (String s : input) {
+			entry = s.split("=");
 			hash = entry[0];
 			metadata = entry[1].split(" ");
 			tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]), metadata[2], metadata[3]));
 		}
-		metadataMap = tempMap;
+		this.metadata = tempMap;
+	}
+
+	/**
+	 * isInTheRange Method that takes the key sent from the client and verify
+	 * whether this key in within the range of this KVServer
+	 *
+	 * @param key   given from the client
+	 * @param start start value of hash
+	 * @param end   end value of hash
+	 * @return a boolean saying if the KVServers range contains this key
+	 */
+	private boolean isInTheRange(String key, String start, String end) {
+		boolean result = false;
+		int intKey = (int) Long.parseLong(key, 16);
+		int intStart = (int) Long.parseLong(start, 16);
+		int intEnd = (int) Long.parseLong(end, 16);
+		// where the start < end
+		if (intStart < intEnd) {
+			if (intKey >= intStart && intKey <= intEnd)
+				result = true;
+		} else {
+			if (intKey >= intStart || intKey <= intEnd)
+				result = true;
+		}
+
+		return result;
+	}
+
+	private String hashMD5(String key) throws NoSuchAlgorithmException {
+		byte[] msgToHash = key.getBytes();
+		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
+
+		//get the result in hexadecimal
+		String result = new String(Hex.encodeHex(hashedMsg));
+		return result;
 	}
 
 	@Override
