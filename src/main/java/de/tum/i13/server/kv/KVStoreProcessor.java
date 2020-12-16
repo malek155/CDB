@@ -63,10 +63,10 @@ public class KVStoreProcessor implements KVStore {
 					Stream<String> lines = Files.lines(path1);
 
 					if (hashToAdd == hashToCompare) {
-						replacingLine = (value == null) ? "" : key + " " + value + hash + "\r\n";
+						replacingLine = (value == null) ? "" : key + " " + value + " " + hash + "\r\n";
 						added = false;
 					} else {
-						replacingLine = key + " " + value + hash + "\r\n" + line + "\r\n";
+						replacingLine = key + " " + value + " " + hash + "\r\n" + line + "\r\n";
 						added = true;
 					}
 					List<String> replaced = lines.map(row -> row.replaceAll(line, replacingLine))

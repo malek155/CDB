@@ -63,6 +63,7 @@ public class KVCommandProcessor implements CommandProcessor {
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
+		Map<String, Metadata> tempMap = new HashMap<>();;
 
 		String reply = command;
 
@@ -111,11 +112,14 @@ public class KVCommandProcessor implements CommandProcessor {
 			logger.setLevel(Level.parse(input[1]));
 			// here should be a msg !
 		}else if(input[0].equals("transferring")){
-			this.kvStore.put(input[1], input[1], input[2]);
+			this.kvStore.put(input[1], input[2], input[3]);
 		}
 		else if(input[0].equals("metadata")){
-			this.processMetadata(command);
-
+				String[] entry = command.split("=");
+				hash = entry[0];
+				String[] metadata = entry[1].split(" ");
+				tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]), metadata[2], metadata[3]));
+				this.metadata = tempMap;
 		}else {
 			// here should be the send request because a wrong request will be handled in
 			// the client side
@@ -124,29 +128,6 @@ public class KVCommandProcessor implements CommandProcessor {
 		if (readOnly && reply.length() == 0)
 			reply = "the server is read only at the moment and can not handle any put request please try later ";
 		return reply;
-	}
-
-	// ip port start end
-	/**
-	 * processMetadata method parses the command with  metadata from ecs
-	 * 	and updated global metadata
-	 *
-	 * @param command given .
-	 */
-	public void processMetadata(String command){
-		Map<String, Metadata> tempMap = new HashMap<>();
-		String[] input = command.split("\r\n");
-		String[] entry;
-		String hash;
-		String[] metadata;
-
-		for (String s : input) {
-			entry = s.split("=");
-			hash = entry[0];
-			metadata = entry[1].split(" ");
-			tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]), metadata[2], metadata[3]));
-		}
-		this.metadata = tempMap;
 	}
 
 	/**

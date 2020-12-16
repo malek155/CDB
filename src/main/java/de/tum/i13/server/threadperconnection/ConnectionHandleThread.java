@@ -39,6 +39,7 @@ public class ConnectionHandleThread extends Thread {
 	private int port;
 	private InetSocketAddress bootstrap;
 	private String hash;
+	private boolean shuttingDown;
 
 	public ConnectionHandleThread(KVCommandProcessor commandProcessor, Socket clientSocket, Map<String, Metadata> metadata,
 								  InetSocketAddress bootstrap, String ip, int port) throws NoSuchAlgorithmException {
@@ -98,6 +99,8 @@ public class ConnectionHandleThread extends Thread {
 		// we maybe have to add sysout in the connectionClosed method in echoLogic
 		cp.connectionClosed(remote.getAddress());
 		// I will close anything here
+		shuttingDown = true;
+
 		try {
 			in.close();
 			out.close();
@@ -108,20 +111,21 @@ public class ConnectionHandleThread extends Thread {
 
 	private void ecsConnect(String ip, int port){
 		boolean notShutDown = true;
-		boolean shuttingDown = false;
+		shuttingDown = false;
 		String neighbour;
 		String cutter;
 
+		// ip, port -> bootstrap, ecs ip, port
 		try(Socket socket = new Socket(ip, port)){
 			BufferedReader inECS = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			PrintWriter outECS = new PrintWriter(socket.getOutputStream());
 			while(notShutDown){
 				if(inECS.readLine().equals("newServer")){
-					cutter = inECS.readLine();
-					neighbour = inECS.readLine();
-					transfer(cutter, neighbour);
-					outECS.write("transferred" + "\r\n");
-					outECS.flush();
+					cutter = inECS.readLine();  				// newly added server
+					neighbour = inECS.readLine();			// server we transfer our data to
+					if(neighbour.equals(this.hash)){
+						this.transfer(cutter, neighbour);
+					}
 				}
 				if(shuttingDown){
 					outECS.write("mayishutdownplz " + this.hash + "\r\n");

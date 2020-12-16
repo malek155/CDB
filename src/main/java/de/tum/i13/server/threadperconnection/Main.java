@@ -73,8 +73,8 @@ public class Main {
 
 			// When we accept a connection, we start a new Thread for this connection
 			Thread th = new ConnectionHandleThread(logic, clientSocket, metadata, cfg.bootstrap, cfg.listenaddr, cfg.port);
-			th.start();
 		}
+
 	}
 
 

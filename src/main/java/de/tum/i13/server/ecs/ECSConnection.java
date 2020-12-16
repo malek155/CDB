@@ -39,20 +39,20 @@ public class ECSConnection implements Runnable {
                     out.write(message);
                     out.flush();
                 }
-                if(bigECS.moved){
-                    Map<String, Metadata> map = bigECS.getMetadataMap();
-                    String metadata = map.keySet().stream()
-                            .map(key -> key + "=" + map.get(key).toString())
-                            .collect(Collectors.joining("\r\n"));
-                    out.write("metadata \r\n" + metadata);
-                    out.flush();
-                    this.bigECS.setMoved(false);
-                }
-                if(bigECS.newlyAdded){
-                    out.write("newserver\r\n" + bigECS.newServer + "\r\n" + bigECS.neghbourHash + "\r\n");
-                    out.flush();
-                    bigECS.newlyAdded = false;
-                }
+            }
+            if(bigECS.moved){
+                Map<String, Metadata> map = bigECS.getMetadataMap();
+                String metadata = map.keySet().stream()
+                        .map(key -> "metadata " + key + "=" + map.get(key).toString())
+                        .collect(Collectors.joining("\r\n"));
+                out.write(metadata);
+                out.flush();
+                this.bigECS.setMoved(false);
+            }
+            if(bigECS.newlyAdded){
+                out.write("newserver\r\n" + bigECS.newServer + "\r\n" + bigECS.neghbourHash + "\r\n");
+                out.flush();
+                bigECS.newlyAdded = false;
             }
         } catch (IOException ie) {
             ie.printStackTrace();
@@ -76,9 +76,7 @@ public class ECSConnection implements Runnable {
         String[] lines = line.split(" ");
         if (lines[0].equals("mayishutdownplz")) {
             String serverTransferTo = this.bigECS.shuttingDown(lines[1]);
-            reply = "yesyoumay\r\n" + serverTransferTo;
-        } else if (line.equals("transferred")) {
-            this.bigECS.transferred(true);
+            reply = "yesyoumay\r\n" + serverTransferTo + "\r\n";
         }
         return reply;
     }

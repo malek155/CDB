@@ -28,7 +28,6 @@ public class ECS {
     public String neghbourHash;
     public boolean newlyAdded;
 
-
     //Servers repository, also a circular structure? meh we'll see
     LinkedList<Main> serverRepository = new LinkedList<>();
 
@@ -44,20 +43,6 @@ public class ECS {
 
     /*moved is a flag that is set to true when the ranges on the ring must be upadated*/
     boolean moved;
-
-    //this method hashes adr and port with md5
-    /**
-     * hashServer method hashes the IP address and port
-     * of a ServerSocket to its Hexadecimal value with md5
-     *
-     * @return String of hashvalue in Hexadecimal
-     */
-    private String hashServer(ServerSocket ss) throws NoSuchAlgorithmException {
-        String ip = ss.getInetAddress().getHostAddress();
-        String port = String.valueOf(ss.getLocalPort());
-
-        return hashMD5(ip + port);
-    }
 
     /**
      * hashMD5 method hashes a given key to its Hexadecimal value with md5
@@ -75,16 +60,15 @@ public class ECS {
 
     /**
      * addServer method adds a server to serverRepository, its data to metadataMap, updates circular relationships
-     * @param ss is a new ServerSocket
+     * @param ip, port are credentials of a new server
      */
-    private void addServer(ServerSocket ss) throws NoSuchAlgorithmException {
+    private void addServer(String ip, int port) throws NoSuchAlgorithmException {
         moved = true;
         int startIndex;     // number if starthash
         String startHash;   // startHash
         Main newMain;       // new added server
 
-        //get hashvalue of a server (ip+port)
-        String hash = this.hashServer(ss);
+        String hash = this.hashMD5(ip+port);
 
         newMain = new Main(cache, metadataMap);
 
@@ -119,13 +103,13 @@ public class ECS {
             prevServer.end = endrangeOfPrev;
         }
 
-        this.metadataMap.put(hash, new Metadata(ss.getInetAddress().getHostAddress(), ss.getLocalPort(), startHash, hash));
+        this.metadataMap.put(hash, new Metadata(ip, port, startHash, hash));
         this.serverRepository.add(startIndex, newMain);
 
         //for ecs connection
         newlyAdded = true;
         newServer = hash;
-        neghbourHash =newMain.nextServer.end;
+        neghbourHash = newMain.nextServer.end;
     }
 
     private void removeServer(ServerSocket ss) throws Exception {
@@ -138,11 +122,11 @@ public class ECS {
         //count is used to define the next server
         int count = 0;
         for (Map.Entry entry : metadataMap.entrySet()) {
-            if (entry.getKey().toString().equals(hashServer(ss))) {
-                //the metadata of the server to be removed
-                mdToRemove = (Metadata) entry.getValue();
-                break;
-            }
+//            if (entry.getKey().toString().equals(hashServer(ss))) {
+//                //the metadata of the server to be removed
+//                mdToRemove = (Metadata) entry.getValue();
+//                break;
+//            }
             count++;
         }
         //end and start of the server to be removed
@@ -150,8 +134,8 @@ public class ECS {
 
         //case differentiation ->?
 
-        //removing the server
-        metadataMap.remove(hashServer(ss));
+//        removing the server
+//        metadataMap.remove(hashServer(ss));
 
         //updating the metadata of the next server IN THE METADATA
         metadataMap.get(count+1).setStart(startToRemove);
@@ -205,18 +189,13 @@ public class ECS {
      * @return String, a hash of a receiving server
      */
     public String shuttingDown(String hash){
-        this.reallocate();
         Map<Integer, String> indexes = this.locate(hash);
 //        this.removeServer(hash);
 
         // we get the index of a previous neighbour of server-to-remove -> +2 to get next one
-        int thankUnext = indexes.keySet().stream().findFirst().get() +2;
+        int thankUnext = indexes.keySet().stream().findFirst().get() + 2;
 
         return serverRepository.get(thankUnext).end;
-    }
-
-    public void transferred(boolean check){
-
     }
 
     public Map<String, Metadata> getMetadataMap(){
@@ -250,10 +229,6 @@ public class ECS {
             startRange = Integer.toHexString(intHash + 1);
         }
         return returnIndexes;
-    }
-
-    private void reallocate() {
-
     }
 
     /**
@@ -323,12 +298,6 @@ public class ECS {
             serverSocket.bind(new InetSocketAddress(cfg.bootstrap.getAddress(), cfg.bootstrap.getPort()));
 
             while (true){
-                if(!ecs.isAdded(cfg.listenaddr, cfg.port)){
-                    ServerSocket newServer = new ServerSocket();
-                    newServer.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
-                    ecs.addServer(newServer);
-                }
-
                 // Waiting for a server to connect
                 Socket clientSocket = serverSocket.accept();
 
@@ -336,6 +305,10 @@ public class ECS {
                 ECSConnection connection = new ECSConnection(clientSocket, ecs);
 
                 new Thread(connection).start();
+
+                if(!ecs.isAdded(cfg.listenaddr, cfg.port)){
+                    ecs.addServer(cfg.listenaddr, cfg.port);
+                }
             }
         }catch(IOException | NoSuchAlgorithmException ie){
             ie.printStackTrace();
