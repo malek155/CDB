@@ -53,9 +53,7 @@ public class Main {
 			@Override
 			public void run() {
 				System.out.println("Closing thread per connection kv server");
-//				shuttingDown = true;
 				try {
-//					if(shutDown)
 						serverSocket.close();
 				} catch (IOException e) {
 					e.printStackTrace();

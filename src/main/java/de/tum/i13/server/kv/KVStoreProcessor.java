@@ -21,7 +21,6 @@ public class KVStoreProcessor implements KVStore {
 	private Scanner scanner;
 	private KVMessageProcessor kvmessage;
 	private String[] keyvalue;
-	private boolean change;
 	private Cache cache;
 
 	public void setPath(Path path) {

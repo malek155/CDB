@@ -24,28 +24,29 @@ import java.util.Scanner;
  */
 public class ConnectionHandleThread extends Thread {
 
-	private KVCommandProcessor cp;
-	private Socket clientSocket;
+	private final KVCommandProcessor cp;
+	private final Socket clientSocket;
 
 	private BufferedReader in = null;
 	private PrintWriter out = null;
 	private InetSocketAddress remote = null;
 
 	private static Map<String, Metadata> metadata;
-	private String nextIP;
-	private int nextPort;
-	private File storage;
 	private String ip;
 	private int port;
-	private InetSocketAddress bootstrap;
-	private String hash;
+	private final InetSocketAddress bootstrap;
+	private final String hash;
 	private boolean shuttingDown;
 
-	public ConnectionHandleThread(KVCommandProcessor commandProcessor, Socket clientSocket, Map<String, Metadata> metadata,
-								  InetSocketAddress bootstrap, String ip, int port) throws NoSuchAlgorithmException {
+	public ConnectionHandleThread(KVCommandProcessor commandProcessor,
+								  Socket clientSocket,
+								  Map<String, Metadata> metadata,
+								  InetSocketAddress bootstrap,
+								  String ip,
+								  int port) throws NoSuchAlgorithmException {
 		this.cp = commandProcessor;
 		this.clientSocket = clientSocket;
-		this.metadata = metadata;
+		ConnectionHandleThread.metadata = metadata;
 		this.bootstrap = bootstrap;
 		this.ip = ip;
 		this.port = port;
@@ -58,12 +59,11 @@ public class ConnectionHandleThread extends Thread {
 	 */
 	public void run() {
 
-		// run client connection
-		clientConnect();
-
 		// run ecs connection
 		ecsConnect(bootstrap.getHostString(), bootstrap.getPort());
 
+		// run client connection
+		clientConnect();
 	}
 
 	private void clientConnect(){
@@ -122,7 +122,7 @@ public class ConnectionHandleThread extends Thread {
 			while(notShutDown){
 				if(inECS.readLine().equals("newServer")){
 					cutter = inECS.readLine();  				// newly added server
-					neighbour = inECS.readLine();			// server we transfer our data to
+					neighbour = inECS.readLine();			// server we have our data at
 					if(neighbour.equals(this.hash)){
 						this.transfer(cutter, neighbour);
 					}
@@ -132,7 +132,7 @@ public class ConnectionHandleThread extends Thread {
 					outECS.flush();
 					if(inECS.readLine().equals("yesyoumay")){
 						neighbour = inECS.readLine();
-						this.transfer("", neighbour);
+						this.transfer(neighbour, "");
 						notShutDown = false;
 					}
 				}
@@ -144,11 +144,13 @@ public class ConnectionHandleThread extends Thread {
 		}
 	}
 
-	private void transfer(String cutter, String neighbourHash){
-		nextIP = metadata.get(neighbourHash).getIP();
-		nextPort = metadata.get(neighbourHash).getPort();
-		try (Socket socket = new Socket(nextIP, nextPort)){
-			storage = this.cp.getKVStore().getStorage(cutter);
+	private void transfer(String transferTo, String ours){
+		String newIP = metadata.get(transferTo).getIP();
+		int newPort = metadata.get(transferTo).getPort();
+
+		try (Socket socket = new Socket(newIP, newPort)){
+			File storage = (ours.equals("")) ? this.cp.getKVStore().getStorage("")
+					: this.cp.getKVStore().getStorage(transferTo);
 			PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
 			Scanner scanner = new Scanner(new FileInputStream(storage));
 

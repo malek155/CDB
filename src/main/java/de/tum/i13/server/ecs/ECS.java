@@ -25,7 +25,7 @@ import static de.tum.i13.shared.LogSetup.setupLogging;
 //assigns a position to both servers and Tuples on the ring
 public class ECS {
     public String newServer;
-    public String neghbourHash;
+    public String neighbourHash;
     public boolean newlyAdded;
 
     //Servers repository, also a circular structure? meh we'll see
@@ -84,7 +84,7 @@ public class ECS {
         } else {
             Map<Integer, String> indexes = this.locate(hash);
             //findfirst because we have there only one keyvalue :/
-            startIndex = (int) indexes.keySet().stream().findFirst().get();
+            startIndex = indexes.keySet().stream().findFirst().get();
             startHash = indexes.get(startIndex);        // already incremented hashvalue
             Main prevServer = this.serverRepository.get(startIndex - 1);
 
@@ -109,7 +109,7 @@ public class ECS {
         //for ecs connection
         newlyAdded = true;
         newServer = hash;
-        neghbourHash = newMain.nextServer.end;
+        neighbourHash = newMain.nextServer.end;
     }
 
     private void removeServer(ServerSocket ss) throws Exception {
@@ -236,7 +236,7 @@ public class ECS {
      * @param ip, port of a possible server to add
      * @return boolean: true if already existing
      */
-    public boolean isAdded(String ip, int port){
+    private boolean isAdded(String ip, int port){
         boolean added = false;
         for (Map.Entry element : metadataMap.entrySet()) {
             Metadata metadata = (Metadata) element.getValue();
