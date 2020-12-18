@@ -16,7 +16,7 @@ public class StartSimpleNioServer {
 
 	public static Logger logger = Logger.getLogger(StartSimpleNioServer.class.getName());
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		KVStoreProcessor kvStore = new KVStoreProcessor();
 		LFUCache cache = new LFUCache(100);
 		Config cfg = parseCommandlineArgs(args); // Do not change this

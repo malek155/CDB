@@ -46,7 +46,7 @@ public class EchoLogic implements CommandProcessor {
 	 * @throws Exception if put command cannot be executed (e.g. not connected to
 	 *                   any KV server).
 	 */
-	public String process(String command) {
+	public String process(String command) throws Exception {
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");

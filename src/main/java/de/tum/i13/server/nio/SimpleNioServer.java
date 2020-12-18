@@ -54,7 +54,7 @@ public class SimpleNioServer {
         this.serverChannel.register(selector, SelectionKey.OP_ACCEPT);
     }
 
-    public void start() throws IOException {
+	public void start() throws Exception {
         while (true) {
             // Process queued interest changes
             for (ChangeRequest change : this.pendingChanges) {
@@ -108,7 +108,7 @@ public class SimpleNioServer {
         queueForWrite(registeredKey, confirmation.getBytes(Constants.TELNET_ENCODING));
     }
 
-    private void read(SelectionKey key) throws IOException {
+	private void read(SelectionKey key) throws Exception {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
         // Clear out our read buffer so it's ready for new data
@@ -231,7 +231,7 @@ public class SimpleNioServer {
         }
     }
 
-    private void handleRequest(SelectionKey selectionKey, String request) {
+	private void handleRequest(SelectionKey selectionKey, String request) throws Exception {
         try {
             String res = cmdProcessor.process(request);
             send(selectionKey, res.getBytes(Constants.TELNET_ENCODING));

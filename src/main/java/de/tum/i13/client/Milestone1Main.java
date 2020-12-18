@@ -14,7 +14,9 @@ import org.apache.commons.codec.binary.Hex;
 import de.tum.i13.shared.Metadata;
 
 public class Milestone1Main {
-	private Map<String, Metadata> metadataMap = new HashMap<>();
+	// Metadata static for all clients ?? otherwise I can not access it from main ,
+	// I will initialize it in main for now
+	// private Map<String, Metadata> metadataMap = new HashMap<>();
 
 	/**
 	 * hashKey method hashes the key a keyvalue to its Hexadecimal value with md5
@@ -40,7 +42,8 @@ public class Milestone1Main {
 		return result;
 	}
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
+		Map<String, Metadata> metadataMap = new HashMap<>();
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
@@ -61,17 +64,21 @@ public class Milestone1Main {
 				break;
 			case "put":
 			case "get":
+
 				int count = 0;
-				while (true) {
+
+				// while (true) {
+				if (metadataMap.isEmpty()) {
 					sendrequest(activeConnection, command, line);
 					String result = activeConnection.readline();
 					if (result.equals("server_write_lock") || result.equals("server_stopped")) {
 						count++;
 					}
-
 				}
+				// }
 
 				break;
+
 			case "disconnect":
 				closeConnection(activeConnection);
 				break;
@@ -99,6 +106,9 @@ public class Milestone1Main {
 		}
 
 		activeConnection.write(line);
+		// Pause the current thread for a short time so that we wait for the response of
+		// the server
+		Thread.yield();
 
 		try {
 			printEchoLine(activeConnection.readline());
@@ -150,6 +160,9 @@ public class Milestone1Main {
 
 		String cmd = line.substring(firstSpace + 1);
 		activeConnection.write(cmd);
+		// Pause the current thread for a short time so that we wait for the response of
+		// the server
+		Thread.yield();
 
 		try {
 			printEchoLine(activeConnection.readline());

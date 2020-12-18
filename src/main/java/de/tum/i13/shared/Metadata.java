@@ -28,4 +28,12 @@ public class Metadata {
 	public String getEnd() {
 		return this.end;
 	}
+
+	public void setStart(String start) {
+		this.start = start;
+	}
+
+	public String toString() {
+		return ip + " " + port + " " + start + " " + end;
+	}
 }
