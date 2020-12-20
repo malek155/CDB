@@ -1,5 +1,6 @@
 package de.tum.i13.server.kv;
 
+import de.tum.i13.server.kv.KVMessage;
 import de.tum.i13.server.kv.KVMessage.StatusType;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Metadata;
@@ -39,7 +40,9 @@ public class KVCommandProcessor implements CommandProcessor {
 	// static boolean variable for read only
 	private static boolean readOnly;
 	// boolean variable to know if the server is initiated from the ECS
-	private boolean initiated = false;
+	// volatile keyword because this variable is expected to be changed from another
+	// thread
+	private volatile boolean initiated = false;
 
 	public KVCommandProcessor() {
 	}
@@ -129,6 +132,9 @@ public class KVCommandProcessor implements CommandProcessor {
 		} else if (input[0].equals("logLevel")) {
 			logger.setLevel(Level.parse(input[1]));
 			// here should be a msg !
+		} else if (input[0].equals("keyrange")) {
+			// the server will send the metadata to the client
+
 		} else if (input[0].equals("transferring")) {
 			this.kvStore.put(input[1], input[2], input[3]);
 		} else if (input[0].equals("metadata")) {
@@ -137,6 +143,7 @@ public class KVCommandProcessor implements CommandProcessor {
 			String[] metadata = entry[1].split(" ");
 			tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]), metadata[2], metadata[3]));
 			this.metadata = tempMap;
+
 		} else {
 			// here should be the send request because a wrong request will be handled in
 			// the client side
@@ -154,21 +161,22 @@ public class KVCommandProcessor implements CommandProcessor {
 	 *
 	 * @param command given .
 	 */
-//	public void processMetadata(String command) {
-//		Map<String, Metadata> tempMap = new HashMap<>();
-//		String[] input = command.split("\r\n");
-//		String[] entry;
-//		String hash;
-//		String[] metadata;
-//
-//		for (int i = 0; i < input.length; i++) {
-//			entry = input[i].split("=");
-//			hash = entry[0];
-//			metadata = entry[1].split(" ");
-//			tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]), metadata[2], metadata[3]));
-//		}
-//		metadataMap = tempMap;
-//	}
+	// public void processMetadata(String command) {
+	// Map<String, Metadata> tempMap = new HashMap<>();
+	// String[] input = command.split("\r\n");
+	// String[] entry;
+	// String hash;
+	// String[] metadata;
+	//
+	// for (int i = 0; i < input.length; i++) {
+	// entry = input[i].split("=");
+	// hash = entry[0];
+	// metadata = entry[1].split(" ");
+	// tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]),
+	// metadata[2], metadata[3]));
+	// }
+	// metadataMap = tempMap;
+	// }
 
 	/**
 	 * isInTheRange Method that takes the key sent from the client and verify

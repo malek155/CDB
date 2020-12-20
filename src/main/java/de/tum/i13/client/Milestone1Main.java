@@ -8,6 +8,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.commons.codec.binary.Hex;
 
@@ -33,7 +34,7 @@ public class Milestone1Main {
 	 *
 	 * @return String of hashvalue in Hexadecimal
 	 */
-	private String hashMD5(String key) throws NoSuchAlgorithmException {
+	private static String hashMD5(String key) throws NoSuchAlgorithmException {
 		byte[] msgToHash = key.getBytes();
 		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
 
@@ -64,18 +65,62 @@ public class Milestone1Main {
 				break;
 			case "put":
 			case "get":
-
+				// number of retry
 				int count = 0;
+				// the maximum number of retry is 5
+				while (count <= 5) {
+					// the case
+					if (metadataMap.isEmpty()) {
+						String result = sendrequest(activeConnection, command, line);
+						if (result.equals("server_write_lock") || result.equals("server_stopped")) {
+							count++;
 
-				// while (true) {
-				if (metadataMap.isEmpty()) {
-					sendrequest(activeConnection, command, line);
-					String result = activeConnection.readline();
-					if (result.equals("server_write_lock") || result.equals("server_stopped")) {
-						count++;
+							// exponential back-off with jitter
+							int base = 100;
+							int cap = 5000;
+							int a = (int) Math.pow(2, count);
+							int temp = Math.min(cap, base * a);
+							int random = (int) (Math.random() * ((temp / 2) - 0) + 0);
+							Thread.sleep((temp / 2) + random);
+
+						} else if (result.equals("server_not_responsible")) {
+							activeConnection.write("keyrange" + "\r\n");
+							Thread.yield();
+							/*
+							 * reading the metadata from the server and updating its metadata
+							 */
+							Metadata meta = null;
+							try {
+								// getting the server which is responsible of this key
+								meta = getServer(metadataMap, hashMD5(command[1]));
+							} catch (NoSuchAlgorithmException e) {
+								e.printStackTrace();
+							}
+							String[] a = { null, meta.getIP(), "" + meta.getPort() };
+							// building a new connection to this server
+							activeConnection = buildconnection(a);
+							// retry the request to the new server
+							sendrequest(activeConnection, command, line);
+							// updating count
+							count = 0;
+
+						}
+
+					} else {
+						Metadata meta = null;
+						try {
+							// getting the server which is responsible of this key
+							meta = getServer(metadataMap, hashMD5(command[1]));
+						} catch (NoSuchAlgorithmException e) {
+							e.printStackTrace();
+						}
+						String[] a = { null, meta.getIP(), "" + meta.getPort() };
+						// building a new connection to this server
+						activeConnection = buildconnection(a);
+						// send the request
+						sendrequest(activeConnection, command, line);
 					}
 				}
-				// }
 
 				break;
 
@@ -94,15 +139,20 @@ public class Milestone1Main {
 		}
 	}
 
-	private static void sendrequest(ActiveConnection activeConnection, String[] command, String line) {
+	private static String sendrequest(ActiveConnection activeConnection, String[] command, String line) {
+		String result = "";
 		if (activeConnection == null) {
 			printEchoLine("Error! Not connected!");
-			return;
+			result = "Error! Not connected!";
+			// return ;
+			return result;
 		}
 		int firstSpace = line.indexOf(" ");
 		if (firstSpace == -1 || firstSpace + 1 >= line.length()) {
 			printEchoLine("Error! Nothing to send!");
-			return;
+			result = "Error! Nothing to send!";
+			// return;
+			return result;
 		}
 
 		activeConnection.write(line);
@@ -111,9 +161,14 @@ public class Milestone1Main {
 		Thread.yield();
 
 		try {
-			printEchoLine(activeConnection.readline());
+			result = activeConnection.readline();
+			// printEchoLine(activeConnection.readline());
+			printEchoLine(result);
+			return result;
+
 		} catch (IOException e) {
 			printEchoLine("Error! Not connected!");
+			return "Error! Not connected!";
 		}
 
 	}
@@ -187,9 +242,37 @@ public class Milestone1Main {
 		return null;
 	}
 
-	// we need a method where we give the key and the map of the metadata and it
-	// returns a ServerSocket containing the server which is responsible of this key
-	// and then we compare it to the server that we are already connected to and if
-	// it is not the same we reconnect to the appropriate server and resend the last
-	// request
+	/**
+	 * getServer() method which takes as parameters the actual metadata of the
+	 * client and the hash value of the key and return a Metadata object that
+	 * contains the server which is responsible of this key
+	 * 
+	 * @param metadataMap the actual Metadata of the client
+	 * @param hash        the hashvalue of the key
+	 * @return Metadata object that contains informations about the server which is
+	 *         responsible of this key
+	 */
+	private static Metadata getServer(Map<String, Metadata> metadataMap, String hash) {
+		Metadata result = null;
+		int intHash = (int) Long.parseLong(hash, 16);
+		Map<String, Metadata> meta = metadataMap;
+		for (Metadata md : meta.values()) {
+			int intStart = (int) Long.parseLong(md.getStart(), 16);
+			int intEnd = (int) Long.parseLong(md.getEnd(), 16);
+			if (intStart < intEnd) {
+				if (intHash >= intStart && intHash <= intEnd)
+					result = md;
+
+			} else if (intStart > intEnd) {
+				if (intHash >= intStart || intHash <= intEnd) {
+					result = md;
+
+				}
+			}
+
+		}
+		return result;
+
+	}
+
 }
