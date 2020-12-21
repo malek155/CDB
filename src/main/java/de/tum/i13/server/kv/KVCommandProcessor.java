@@ -133,9 +133,11 @@ public class KVCommandProcessor implements CommandProcessor {
 			logger.setLevel(Level.parse(input[1]));
 			// here should be a msg !
 		} else if (input[0].equals("keyrange")) {
+			
 			/*
 			 * the server will send the metadata to the client
 			 */
+			// structuring the metadata as following : "keyrange_success <kr-from>, <kr-to>, <ip:port>; <kr-from>, <kr-to>, <ip:port>;..."
 
 		} else if (input[0].equals("transferring")) {
 			this.kvStore.put(input[1], input[2], input[3]);

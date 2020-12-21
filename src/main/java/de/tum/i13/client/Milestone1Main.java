@@ -6,9 +6,11 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import org.apache.commons.codec.binary.Hex;
 
@@ -107,6 +109,19 @@ public class Milestone1Main {
 						/*
 						 * reading the metadata from the server and updating its metadata
 						 */
+						String metadata = activeConnection.readline();
+						String[] entry = metadata.split(";");
+						Stream<String> sp = Arrays.stream(entry);
+						Map<String, Metadata> metadataMap2 = new HashMap<>();
+						sp.forEach(str -> {
+							String[] entry2 = str.split(",");
+							if (entry2[0].substring(0, 17).equals("keyrange_success "))
+								entry2[0] = entry2[0].substring(17);
+							String[] ipAndPort = entry2[2].split(":");
+							metadataMap2.put(entry2[1],
+									new Metadata(ipAndPort[0], Integer.parseInt(ipAndPort[1]), entry2[0], entry2[1]));
+
+						});
 						Metadata meta = null;
 						try {
 							// getting the server which is responsible of this key
