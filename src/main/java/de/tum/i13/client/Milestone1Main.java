@@ -69,44 +69,8 @@ public class Milestone1Main {
 				int count = 0;
 				// the maximum number of retry is 5
 				while (count <= 5) {
-					// the case
-					if (metadataMap.isEmpty()) {
-						String result = sendrequest(activeConnection, command, line);
-						if (result.equals("server_write_lock") || result.equals("server_stopped")) {
-							count++;
-
-							// exponential back-off with jitter
-							int base = 100;
-							int cap = 5000;
-							int a = (int) Math.pow(2, count);
-							int temp = Math.min(cap, base * a);
-							int random = (int) (Math.random() * ((temp / 2) - 0) + 0);
-							Thread.sleep((temp / 2) + random);
-
-						} else if (result.equals("server_not_responsible")) {
-							activeConnection.write("keyrange" + "\r\n");
-							Thread.yield();
-							/*
-							 * reading the metadata from the server and updating its metadata
-							 */
-							Metadata meta = null;
-							try {
-								// getting the server which is responsible of this key
-								meta = getServer(metadataMap, hashMD5(command[1]));
-							} catch (NoSuchAlgorithmException e) {
-								e.printStackTrace();
-							}
-							String[] a = { null, meta.getIP(), "" + meta.getPort() };
-							// building a new connection to this server
-							activeConnection = buildconnection(a);
-							// retry the request to the new server
-							sendrequest(activeConnection, command, line);
-							// updating count
-							count = 0;
-
-						}
-
-					} else {
+					// we check whether the metadata is empty
+					if (!metadataMap.isEmpty()) {
 						Metadata meta = null;
 						try {
 							// getting the server which is responsible of this key
@@ -117,8 +81,47 @@ public class Milestone1Main {
 						String[] a = { null, meta.getIP(), "" + meta.getPort() };
 						// building a new connection to this server
 						activeConnection = buildconnection(a);
-						// send the request
+
+					}
+					// send the request
+					String result = sendrequest(activeConnection, command, line);
+					// if we get a server_write lock or server_stopped notification from the server
+					// we weet for some time and we retry
+					if (result.equals("server_write_lock") || result.equals("server_stopped")) {
+						count++;
+
+						// exponential back-off with jitter
+						int base = 100;
+						int cap = 5000;
+						int a = (int) Math.pow(2, count);
+						int temp = Math.min(cap, base * a);
+						int random = (int) (Math.random() * ((temp / 2) - 0) + 0);
+						Thread.sleep((temp / 2) + random);
+
+					} // if we get a server_not_responsible notification from the server that means
+						// that our metadata is stale and we need to update it
+					else if (result.equals("server_not_responsible")) {
+						// we ask the server to send us the most recent metadata version
+						activeConnection.write("keyrange" + "\r\n");
+						Thread.yield();
+						/*
+						 * reading the metadata from the server and updating its metadata
+						 */
+						Metadata meta = null;
+						try {
+							// getting the server which is responsible of this key
+							meta = getServer(metadataMap, hashMD5(command[1]));
+						} catch (NoSuchAlgorithmException e) {
+							e.printStackTrace();
+						}
+						String[] a = { null, meta.getIP(), "" + meta.getPort() };
+						// building a new connection to this server
+						activeConnection = buildconnection(a);
+						// retry the request to the new server
 						sendrequest(activeConnection, command, line);
+						// updating count
+						count = 0;
+
 					}
 				}
 
