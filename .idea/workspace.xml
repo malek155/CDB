@@ -29,14 +29,48 @@
     </select>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6fcb5e85-ac1f-46f5-a664-6c470115760f" name="Default Changelist" comment="d">
+    <list default="true" id="6fcb5e85-ac1f-46f5-a664-6c470115760f" name="Default Changelist" comment="merge confused">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/circle/ECS.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/circle/ECS.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/circle/ECSConnection.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/circle/ECSConnection.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cdbms1.iml" beforeDir="false" afterPath="$PROJECT_DIR$/cdbms1.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/client/CommunicationModule.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/client/EchoConnectionBuilder.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/client/EchoConnectionBuilder.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/client/Milestone1Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/client/Milestone1Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/circle/ECS.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/ecs/ECS.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/circle/ECSConnection.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/ecs/ECSConnection.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/echo/EchoLogic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/echo/EchoLogic.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/kv/KVCommandProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/kv/KVCommandProcessor.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/kv/KVStore.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/kv/KVStore.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/kv/KVStoreProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/kv/KVStoreProcessor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/threadperconnection/ConnectionHandleThread.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/threadperconnection/ConnectionHandleThread.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/threadperconnection/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/de/tum/i13/server/threadperconnection/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/de/tum/i13/server/kv/TestKVCommandProcessor.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/client/ActiveConnection.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/client/CommunicationModule.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/client/EchoConnectionBuilder.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/client/Milestone1Main.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/echo/EchoLogic.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/kv/FIFOLRUCache$1.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/kv/FIFOLRUCache.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/kv/KVCommandProcessor.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/kv/KVMessage$StatusType.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/kv/KVMessage.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/kv/KVMessageProcessor.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/kv/KVStore.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/kv/KVStoreProcessor.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/kv/LFUCache$CacheEntry.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/kv/LFUCache.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/nio/ChangeRequest.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/nio/SimpleNioServer.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/nio/StartSimpleNioServer.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/threadperconnection/ConnectionHandleThread.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/threadperconnection/Main$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/de/tum/i13/server/threadperconnection/Main$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/server/threadperconnection/Main.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/de/tum/i13/server/threadperconnection/Main.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/shared/CommandProcessor.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/shared/Config.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/de/tum/i13/shared/Config.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/shared/Constants.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/de/tum/i13/shared/InetSocketAddressTypeConverter.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -297,7 +331,14 @@
       <option name="project" value="LOCAL" />
       <updated>1607869288672</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="merge confused">
+      <created>1607969569535</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1607969569535</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -351,16 +392,18 @@
     <MESSAGE value="g" />
     <MESSAGE value="f" />
     <MESSAGE value="d" />
-    <option name="LAST_COMMIT_MESSAGE" value="d" />
+    <MESSAGE value="merge confused" />
+    <option name="LAST_COMMIT_MESSAGE" value="merge confused" />
   </component>
   <component name="WindowStateProjectService">
     <state x="208" y="60" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1606242416145">
       <screen x="0" y="23" width="1440" height="832" />
     </state>
     <state x="208" y="60" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.23.1440.832@0.23.1440.832" timestamp="1606242416145" />
-    <state x="801" y="151" key="#com.intellij.ide.util.MemberChooser" timestamp="1607686531171">
-      <screen x="0" y="22" width="1440" height="833" />
+    <state x="801" y="151" key="#com.intellij.ide.util.MemberChooser" timestamp="1607970081794">
+      <screen x="0" y="22" width="1440" height="830" />
     </state>
+    <state x="801" y="151" key="#com.intellij.ide.util.MemberChooser/0.22.1440.830@0.22.1440.830" timestamp="1607970081794" />
     <state x="801" y="151" key="#com.intellij.ide.util.MemberChooser/0.22.1440.833@0.22.1440.833" timestamp="1607686531171" />
     <state x="801" y="152" key="#com.intellij.ide.util.MemberChooser/0.23.1440.832@0.23.1440.832" timestamp="1606061639501" />
     <state x="801" y="152" key="#com.intellij.ide.util.MemberChooser/0.23.1440.833@0.23.1440.833" timestamp="1605905121812" />
@@ -388,10 +431,10 @@
       <screen x="0" y="23" width="1440" height="832" />
     </state>
     <state width="1398" height="229" key="GridCell.Tab.0.right/0.23.1440.832@0.23.1440.832" timestamp="1606297077237" />
-    <state x="516" y="100" key="Maven.ArtifactSearchDialog" timestamp="1607773912937">
-      <screen x="0" y="22" width="1440" height="835" />
+    <state x="516" y="100" key="Maven.ArtifactSearchDialog" timestamp="1608560828696">
+      <screen x="0" y="22" width="1440" height="833" />
     </state>
-    <state x="516" y="100" key="Maven.ArtifactSearchDialog/0.22.1440.833@0.22.1440.833" timestamp="1606738937772" />
+    <state x="516" y="100" key="Maven.ArtifactSearchDialog/0.22.1440.833@0.22.1440.833" timestamp="1608560828696" />
     <state x="516" y="100" key="Maven.ArtifactSearchDialog/0.22.1440.835@0.22.1440.835" timestamp="1607773912937" />
     <state x="288" y="94" key="MergeDialog" timestamp="1607772242133">
       <screen x="0" y="22" width="1440" height="834" />
@@ -406,9 +449,10 @@
     </state>
     <state x="443" y="77" key="SettingsEditor/0.22.1440.833@0.22.1440.833" timestamp="1607024119210" />
     <state x="443" y="78" key="SettingsEditor/0.23.1440.832@0.23.1440.832" timestamp="1606241790157" />
-    <state x="588" y="178" key="Vcs.Push.Dialog.v2" timestamp="1607869297508">
-      <screen x="0" y="22" width="1440" height="834" />
+    <state x="588" y="177" key="Vcs.Push.Dialog.v2" timestamp="1607970261350">
+      <screen x="0" y="22" width="1440" height="830" />
     </state>
+    <state x="588" y="177" key="Vcs.Push.Dialog.v2/0.22.1440.830@0.22.1440.830" timestamp="1607970261349" />
     <state x="588" y="178" key="Vcs.Push.Dialog.v2/0.22.1440.833@0.22.1440.833" timestamp="1607773046745" />
     <state x="588" y="178" key="Vcs.Push.Dialog.v2/0.22.1440.834@0.22.1440.834" timestamp="1607869297508" />
     <state x="588" y="178" key="Vcs.Push.Dialog.v2/0.22.1440.835@0.22.1440.835" timestamp="1607784939516" />
@@ -416,9 +460,11 @@
     <state x="588" y="178" key="Vcs.Push.Dialog.v2/0.22.1440.837@0.22.1440.837" timestamp="1607775411795" />
     <state x="588" y="179" key="Vcs.Push.Dialog.v2/0.23.1440.832@0.23.1440.832" timestamp="1606258360830" />
     <state x="588" y="179" key="Vcs.Push.Dialog.v2/0.23.1440.833@0.23.1440.833" timestamp="1605718885578" />
-    <state x="652" y="224" key="chooseDestDirectoryDialog" timestamp="1606246985788">
-      <screen x="0" y="23" width="1440" height="832" />
+    <state x="652" y="224" key="chooseDestDirectoryDialog" timestamp="1608554743980">
+      <screen x="0" y="22" width="1440" height="833" />
     </state>
+    <state x="652" y="223" key="chooseDestDirectoryDialog/0.22.1440.830@0.22.1440.830" timestamp="1608319871908" />
+    <state x="652" y="224" key="chooseDestDirectoryDialog/0.22.1440.833@0.22.1440.833" timestamp="1608554743980" />
     <state x="652" y="224" key="chooseDestDirectoryDialog/0.23.1440.832@0.23.1440.832" timestamp="1606246985788" />
     <state x="722" y="158" key="git4idea.branch.GitSmartOperationDialog" timestamp="1607772198912">
       <screen x="0" y="22" width="1440" height="834" />
@@ -429,6 +475,10 @@
     </state>
     <state x="763" y="334" key="git4idea.remote.GitConfigureRemotesDialog/0.22.1440.833@0.22.1440.833" timestamp="1607772817703" />
     <state x="763" y="335" key="git4idea.remote.GitConfigureRemotesDialog/0.22.1440.835@0.22.1440.835" timestamp="1607774146087" />
+    <state x="105" y="59" key="new project wizard" timestamp="1608575534374">
+      <screen x="0" y="22" width="1440" height="833" />
+    </state>
+    <state x="105" y="59" key="new project wizard/0.22.1440.833@0.22.1440.833" timestamp="1608575534374" />
     <state x="674" y="179" width="670" height="679" key="search.everywhere.popup" timestamp="1607783662490">
       <screen x="0" y="22" width="1440" height="835" />
     </state>

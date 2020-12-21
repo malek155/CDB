@@ -1,48 +1,33 @@
 package de.tum.i13.client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.ServerSocket;
+
+import de.tum.i13.shared.Metadata;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.codec.binary.Hex;
-
-import de.tum.i13.shared.Metadata;
-
 public class Milestone1Main {
-    private  Map<String, Metadata> metadataMap = new HashMap<>();
-    /**
-     * hashKey method hashes the key a keyvalue to its
-     * Hexadecimal value with md5
-     *
-     * @return String of hashvalue in Hexadecimal
-     */
-    private String hashKey(String key) throws NoSuchAlgorithmException {
 
-
-        return hashMD5(key);
-    }
+    private Map<String, Metadata> metadataMap = new HashMap<>();
 
     /**
      * hashTupel method hashes a given key to its Hexadecimal value with md5
      *
      * @return String of hashvalue in Hexadecimal
      */
-    private String hashMD5(String key) throws NoSuchAlgorithmException {
-        byte[] msgToHash = key.getBytes();
-        byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
+    public String hashMD5(String key) throws NoSuchAlgorithmException {
 
-        // get the result in hexadecimal
-        String result = new String(Hex.encodeHex(hashedMsg));
-        return result;
+        MessageDigest msg = MessageDigest.getInstance("MD5");
+        byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
+
+        return new String(digested);
     }
 
     public static void main(String[] args) throws IOException {
-
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
         ActiveConnection activeConnection = null;
@@ -50,8 +35,7 @@ public class Milestone1Main {
             System.out.print("EchoClient> ");
             String line = reader.readLine();
             String[] command = line.split(" ");
-            // System.out.print("command:");
-            // System.out.println(line);
+
             switch (command[0]) {
                 case "connect":
                     activeConnection = buildconnection(command);
@@ -61,9 +45,16 @@ public class Milestone1Main {
                     break;
                 case "put":
                 case "get":
+                    int count = 0;
+                    while (true) {
+                        sendrequest(activeConnection, command, line);
+                        String result = activeConnection.readline();
+                        if (result.equals("server_write_lock") || result.equals("server_stopped")) {
+                            count++;
+                        }
+                    }
+//				break;
 
-                    sendrequest(activeConnection, command, line);
-                    break;
                 case "disconnect":
                     closeConnection(activeConnection);
                     break;
@@ -159,16 +150,9 @@ public class Milestone1Main {
                 printEchoLine(confirmation);
                 return ac;
             } catch (Exception e) {
-                // Todo: separate between could not connect, unknown host and invalid port
-                printEchoLine("Could not connect to server");
+                printEchoLine(e.getMessage());
             }
         }
         return null;
     }
-
-    // we need a method where we give the key and the map of the metadata and it
-    // returns a ServerSocket containing the server which is responsible of this key
-    // and then we compare it to the server that we are already connected to and if
-    // it is not the same we reconnect to the appropriate server and resend the last
-    // request
 }

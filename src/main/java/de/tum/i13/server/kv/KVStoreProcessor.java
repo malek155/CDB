@@ -13,6 +13,7 @@ import java.util.stream.Stream;
  * KVStoreProcessor class to handle the storage file and the cach
  *
  * @author gr9
+ *
  */
 public class KVStoreProcessor implements KVStore {
     private Path path;
@@ -20,15 +21,11 @@ public class KVStoreProcessor implements KVStore {
     private Scanner scanner;
     private KVMessageProcessor kvmessage;
     private String[] keyvalue;
-    private boolean change;
     private Cache cache;
 
     public void setPath(Path path) {
         this.path = path;
     }
-public Path getPath(){
-        return this.path;
-}
 
     public void setCache(Cache cache) {
         this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
@@ -65,10 +62,10 @@ public Path getPath(){
                     Stream<String> lines = Files.lines(path1);
 
                     if (hashToAdd == hashToCompare) {
-                        replacingLine = (value == null) ? "" : key + " " + value + hash + "\r\n";
+                        replacingLine = (value == null) ? "" : key + " " + value + " " + hash + "\r\n";
                         added = false;
                     } else {
-                        replacingLine = key + " " + value + hash + "\r\n" + line + "\r\n";
+                        replacingLine = key + " " + value + " " + hash + "\r\n" + line + "\r\n";
                         added = true;
                     }
                     List<String> replaced = lines.map(row -> row.replaceAll(line, replacingLine))
@@ -123,41 +120,60 @@ public Path getPath(){
     }
 
     /**
-     * getStorage returns a storage connected to this server
+     * getStorage returns a whole storage if removing, part of it by adding a new one
+     * @param hash cutting the storage to transfer only one of the parts to another server
+     *             if empty, we merge by removing a server and getting the whole storage
      *
      * @return File of a data to transfer
-     * @throws Exception if key not found
+     * @throws IOException
      */
-    public File getStorage(String hash) {
+    public File getStorage(String hash) throws IOException {
         File toReturn;
-        if (hash.equals(""))
-            toReturn = storage;
+        File toStay;
+        if (hash.equals("")){
+            return storage;
+        }
         else {
             int hashEdge = (int) Long.parseLong(hash, 16);
             int hashToCompare;
-            toReturn = new File(String.valueOf(path));
+
+            //creating tmp paths
+            Path returnPath = Files.createTempFile("rebalancing", ".txt");
+            Path stayPath = Files.createTempFile("rebalancing", ".txt");
+            toReturn = new File(String.valueOf(returnPath));
+            toStay = new File(String.valueOf(stayPath));
+
+            FileWriter fwToReturn = new FileWriter(toReturn.getName(), true);
+            FileWriter fwToStay = new FileWriter(toStay.getName(), false);
+            BufferedWriter bw1 = new BufferedWriter(fwToReturn);
+            BufferedWriter bw2 = new BufferedWriter(fwToStay);
+
             try {
                 scanner = new Scanner(new FileInputStream(storage));
                 while (scanner.hasNextLine()) {
                     String line = scanner.nextLine();
                     keyvalue = line.split(" ");
                     hashToCompare = (int) Long.parseLong(keyvalue[2], 16);
-                    if (hashEdge >= hashToCompare) {
-                        break;
+                    if(hashEdge >= hashToCompare){
+                        bw2.write(line);
                     }
-                    FileWriter fileWriter = new FileWriter(toReturn.getName(), true);
-                    BufferedWriter bw = new BufferedWriter(fileWriter);
-                    bw.write(line);
+                    else{
+                        bw1.write(line);
+                    }
                 }
-
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
-        return toReturn;
-    }
+            Path path1 = Paths.get(String.valueOf(stayPath));
+            List <String> lines = Files.lines(path1).collect(Collectors.toList());
+            Files.write(path, lines);
 
-    public void setStorage(File file) {
-        this.storage = file;
+            fwToReturn.close();
+            fwToStay.close();
+            bw1.close();
+            bw2.close();
+
+            return toReturn;
+        }
     }
 }
