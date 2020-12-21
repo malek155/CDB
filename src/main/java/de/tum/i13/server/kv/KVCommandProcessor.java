@@ -1,9 +1,9 @@
 package de.tum.i13.server.kv;
 
+import de.tum.i13.server.kv.KVMessage;
 import de.tum.i13.server.kv.KVMessage.StatusType;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Metadata;
-import org.apache.commons.codec.binary.Hex;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -15,16 +15,22 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.codec.binary.Hex;
+
 /**
  * KVCommandProcessor to handle the client requests that contains put or get
  * requests
- * 
+ *
  * @author gr9
  *
  */
 public class KVCommandProcessor implements CommandProcessor {
+	// we forward the lines that have put , get , delete from the Echologic to this
+	// class because it is responsible to interact with the KVStore and handle those
+	// commands
 	private KVStoreProcessor kvStore;
 	private Cache cache;
+
 	// static instance of metadata
 	private static Map<String, Metadata> metadata;
 	// start and end (for now I suppose that I am able to get them from the main)
@@ -34,27 +40,30 @@ public class KVCommandProcessor implements CommandProcessor {
 	// static boolean variable for read only
 	private static boolean readOnly;
 	// boolean variable to know if the server is initiated from the ECS
-	private boolean initiated = false;
-	public KVCommandProcessor(){
+	// volatile keyword because this variable is expected to be changed from another
+	// thread
+	private volatile boolean initiated;
+
+	public KVCommandProcessor() {
 	}
 
 	// new constructor having the metadata instance and start end of the range
-	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache, Map<String, Metadata> metadata, String ip, int port) throws NoSuchAlgorithmException {
+	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache, Map<String, Metadata> metadata, String ip,
+							  int port) throws NoSuchAlgorithmException {
 		this.kvStore = kvStore;
 		this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
 		kvStore.setCache(this.cache);
 		this.metadata = metadata;
-		this.hash = this.hashMD5(ip+port);
+		this.hash = this.hashMD5(ip + port);
 		this.start = metadata.get(hash).getStart();
 		this.end = metadata.get(hash).getEnd();
+		this.initiated = false;
 	}
 
 	public static Logger logger = Logger.getLogger(KVCommandProcessor.class.getName());
 
-	public KVStoreProcessor getKVStore(){
-		return this.kvStore;
-	}
-
+	// if we will use the cache here it should be static so that only one instance
+	// is accessed by all the KVCommandProcessors
 	/**
 	 * process() method that handles the requests
 	 */
@@ -63,7 +72,8 @@ public class KVCommandProcessor implements CommandProcessor {
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
-		Map<String, Metadata> tempMap = new HashMap<>();;
+		Map<String, Metadata> tempMap = new HashMap<>();
+		;
 
 		String reply = command;
 
@@ -79,25 +89,32 @@ public class KVCommandProcessor implements CommandProcessor {
 
 					// put request
 					// adding new read only functionality
-					if (input[0].equals("put") && !readOnly) {
-						if (input.length < 4) {
-							throw new IOException("Put Request needs a key and a value !");
+					if (!initiated) {
+						response = "server_stopped";
+					} else {
+						if (input[0].equals("put") && readOnly) {
+							response = "server_write_lock";
 						}
-						msg = this.kvStore.put(input[1], input[2], input[3]);
-						if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
-							response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
-						} else {
-							response = msg.getStatus().toString() + " " + msg.getKey();
-						}
-					} else if (input[0].equals("get")) {
-						if (input.length != 2) {
-							throw new Exception("Get Request needs only a key !");
-						}
-						msg = this.kvStore.get(input[1]);
-						if (msg.getStatus().equals(StatusType.GET_ERROR)) {
-							response = msg.getStatus().toString() + " " + msg.getKey();
-						} else {
-							response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
+						if (input[0].equals("put") && !readOnly) {
+							if (input.length < 4) {
+								throw new IOException("Put Request needs a key and a value !");
+							}
+							msg = this.kvStore.put(input[1], input[2], input[3]);
+							if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
+								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
+							} else {
+								response = msg.getStatus().toString() + " " + msg.getKey();
+							}
+						} else if (input[0].equals("get")) {
+							if (input.length != 2) {
+								throw new Exception("Get Request needs only a key !");
+							}
+							msg = this.kvStore.get(input[1]);
+							if (msg.getStatus().equals(StatusType.GET_ERROR)) {
+								response = msg.getStatus().toString() + " " + msg.getKey();
+							} else {
+								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
+							}
 						}
 					}
 				} catch (Exception e) {
@@ -107,20 +124,24 @@ public class KVCommandProcessor implements CommandProcessor {
 			} else {
 				reply = "server_not_responsible";
 			}
-		}
-		else if (input[0].equals("logLevel")) {
+		} else if (input[0].equals("logLevel")) {
 			logger.setLevel(Level.parse(input[1]));
 			// here should be a msg !
-		}else if(input[0].equals("transferring")){
+		} else if (input[0].equals("You'reGoodToGo")) {
+			this.initiated = true;
+		} else if (input[0].equals("keyrange")) {
+			// the server will send the metadata to the client
+
+		} else if (input[0].equals("transferring")) {
 			this.kvStore.put(input[1], input[2], input[3]);
-		}
-		else if(input[0].equals("metadata")){
-				String[] entry = command.split("=");
-				hash = entry[0];
-				String[] metadata = entry[1].split(" ");
-				tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]), metadata[2], metadata[3]));
-				this.metadata = tempMap;
-		}else {
+		} else if (input[0].equals("metadata")) {
+			String[] entry = command.split("=");
+			hash = entry[0];
+			String[] metadata = entry[1].split(" ");
+			tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]), metadata[2], metadata[3]));
+			this.metadata = tempMap;
+
+		} else {
 			// here should be the send request because a wrong request will be handled in
 			// the client side
 			// logger.warning("Please check your input and try again.");
@@ -129,6 +150,30 @@ public class KVCommandProcessor implements CommandProcessor {
 			reply = "the server is read only at the moment and can not handle any put request please try later ";
 		return reply;
 	}
+
+	// ip port start end
+	/**
+	 * processMetadata method parses the command with metadata from ecs and updated
+	 * global metadata
+	 *
+	 * @param command given .
+	 */
+	// public void processMetadata(String command) {
+	// Map<String, Metadata> tempMap = new HashMap<>();
+	// String[] input = command.split("\r\n");
+	// String[] entry;
+	// String hash;
+	// String[] metadata;
+	//
+	// for (int i = 0; i < input.length; i++) {
+	// entry = input[i].split("=");
+	// hash = entry[0];
+	// metadata = entry[1].split(" ");
+	// tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]),
+	// metadata[2], metadata[3]));
+	// }
+	// metadataMap = tempMap;
+	// }
 
 	/**
 	 * isInTheRange Method that takes the key sent from the client and verify
@@ -156,13 +201,21 @@ public class KVCommandProcessor implements CommandProcessor {
 		return result;
 	}
 
+	public KVStoreProcessor getKVStore() {
+		return this.kvStore;
+	}
+
 	private String hashMD5(String key) throws NoSuchAlgorithmException {
 		byte[] msgToHash = key.getBytes();
 		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
 
-		//get the result in hexadecimal
+		// get the result in hexadecimal
 		String result = new String(Hex.encodeHex(hashedMsg));
 		return result;
+	}
+
+	public void setInitiated(boolean initiated){
+		this.initiated = initiated;
 	}
 
 	@Override

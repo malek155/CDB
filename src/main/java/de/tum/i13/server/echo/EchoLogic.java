@@ -33,7 +33,7 @@ public class EchoLogic implements CommandProcessor {
 	public EchoLogic(Cache cache, KVStore kvStore) {
 		this.cache = cache;
 		this.kvStore = kvStore;
-		this.CommProc = new KVCommandProcessor(new KVStoreProcessor(), this.cache);
+		this.CommProc = new KVCommandProcessor();
 	}
 
 	public static Logger logger = Logger.getLogger(EchoLogic.class.getName());
@@ -46,7 +46,7 @@ public class EchoLogic implements CommandProcessor {
 	 * @throws Exception if put command cannot be executed (e.g. not connected to
 	 *                   any KV server).
 	 */
-	public String process(String command) {
+	public String process(String command) throws Exception {
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");

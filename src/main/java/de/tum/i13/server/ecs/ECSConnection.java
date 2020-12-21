@@ -52,7 +52,7 @@ public class ECSConnection implements Runnable {
                     this.bigECS.setMoved(false);
                 }
                 if (bigECS.newlyAdded) {
-                    out.write("newserver\r\n" + bigECS.newServer + "\r\n" + bigECS.neighbourHash + "\r\n");
+                    out.write("NewServer\r\n" + bigECS.newServer + "\r\n" + bigECS.neighbourHash + "\r\n");
                     out.flush();
                     bigECS.newlyAdded = false;
                 }
@@ -76,9 +76,9 @@ public class ECSConnection implements Runnable {
     private String process(String line) {
         String reply = "";
         String[] lines = line.split(" ");
-        if (lines[0].equals("mayishutdownplz")) {
+        if (lines[0].equals("MayIShutDownPlease")) {
             String serverTransferTo = this.bigECS.shuttingDown(lines[1]);
-            reply = "yesyoumay\r\n" + serverTransferTo + "\r\n";
+            reply = "YesYouMay\r\n" + serverTransferTo + "\r\n";
         }
         return reply;
     }

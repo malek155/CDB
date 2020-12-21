@@ -120,17 +120,17 @@ public class ConnectionHandleThread extends Thread {
 			BufferedReader inECS = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			PrintWriter outECS = new PrintWriter(socket.getOutputStream());
 			while(notShutDown){
-				if(inECS.readLine().equals("newServer")){
+				if(inECS.readLine().equals("NewServer")){
 					cutter = inECS.readLine();  				// newly added server
 					neighbour = inECS.readLine();			// server we have our data at
-					if(neighbour.equals(this.hash)){
+					if(neighbour.equals(this.hash)) {
 						this.transfer(cutter, neighbour);
 					}
 				}
 				if(shuttingDown){
-					outECS.write("mayishutdownplz " + this.hash + "\r\n");
+					outECS.write("MayIShutDownPlease " + this.hash + "\r\n");
 					outECS.flush();
-					if(inECS.readLine().equals("yesyoumay")){
+					if(inECS.readLine().equals("YesYouMay")){
 						neighbour = inECS.readLine();
 						this.transfer(neighbour, "");
 						notShutDown = false;
@@ -156,6 +156,10 @@ public class ConnectionHandleThread extends Thread {
 
 			while (scanner.hasNextLine()) {
 				outTransfer.write("transferring " + scanner.nextLine() + "\r\n");
+				outTransfer.flush();
+			}
+			if(ours.equals("")){
+				outTransfer.write("You'reGoodToGo" + "\r\n");
 				outTransfer.flush();
 			}
 			scanner.close();

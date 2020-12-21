@@ -41,7 +41,7 @@ public class ECS {
     //One cache to rule them all
     private static Cache cache;
 
-    /*moved is a flag that is set to true when the ranges on the ring must be upadated*/
+    /*moved is a flag that is set to true when the ranges on the ring must be updated*/
     boolean moved;
 
     /**
@@ -71,6 +71,8 @@ public class ECS {
         String hash = this.hashMD5(ip+port);
 
         newMain = new Main(cache, metadataMap);
+
+
 
         //getting an index and a hashvalue of a predecessor to be -> startrange
         if (headServer == null) {     // means we have no servers in rep yet

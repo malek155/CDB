@@ -236,7 +236,7 @@ public class SimpleNioServer {
             String res = cmdProcessor.process(request);
             send(selectionKey, res.getBytes(Constants.TELNET_ENCODING));
 
-        } catch (UnsupportedEncodingException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
