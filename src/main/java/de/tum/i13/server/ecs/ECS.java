@@ -46,7 +46,7 @@ public class ECS {
      *
      * @return String of hashvalue in Hexadecimal
      */
-    private String hashMD5(String key) throws NoSuchAlgorithmException {
+    public String hashMD5(String key) throws NoSuchAlgorithmException {
 
         MessageDigest msg = MessageDigest.getInstance("MD5");
         byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
@@ -66,9 +66,7 @@ public class ECS {
 
         String hash = this.hashMD5(ip+port);
 
-        newMain = new Main(cache, metadataMap);
-
-
+        newMain = new Main();
 
         //getting an index and a hashvalue of a predecessor to be -> startrange
         if (headServer == null) {     // means we have no servers in rep yet
@@ -270,11 +268,11 @@ public class ECS {
 
         //configuring cache for all servers
         if (cfg.cache.equals("FIFO")) {
-            cache = new FIFOLRUCache(cfg.cacheSize, false);
+            ECS.cache = new FIFOLRUCache(cfg.cacheSize, false);
         } else if (cfg.cache.equals("LRU")) {
-            cache = new FIFOLRUCache(cfg.cacheSize, true);
+            ECS.cache = new FIFOLRUCache(cfg.cacheSize, true);
         } else if (cfg.cache.equals("LFU")) {
-            cache = new LFUCache(cfg.cacheSize);
+            ECS.cache = new LFUCache(cfg.cacheSize);
         } else System.out.println("Please check your input for a cache strategy and try again.");
 
         ServerSocket serverSocket = new ServerSocket();

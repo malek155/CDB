@@ -49,15 +49,12 @@ public class KVCommandProcessor implements CommandProcessor {
 	}
 
 	// new constructor having the metadata instance and start end of the range
-	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache, Map<String, Metadata> metadata, String ip,
+	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache, String ip,
 							  int port) throws NoSuchAlgorithmException {
 		this.kvStore = kvStore;
 		this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
 		kvStore.setCache(this.cache);
-		KVCommandProcessor.metadata = metadata;
 		this.hash = this.hashMD5(ip + port);
-		this.start = metadata.get(hash).getStart();
-		this.end = metadata.get(hash).getEnd();
 		this.initiated = false;
 	}
 
@@ -130,6 +127,10 @@ public class KVCommandProcessor implements CommandProcessor {
 			}
 		} else if (input[0].equals("You'reGoodToGo")) {
 			this.initiated = true;
+			if(KVCommandProcessor.metadata != null){
+				this.start = metadata.get(hash).getStart();
+				this.end = metadata.get(hash).getEnd();
+			}
 		} else if (input[0].equals("keyrange")) {
 			reply = "keyrange_success " + KVCommandProcessor.metadata.keySet().stream()
 						.map(key -> KVCommandProcessor.metadata.get(key).getStart() + ","
