@@ -62,11 +62,9 @@ public class ECS {
         moved = true;
         int startIndex;     // number if starthash
         String startHash;   // startHash
-        Main newMain;       // new added server
+        Main newMain = new Main();;       // new added server
 
         String hash = this.hashMD5(ip+port);
-
-        newMain = new Main();
 
         //getting an index and a hashvalue of a predecessor to be -> startrange
         if (headServer == null) {     // means we have no servers in rep yet
@@ -81,8 +79,15 @@ public class ECS {
             Map<Integer, String> indexes = this.locate(hash);
             //findfirst because we have there only one keyvalue :/
             startIndex = indexes.keySet().stream().findFirst().get();
-            startHash = indexes.get(startIndex);        // already incremented hashvalue
-            Main prevServer = this.serverRepository.get(startIndex - 1);
+
+            // checking if we're in the beginning of the circle -> end smaller than start
+            startHash = (startIndex == 0)
+                ? Integer.toHexString((int) Long.parseLong(tailServer.end, 16) + 1)
+                : indexes.get(startIndex);        // already incremented hashvalue
+
+            Main prevServer = (startIndex == 0)
+                ? serverRepository.getLast()
+                : this.serverRepository.get(startIndex - 1);
 
             if (this.tailServer == prevServer) {
                 this.tailServer = newMain;
