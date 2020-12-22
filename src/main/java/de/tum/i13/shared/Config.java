@@ -6,6 +6,7 @@ import de.tum.i13.server.kv.LFUCache;
 import org.w3c.dom.ls.LSOutput;
 import picocli.CommandLine;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
@@ -54,16 +55,6 @@ public class Config {
 
 		// handling loglevels
 		Level level = Level.parse(cfg.loglevel);
-
-		// handling caches
-		if (cfg.cache.equals("FIFO")) {
-			Cache cache = new FIFOLRUCache(cfg.cacheSize, false);
-		} else if (cfg.cache.equals("LRU")) {
-			Cache cache = new FIFOLRUCache(cfg.cacheSize, true);
-		} else if (cfg.cache.equals("LFU")) {
-			Cache cache = new LFUCache(cfg.cacheSize);
-		} else
-			System.out.println("Check your input and try setting a cache strategy again");
 
 		// handling logfile
 		if (!Files.exists(cfg.logfile)) {

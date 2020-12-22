@@ -145,8 +145,8 @@ public class ECS {
             }
         }
 
-        //updating the metadata of the next server
-        metadataMap.get(count).setEnd(newEnd);
+//        //updating the metadata of the next server
+//        metadataMap.get(count).setEnd(newEnd);
 
         //removing the main in server respository
         Main predMain = null;

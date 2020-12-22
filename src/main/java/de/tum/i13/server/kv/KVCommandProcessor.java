@@ -79,7 +79,7 @@ public class KVCommandProcessor implements CommandProcessor {
 
 		String reply = command;
 
-		if (input[0].equals("put") || input[0].equals("get")) {
+		if (input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) {
 			if (isInTheRange(input[1], start, end)) {
 				KVMessage msg;
 				String response = "";
