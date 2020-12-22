@@ -1,10 +1,7 @@
 package de.tum.i13.server.ecs;
 
 import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-// import MD5 for the hashing
-import java.net.Socket;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -41,7 +38,7 @@ public class ECS {
     //One cache to rule them all
     private static Cache cache;
 
-    /*moved is a flag that is set to true when the ranges on the ring must be upadated*/
+    /*moved is a flag that is set to true when the ranges on the ring must be updated*/
     boolean moved;
 
     /**
@@ -59,8 +56,7 @@ public class ECS {
 
     /**
      * addServer method adds a server to serverRepository, its data to metadataMap, updates circular relationships
-     *
-     * @param (ip,port) are credentials of a new server
+     * @param ip, port are credentials of a new server
      */
     private void addServer(String ip, int port) throws NoSuchAlgorithmException {
         moved = true;
@@ -68,9 +64,11 @@ public class ECS {
         String startHash;   // startHash
         Main newMain;       // new added server
 
-        String hash = this.hashMD5(ip + port);
+        String hash = this.hashMD5(ip+port);
 
         newMain = new Main(cache, metadataMap);
+
+
 
         //getting an index and a hashvalue of a predecessor to be -> startrange
         if (headServer == null) {     // means we have no servers in rep yet
@@ -126,7 +124,7 @@ public class ECS {
         Map<Integer, String> returnIndexes = new HashMap();
 
         Metadata mdToRemove = null;
-        String newEnd = null;
+        String newStart = null;
 
         //count is the index of the next server (the new responsible server)
         int count = 1;
@@ -136,15 +134,15 @@ public class ECS {
             if (entry.getKey().toString().equals(hashMD5(ip + port))) {
                 //the metadata of the server to be removed
                 mdToRemove = (Metadata) entry.getValue();
-                newEnd = mdToRemove.getEnd();
+                newStart = mdToRemove.getStart();
                 //remove the metadata
                 mdToRemove = null;
                 break;
             }
         }
 
-        //updating the metadata of the next server
-        metadataMap.get(count).setEnd(newEnd);
+//updating the metadata of the next server
+      metadataMap.get(count).setStart(newStart);
 
         //removing the main in server respository
         Main predMain = null;
@@ -185,13 +183,12 @@ public class ECS {
 
     /**
      * shuttingDown method reallocates the servers and then returns further instructions
-     *
      * @param hash is a hashed value of a server-to-remove
      * @return String, a hash of a receiving server
      */
-    public String shuttingDown(String hash) {
+    public String shuttingDown(String ip, int port, String hash) throws Exception {
         Map<Integer, String> indexes = this.locate(hash);
-//        this.removeServer(hash);
+        this.removeServer(ip, port);
 
         // we get the index of a previous neighbour of server-to-remove -> +2 to get next one
         int thankUnext = indexes.keySet().stream().findFirst().get() + 2;
@@ -199,20 +196,18 @@ public class ECS {
         return serverRepository.get(thankUnext).end;
     }
 
-    public Map<String, Metadata> getMetadataMap() {
+    public Map<String, Metadata> getMetadataMap(){
         return metadataMap;
     }
 
     // find the right location of a new server
-
     /**
      * locate method locates the position, where we should add a new server or helps to locate a definite serverindex
-     *
      * @param hash of a server to add / find
      * @return Map<Integer, String>
-     * by adding:  Integer is responsible for N(natural) index of a server-to-add
-     * String is responsible for hashValue of previous Server+1 -> startHash of a server-to-add
-     * by finding: Integer is responsible for N(natural) index of a previous server
+     *      by adding:  Integer is responsible for N(natural) index of a server-to-add
+     *                  String is responsible for hashValue of previous Server+1 -> startHash of a server-to-add
+     *      by finding: Integer is responsible for N(natural) index of a previous server
      */
     private Map<Integer, String> locate(String hash) {
         Map<Integer, String> returnIndexes = new HashMap();
@@ -236,15 +231,14 @@ public class ECS {
 
     /**
      * isAdded method submits (or not), that we already have this server in a repository
-     *
      * @param ip, port of a possible server to add
      * @return boolean: true if already existing
      */
-    private boolean isAdded(String ip, int port) {
+    private boolean isAdded(String ip, int port){
         boolean added = false;
         for (Map.Entry element : metadataMap.entrySet()) {
             Metadata metadata = (Metadata) element.getValue();
-            if (metadata.getIP().equals(ip) && metadata.getPort() == port) {
+            if(metadata.getIP().equals(ip) && metadata.getPort()==port){
                 added = true;
                 break;
             }
@@ -289,7 +283,7 @@ public class ECS {
             @Override
             public void run() {
                 try {
-                    if (serverSocket != null)
+                    if(serverSocket != null)
                         serverSocket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -301,7 +295,7 @@ public class ECS {
             // binding to the server through specified bootstrap ip and port
             serverSocket.bind(new InetSocketAddress(cfg.bootstrap.getAddress(), cfg.bootstrap.getPort()));
 
-            while (true) {
+            while (true){
                 // Waiting for a server to connect
                 Socket clientSocket = serverSocket.accept();
 
@@ -310,11 +304,11 @@ public class ECS {
 
                 new Thread(connection).start();
 
-                if (!ecs.isAdded(cfg.listenaddr, cfg.port)) {
+                if(!ecs.isAdded(cfg.listenaddr, cfg.port)){
                     ecs.addServer(cfg.listenaddr, cfg.port);
                 }
             }
-        } catch (IOException | NoSuchAlgorithmException ie) {
+        }catch(IOException | NoSuchAlgorithmException ie){
             ie.printStackTrace();
         }
     }
