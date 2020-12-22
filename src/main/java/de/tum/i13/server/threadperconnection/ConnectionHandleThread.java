@@ -15,6 +15,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 /**
  * ConnectionHandleThread class that will handle the thread of each client
@@ -32,8 +33,6 @@ public class ConnectionHandleThread extends Thread {
 	private InetSocketAddress remote = null;
 
 	private static Map<String, Metadata> metadata;
-	private String ip;
-	private int port;
 	private final InetSocketAddress bootstrap;
 	private final String hash;
 	private boolean shuttingDown;
@@ -48,8 +47,6 @@ public class ConnectionHandleThread extends Thread {
 		this.clientSocket = clientSocket;
 		ConnectionHandleThread.metadata = metadata;
 		this.bootstrap = bootstrap;
-		this.ip = ip;
-		this.port = port;
 		this.hash = hashMD5(ip + port);
 	}
 
@@ -85,8 +82,10 @@ public class ConnectionHandleThread extends Thread {
 					done = false;
 				}
 				String firstLine;
+				String res;
 				while ((firstLine = in.readLine()) != null) {
-					String res = cp.process(firstLine);
+					res = cp.process(firstLine);
+
 					out.write(res);
 					out.flush();
 				}

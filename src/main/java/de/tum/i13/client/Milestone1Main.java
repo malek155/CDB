@@ -1,25 +1,36 @@
 package de.tum.i13.client;
 
-
-import de.tum.i13.shared.Metadata;
-import org.apache.commons.codec.binary.Hex;
-
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Stream;
+
+import org.apache.commons.codec.binary.Hex;
+
+import de.tum.i13.shared.Metadata;
 
 public class Milestone1Main {
+	// Metadata static for all clients ?? otherwise I can not access it from main ,
+	// I will initialize it in main for now
+	// private Map<String, Metadata> metadataMap = new HashMap<>();
 
-	private Map<String, Metadata> metadataMap = new HashMap<>();
+	/**
+	 * hashKey method hashes the key a keyvalue to its Hexadecimal value with md5
+	 *
+	 * @return String of hashvalue in Hexadecimal
+	 */
+	private String hashKey(String key) throws NoSuchAlgorithmException {
+
+		return hashMD5(key);
+	}
 
 	/**
 	 * hashTupel method hashes a given key to its Hexadecimal value with md5
 	 *
 	 * @return String of hashvalue in Hexadecimal
 	 */
-	private String hashMD5(String key) throws NoSuchAlgorithmException, NoSuchAlgorithmException {
+	private static String hashMD5(String key) throws NoSuchAlgorithmException {
 		byte[] msgToHash = key.getBytes();
 		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
 
@@ -28,66 +39,147 @@ public class Milestone1Main {
 		return result;
 	}
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
+		Map<String, Metadata> metadataMap = new HashMap<>();
+
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
 		ActiveConnection activeConnection = null;
+
 		for (;;) {
 			System.out.print("EchoClient> ");
 			String line = reader.readLine();
 			String[] command = line.split(" ");
-
+			// System.out.print("command:");
+			// System.out.println(line);
 			switch (command[0]) {
-			case "connect":
-				activeConnection = buildconnection(command);
-				break;
-			case "send":
-				sendmessage(activeConnection, command, line);
-				break;
-			case "put":
-			case "get":
-				int count = 0;
-				while (true) {
-					sendrequest(activeConnection, command, line);
-					String result = activeConnection.readline();
-					if (result.equals("server_write_lock") || result.equals("server_stopped")) {
-						count++;
-					}
-				}
-//				break;
+				case "connect":
+					activeConnection = buildconnection(command);
+					break;
+				case "send":
+					sendmessage(activeConnection, command, line);
+					break;
+				case "put":
+				case "get":
+					// number of retry
+					int count = 0;
+					// the maximum number of retry is 5
+					while (count <= 5) {
+						// we check whether the metadata is empty
+						if (!metadataMap.isEmpty()) {
+							Metadata meta = null;
+							try {
+								// getting the server which is responsible of this key
+								meta = getServer(metadataMap, hashMD5(command[1]));
+							} catch (NoSuchAlgorithmException e) {
+								e.printStackTrace();
+							}
+							String[] a = { null, meta.getIP(), "" + meta.getPort() };
+							// building a new connection to this server
+							activeConnection = buildconnection(a);
 
-			case "disconnect":
-				closeConnection(activeConnection);
-				break;
-			case "help":
-				printHelp();
-				break;
-			case "quit":
-				printEchoLine("Application exit!");
-				return;
-			default:
-				printEchoLine("Unknown command");
+						}
+						// send the request
+						String result = sendrequest(activeConnection, command, line);
+						// if we get a server_write lock or server_stopped notification from the server
+						// we weet for some time and we retry
+						if (result.equals("server_write_lock") || result.equals("server_stopped")) {
+							count++;
+
+							// exponential back-off with jitter
+							int base = 100;
+							int cap = 5000;
+							int a = (int) Math.pow(2, count);
+							int temp = Math.min(cap, base * a);
+							int random = (int) (Math.random() * ((temp / 2) - 0) + 0);
+							Thread.sleep((temp / 2) + random);
+
+						} // if we get a server_not_responsible notification from the server that means
+						// that our metadata is stale and we need to update it
+						else if (result.equals("server_not_responsible")) {
+							// we ask the server to send us the most recent metadata version
+							activeConnection.write("keyrange" + "\r\n");
+							Thread.yield();
+							/*
+							 * reading the metadata from the server and updating its metadata
+							 */
+							String metadata = activeConnection.readline();
+							String[] entry = metadata.split(";");
+							Stream<String> sp = Arrays.stream(entry);
+							Map<String, Metadata> metadataMap2 = new HashMap<>();
+							sp.forEach(str -> {
+								String[] entry2 = str.split(",");
+								if (entry2[0].substring(0, 17).equals("keyrange_success "))
+									entry2[0] = entry2[0].substring(17);
+								String[] ipAndPort = entry2[2].split(":");
+								metadataMap2.put(entry2[1],
+										new Metadata(ipAndPort[0], Integer.parseInt(ipAndPort[1]), entry2[0], entry2[1]));
+
+							});
+							Metadata meta = null;
+							try {
+								// getting the server which is responsible of this key
+								meta = getServer(metadataMap, hashMD5(command[1]));
+							} catch (NoSuchAlgorithmException e) {
+								e.printStackTrace();
+							}
+							String[] a = { null, meta.getIP(), "" + meta.getPort() };
+							// building a new connection to this server
+							activeConnection = buildconnection(a);
+							// retry the request to the new server
+							sendrequest(activeConnection, command, line);
+							// updating count
+							count = 0;
+						}
+					}
+
+					break;
+
+				case "disconnect":
+					closeConnection(activeConnection);
+					break;
+				case "help":
+					printHelp();
+					break;
+				case "quit":
+					printEchoLine("Application exit!");
+					return;
+				default:
+					printEchoLine("Unknown command");
 			}
 		}
 	}
 
-	private static void sendrequest(ActiveConnection activeConnection, String[] command, String line) {
+	private static String sendrequest(ActiveConnection activeConnection, String[] command, String line) {
+		String result = "";
 		if (activeConnection == null) {
 			printEchoLine("Error! Not connected!");
-			return;
+			result = "Error! Not connected!";
+			// return ;
+			return result;
 		}
 		int firstSpace = line.indexOf(" ");
 		if (firstSpace == -1 || firstSpace + 1 >= line.length()) {
 			printEchoLine("Error! Nothing to send!");
-			return;
+			result = "Error! Nothing to send!";
+			// return;
+			return result;
 		}
 
 		activeConnection.write(line);
+		// Pause the current thread for a short time so that we wait for the response of
+		// the server
+		Thread.yield();
 
 		try {
-			printEchoLine(activeConnection.readline());
+			result = activeConnection.readline();
+			// printEchoLine(activeConnection.readline());
+			printEchoLine(result);
+			return result;
+
 		} catch (IOException e) {
 			printEchoLine("Error! Not connected!");
+			return "Error! Not connected!";
 		}
 
 	}
@@ -134,6 +226,9 @@ public class Milestone1Main {
 
 		String cmd = line.substring(firstSpace + 1);
 		activeConnection.write(cmd);
+		// Pause the current thread for a short time so that we wait for the response of
+		// the server
+		Thread.yield();
 
 		try {
 			printEchoLine(activeConnection.readline());
@@ -151,9 +246,44 @@ public class Milestone1Main {
 				printEchoLine(confirmation);
 				return ac;
 			} catch (Exception e) {
-				printEchoLine(e.getMessage());
+				// Todo: separate between could not connect, unknown host and invalid port
+				printEchoLine("Could not connect to server");
 			}
 		}
 		return null;
 	}
+
+	/**
+	 * getServer() method which takes as parameters the actual metadata of the
+	 * client and the hash value of the key and return a Metadata object that
+	 * contains the server which is responsible of this key
+	 *
+	 * @param metadataMap the actual Metadata of the client
+	 * @param hash        the hashvalue of the key
+	 * @return Metadata object that contains informations about the server which is
+	 *         responsible of this key
+	 */
+	private static Metadata getServer(Map<String, Metadata> metadataMap, String hash) {
+		Metadata result = null;
+		int intHash = (int) Long.parseLong(hash, 16);
+		Map<String, Metadata> meta = metadataMap;
+		for (Metadata md : meta.values()) {
+			int intStart = (int) Long.parseLong(md.getStart(), 16);
+			int intEnd = (int) Long.parseLong(md.getEnd(), 16);
+			if (intStart < intEnd) {
+				if (intHash >= intStart && intHash <= intEnd)
+					result = md;
+
+			} else if (intStart > intEnd) {
+				if (intHash >= intStart || intHash <= intEnd) {
+					result = md;
+
+				}
+			}
+
+		}
+		return result;
+
+	}
+
 }

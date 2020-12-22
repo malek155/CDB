@@ -2,18 +2,21 @@ package de.tum.i13.server.kv;
 
 import de.tum.i13.server.kv.KVMessage;
 import de.tum.i13.server.kv.KVMessage.StatusType;
+import de.tum.i13.server.threadperconnection.ConnectionHandleThread;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Metadata;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.apache.commons.codec.binary.Hex;
 
@@ -53,7 +56,7 @@ public class KVCommandProcessor implements CommandProcessor {
 		this.kvStore = kvStore;
 		this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
 		kvStore.setCache(this.cache);
-		this.metadata = metadata;
+		KVCommandProcessor.metadata = metadata;
 		this.hash = this.hashMD5(ip + port);
 		this.start = metadata.get(hash).getStart();
 		this.end = metadata.get(hash).getEnd();
@@ -73,7 +76,6 @@ public class KVCommandProcessor implements CommandProcessor {
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
 		Map<String, Metadata> tempMap = new HashMap<>();
-		;
 
 		String reply = command;
 
@@ -95,11 +97,15 @@ public class KVCommandProcessor implements CommandProcessor {
 						if (input[0].equals("put") && readOnly) {
 							response = "server_write_lock";
 						}
-						if (input[0].equals("put") && !readOnly) {
-							if (input.length < 4) {
+						if ((input[0].equals("put") || input[0].equals("delete"))  && !readOnly) {
+							if (input.length != 4 && input[0].equals("put")) {
 								throw new IOException("Put Request needs a key and a value !");
 							}
-							msg = this.kvStore.put(input[1], input[2], input[3]);
+							else if(input.length != 3 && input[0].equals("delete")){
+								throw new IOException("Delete Request needs only a key !");
+							}
+							msg = input[0].equals("put")? this.kvStore.put(input[1], input[2], input[3])
+									: this.kvStore.put(input[1], null, "");
 							if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							} else {
@@ -130,8 +136,12 @@ public class KVCommandProcessor implements CommandProcessor {
 		} else if (input[0].equals("You'reGoodToGo")) {
 			this.initiated = true;
 		} else if (input[0].equals("keyrange")) {
-			// the server will send the metadata to the client
-
+			reply = "keyrange_success " + KVCommandProcessor.metadata.keySet().stream()
+						.map(key -> KVCommandProcessor.metadata.get(key).getStart() + ","
+								+ key + ","
+								+ KVCommandProcessor.metadata.get(key).getIP() + ":"
+								+ KVCommandProcessor.metadata.get(key).getPort())
+						.collect(Collectors.joining(";"));
 		} else if (input[0].equals("transferring")) {
 			this.kvStore.put(input[1], input[2], input[3]);
 		} else if (input[0].equals("metadata")) {
@@ -150,30 +160,6 @@ public class KVCommandProcessor implements CommandProcessor {
 			reply = "the server is read only at the moment and can not handle any put request please try later ";
 		return reply;
 	}
-
-	// ip port start end
-	/**
-	 * processMetadata method parses the command with metadata from ecs and updated
-	 * global metadata
-	 *
-	 * @param command given .
-	 */
-	// public void processMetadata(String command) {
-	// Map<String, Metadata> tempMap = new HashMap<>();
-	// String[] input = command.split("\r\n");
-	// String[] entry;
-	// String hash;
-	// String[] metadata;
-	//
-	// for (int i = 0; i < input.length; i++) {
-	// entry = input[i].split("=");
-	// hash = entry[0];
-	// metadata = entry[1].split(" ");
-	// tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]),
-	// metadata[2], metadata[3]));
-	// }
-	// metadataMap = tempMap;
-	// }
 
 	/**
 	 * isInTheRange Method that takes the key sent from the client and verify
@@ -206,16 +192,10 @@ public class KVCommandProcessor implements CommandProcessor {
 	}
 
 	private String hashMD5(String key) throws NoSuchAlgorithmException {
-		byte[] msgToHash = key.getBytes();
-		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
+		MessageDigest msg = MessageDigest.getInstance("MD5");
+		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
 
-		// get the result in hexadecimal
-		String result = new String(Hex.encodeHex(hashedMsg));
-		return result;
-	}
-
-	public void setInitiated(boolean initiated){
-		this.initiated = initiated;
+		return new String(digested);
 	}
 
 	@Override
