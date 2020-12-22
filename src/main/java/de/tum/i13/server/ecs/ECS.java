@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 // import MD5 for the hashing
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -16,7 +17,6 @@ import de.tum.i13.server.kv.*;
 import de.tum.i13.server.threadperconnection.Main;
 import de.tum.i13.shared.Config;
 import de.tum.i13.shared.Metadata;
-import org.apache.commons.codec.binary.Hex;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
 import static de.tum.i13.shared.LogSetup.setupLogging;
@@ -53,12 +53,11 @@ public class ECS {
 	 * @return String of hashvalue in Hexadecimal
 	 */
 	private String hashMD5(String key) throws NoSuchAlgorithmException {
-		byte[] msgToHash = key.getBytes();
-		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
 
-		// get the result in hexadecimal
-		String result = new String(Hex.encodeHex(hashedMsg));
-		return result;
+		MessageDigest msg = MessageDigest.getInstance("MD5");
+		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
+
+		return new String(digested);
 	}
 
 	/**

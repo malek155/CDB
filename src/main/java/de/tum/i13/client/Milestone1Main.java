@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -11,8 +12,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Stream;
-
-import org.apache.commons.codec.binary.Hex;
 
 import de.tum.i13.shared.Metadata;
 
@@ -36,13 +35,17 @@ public class Milestone1Main {
 	 *
 	 * @return String of hashvalue in Hexadecimal
 	 */
-	private static String hashMD5(String key) throws NoSuchAlgorithmException {
-		byte[] msgToHash = key.getBytes();
-		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
+	public static String hashMD5(String key) throws NoSuchAlgorithmException {
 
-		// get the result in hexadecimal
-		String result = new String(Hex.encodeHex(hashedMsg));
-		return result;
+		MessageDigest msg = MessageDigest.getInstance("MD5");
+		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
+		return new String(digested);
+//		byte[] msgToHash = key.getBytes();
+//		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
+//
+//		// get the result in hexadecimal
+//		String result = new String(Hex.encodeHex(hashedMsg));
+//		return result;
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException {
@@ -67,6 +70,7 @@ public class Milestone1Main {
 				break;
 			case "put":
 			case "get":
+			case "delete":
 				// number of retry
 				int count = 0;
 				// the maximum number of retry is 5

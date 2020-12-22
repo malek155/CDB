@@ -8,6 +8,7 @@ import de.tum.i13.shared.Metadata;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -15,8 +16,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-
-import org.apache.commons.codec.binary.Hex;
 
 /**
  * KVCommandProcessor to handle the client requests that contains put or get
@@ -46,6 +45,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	private volatile boolean initiated = false;
 
 	public KVCommandProcessor() {
+		this.initiated = false;
 	}
 
 	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache) {
@@ -60,10 +60,11 @@ public class KVCommandProcessor implements CommandProcessor {
 		this.kvStore = kvStore;
 		this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
 		kvStore.setCache(this.cache);
-		this.metadata = metadata;
+		KVCommandProcessor.metadata = metadata;
 		this.hash = this.hashMD5(ip + port);
 		this.start = metadata.get(hash).getStart();
 		this.end = metadata.get(hash).getEnd();
+		this.initiated = false;
 	}
 
 	public static Logger logger = Logger.getLogger(KVCommandProcessor.class.getName());
@@ -79,11 +80,10 @@ public class KVCommandProcessor implements CommandProcessor {
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
 		Map<String, Metadata> tempMap = new HashMap<>();
-		;
 
 		String reply = command;
 
-		if (input[0].equals("put") || input[0].equals("get")) {
+		if (input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) {
 			if (isInTheRange(input[1], start, end)) {
 				KVMessage msg;
 				String response = "";
@@ -101,11 +101,14 @@ public class KVCommandProcessor implements CommandProcessor {
 						if (input[0].equals("put") && readOnly) {
 							response = "server_write_lock";
 						}
-						if (input[0].equals("put") && !readOnly) {
-							if (input.length < 4) {
+						if ((input[0].equals("put") || input[0].equals("delete")) && !readOnly) {
+							if (input.length != 4 && input[0].equals("put")) {
 								throw new IOException("Put Request needs a key and a value !");
+							} else if (input.length != 3 && input[0].equals("delete")) {
+								throw new IOException("Delete Request needs only a key !");
 							}
-							msg = this.kvStore.put(input[1], input[2], input[3]);
+							msg = input[0].equals("put") ? this.kvStore.put(input[1], input[2], input[3])
+									: this.kvStore.put(input[1], null, "");
 							if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							} else {
@@ -130,18 +133,17 @@ public class KVCommandProcessor implements CommandProcessor {
 			} else {
 				reply = "server_not_responsible";
 			}
-		} else if (input[0].equals("logLevel")) {
-			logger.setLevel(Level.parse(input[1]));
-			// here should be a msg !
+		} else if (input[0].equals("You'reGoodToGo")) {
+			this.initiated = true;
 		} else if (input[0].equals("keyrange")) {
-			
+
 			/*
 			 * the server will send the metadata to the client
 			 */
-			// structuring the metadata as following : "keyrange_success <kr-from>, <kr-to>, <ip:port>; <kr-from>, <kr-to>, <ip:port>;..."
+			// structuring the metadata as following : "keyrange_success <kr-from>, <kr-to>,
+			// <ip:port>; <kr-from>, <kr-to>, <ip:port>;..."
 			reply = "keyrange_success " + KVCommandProcessor.metadata.keySet().stream()
-					.map(key -> KVCommandProcessor.metadata.get(key).getStart() + ","
-							+ key + ","
+					.map(key -> KVCommandProcessor.metadata.get(key).getStart() + "," + key + ","
 							+ KVCommandProcessor.metadata.get(key).getIP() + ":"
 							+ KVCommandProcessor.metadata.get(key).getPort())
 					.collect(Collectors.joining(";"));
@@ -219,12 +221,15 @@ public class KVCommandProcessor implements CommandProcessor {
 	}
 
 	private String hashMD5(String key) throws NoSuchAlgorithmException {
-		byte[] msgToHash = key.getBytes();
-		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
-
-		// get the result in hexadecimal
-		String result = new String(Hex.encodeHex(hashedMsg));
-		return result;
+//		byte[] msgToHash = key.getBytes();
+//		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
+//
+//		// get the result in hexadecimal
+//		String result = new String(Hex.encodeHex(hashedMsg));
+//		return result;
+		MessageDigest msg = MessageDigest.getInstance("MD5");
+		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
+		return new String(digested);
 	}
 
 	@Override

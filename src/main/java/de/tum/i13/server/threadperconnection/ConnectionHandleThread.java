@@ -1,7 +1,5 @@
 package de.tum.i13.server.threadperconnection;
 
-import org.apache.commons.codec.binary.Hex;
-
 import de.tum.i13.server.kv.KVCommandProcessor;
 import de.tum.i13.shared.Constants;
 import de.tum.i13.shared.Metadata;
@@ -9,6 +7,7 @@ import de.tum.i13.shared.Metadata;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
@@ -30,8 +29,7 @@ public class ConnectionHandleThread extends Thread {
 	private InetSocketAddress remote = null;
 
 	private static Map<String, Metadata> metadata;
-	private String ip;
-	private int port;
+
 	private final InetSocketAddress bootstrap;
 	private final String hash;
 	private boolean shuttingDown;
@@ -43,8 +41,7 @@ public class ConnectionHandleThread extends Thread {
 		this.clientSocket = clientSocket;
 		ConnectionHandleThread.metadata = metadata;
 		this.bootstrap = bootstrap;
-		this.ip = ip;
-		this.port = port;
+
 		this.hash = hashMD5(ip + port);
 	}
 
@@ -80,8 +77,9 @@ public class ConnectionHandleThread extends Thread {
 					done = false;
 				}
 				String firstLine;
+				String res;
 				while ((firstLine = in.readLine()) != null) {
-					String res = cp.process(firstLine);
+					res = cp.process(firstLine);
 					out.write(res);
 					out.flush();
 				}
@@ -153,6 +151,10 @@ public class ConnectionHandleThread extends Thread {
 				outTransfer.write("transferring " + scanner.nextLine() + "\r\n");
 				outTransfer.flush();
 			}
+			if (ours.equals("")) {
+				outTransfer.write("You'reGoodToGo" + "\r\n");
+				outTransfer.flush();
+			}
 			scanner.close();
 			outTransfer.close();
 		} catch (Exception e) {
@@ -161,12 +163,11 @@ public class ConnectionHandleThread extends Thread {
 	}
 
 	private String hashMD5(String key) throws NoSuchAlgorithmException {
-		byte[] msgToHash = key.getBytes();
-		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
 
-		// get the result in hexadecimal
-		String result = new String(Hex.encodeHex(hashedMsg));
-		return result;
+		MessageDigest msg = MessageDigest.getInstance("MD5");
+		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
+
+		return new String(digested);
 	}
 
 }
