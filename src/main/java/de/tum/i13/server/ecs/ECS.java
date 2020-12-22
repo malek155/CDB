@@ -67,11 +67,10 @@ public class ECS {
 		moved = true;
 		int startIndex; // number if starthash
 		String startHash; // startHash
-		Main newMain; // new added server
+		Main newMain = new Main();
+		; // new added server
 
 		String hash = this.hashMD5(ip + port);
-
-		newMain = new Main(cache, metadataMap);
 
 		// getting an index and a hashvalue of a predecessor to be -> startrange
 		if (headServer == null) { // means we have no servers in rep yet
@@ -86,8 +85,13 @@ public class ECS {
 			Map<Integer, String> indexes = this.locate(hash);
 			// findfirst because we have there only one keyvalue :/
 			startIndex = indexes.keySet().stream().findFirst().get();
-			startHash = indexes.get(startIndex); // already incremented hashvalue
-			Main prevServer = this.serverRepository.get(startIndex - 1);
+
+			// checking if we're in the beginning of the circle -> end smaller than start
+			startHash = (startIndex == 0) ? Integer.toHexString((int) Long.parseLong(tailServer.end, 16) + 1)
+					: indexes.get(startIndex); // already incremented hashvalue
+
+			Main prevServer = (startIndex == 0) ? serverRepository.getLast()
+					: this.serverRepository.get(startIndex - 1);
 
 			if (this.tailServer == prevServer) {
 				this.tailServer = newMain;
@@ -127,7 +131,7 @@ public class ECS {
 		Map<Integer, String> returnIndexes = new HashMap();
 
 		Metadata mdToRemove = null;
-		String newEnd = null;
+		String newStart = null;
 
 		// count is the index of the next server (the new responsible server)
 		int count = 1;
@@ -137,15 +141,15 @@ public class ECS {
 			if (entry.getKey().toString().equals(hashMD5(ip + port))) {
 				// the metadata of the server to be removed
 				mdToRemove = (Metadata) entry.getValue();
-				newEnd = mdToRemove.getEnd();
+				newStart = mdToRemove.getStart();
 				// remove the metadata
 				mdToRemove = null;
 				break;
 			}
 		}
 
-//        //updating the metadata of the next server
-//        metadataMap.get(count).setEnd(newEnd);
+//updating the metadata of the next server
+		metadataMap.get(count).setStart(newStart);
 
 		// removing the main in server respository
 		Main predMain = null;
@@ -281,11 +285,11 @@ public class ECS {
 
 		// configuring cache for all servers
 		if (cfg.cache.equals("FIFO")) {
-			cache = new FIFOLRUCache(cfg.cacheSize, false);
+			ECS.cache = new FIFOLRUCache(cfg.cacheSize, false);
 		} else if (cfg.cache.equals("LRU")) {
-			cache = new FIFOLRUCache(cfg.cacheSize, true);
+			ECS.cache = new FIFOLRUCache(cfg.cacheSize, true);
 		} else if (cfg.cache.equals("LFU")) {
-			cache = new LFUCache(cfg.cacheSize);
+			ECS.cache = new LFUCache(cfg.cacheSize);
 		} else
 			System.out.println("Please check your input for a cache strategy and try again.");
 

@@ -29,7 +29,7 @@ public class KVCommandProcessorTest {
 	@Test
 	public void correctParsingOfPut() throws Exception {
 		// metadata?
-		KVCommandProcessor kvcp = new KVCommandProcessor(kv, cache, null, testIP, testPort);
+		KVCommandProcessor kvcp = new KVCommandProcessor(kv, cache, testIP, testPort);
 		kvcp.process("put key0 value0");
 
 		verify(kv).put("key0", "value0", ecs.hashMD5("key0"));
@@ -39,7 +39,7 @@ public class KVCommandProcessorTest {
 	public void correctParsingOfGet() throws Exception {
 		Cache cache = mock(Cache.class);
 		KVStoreProcessor kv = mock(KVStoreProcessor.class);
-		KVCommandProcessor kvcp = new KVCommandProcessor(kv, cache, null, testIP, testPort);
+		KVCommandProcessor kvcp = new KVCommandProcessor(kv, cache, testIP, testPort);
 		kvcp.process("get key0");
 
 		verify(kv).get("key0");
@@ -49,7 +49,7 @@ public class KVCommandProcessorTest {
 	public void correctUpdateValue() throws Exception {
 		Cache cache = mock(Cache.class);
 		KVStoreProcessor kv = mock(KVStoreProcessor.class);
-		KVCommandProcessor kvcp = new KVCommandProcessor(kv, cache, null, testIP, testPort);
+		KVCommandProcessor kvcp = new KVCommandProcessor(kv, cache, testIP, testPort);
 		kvcp.process("put key0 value1");
 		verify(kv).put("key0", "value1", ecs.hashMD5("key0"));
 	}
@@ -59,7 +59,7 @@ public class KVCommandProcessorTest {
 
 		Cache cache = mock(Cache.class);
 		KVStoreProcessor kv = mock(KVStoreProcessor.class);
-		KVCommandProcessor kvcp = new KVCommandProcessor(kv, cache, null, testIP, testPort);
+		KVCommandProcessor kvcp = new KVCommandProcessor(kv, cache, testIP, testPort);
 		kvcp.process("put key0 null");
 		verify(kv).put("key0", null, ecs.hashMD5("key0"));
 	}

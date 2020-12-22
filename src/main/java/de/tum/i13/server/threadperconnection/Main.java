@@ -30,10 +30,7 @@ public class Main {
 	public String start;
 	public String end;
 
-	public Main(Cache cache, Map<String, Metadata> metadata) {
-		this.cache = cache;
-		this.metadata = metadata;
-
+	public Main() {
 	}
 
 	/**
@@ -69,7 +66,16 @@ public class Main {
 		// binding to the server
 		serverSocket.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
 
-		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache);
+		if (cfg.cache.equals("FIFO")) {
+			cache = new FIFOLRUCache(cfg.cacheSize, false);
+		} else if (cfg.cache.equals("LRU")) {
+			cache = new FIFOLRUCache(cfg.cacheSize, true);
+		} else if (cfg.cache.equals("LFU")) {
+			cache = new LFUCache(cfg.cacheSize);
+		} else
+			System.out.println("Please check your input for a cache strategy and try again.");
+
+		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache, cfg.listenaddr, cfg.port);
 
 		while (true) {
 			// Waiting for client to connect

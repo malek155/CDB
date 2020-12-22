@@ -45,7 +45,6 @@ public class KVCommandProcessor implements CommandProcessor {
 	private volatile boolean initiated = false;
 
 	public KVCommandProcessor() {
-		this.initiated = false;
 	}
 
 	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache) {
@@ -54,16 +53,13 @@ public class KVCommandProcessor implements CommandProcessor {
 		kvStore.setCache(this.cache);
 	}
 
-	// new constructor having the metadata instance and start end of the range
-	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache, Map<String, Metadata> metadata, String ip,
-			int port) throws NoSuchAlgorithmException {
+	// new constructor having the start end of the range
+	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache, String ip, int port)
+			throws NoSuchAlgorithmException {
 		this.kvStore = kvStore;
 		this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
 		kvStore.setCache(this.cache);
-		KVCommandProcessor.metadata = metadata;
 		this.hash = this.hashMD5(ip + port);
-		this.start = metadata.get(hash).getStart();
-		this.end = metadata.get(hash).getEnd();
 		this.initiated = false;
 	}
 
@@ -80,6 +76,7 @@ public class KVCommandProcessor implements CommandProcessor {
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
 		Map<String, Metadata> tempMap = new HashMap<>();
+		;
 
 		String reply = command;
 
@@ -133,10 +130,14 @@ public class KVCommandProcessor implements CommandProcessor {
 			} else {
 				reply = "server_not_responsible";
 			}
+
 		} else if (input[0].equals("You'reGoodToGo")) {
 			this.initiated = true;
+			if (KVCommandProcessor.metadata != null) {
+				this.start = metadata.get(hash).getStart();
+				this.end = metadata.get(hash).getEnd();
+			}
 		} else if (input[0].equals("keyrange")) {
-
 			/*
 			 * the server will send the metadata to the client
 			 */
@@ -165,30 +166,6 @@ public class KVCommandProcessor implements CommandProcessor {
 			reply = "the server is read only at the moment and can not handle any put request please try later ";
 		return reply;
 	}
-
-	// ip port start end
-	/**
-	 * processMetadata method parses the command with metadata from ecs and updated
-	 * global metadata
-	 *
-	 * @param command given .
-	 */
-	// public void processMetadata(String command) {
-	// Map<String, Metadata> tempMap = new HashMap<>();
-	// String[] input = command.split("\r\n");
-	// String[] entry;
-	// String hash;
-	// String[] metadata;
-	//
-	// for (int i = 0; i < input.length; i++) {
-	// entry = input[i].split("=");
-	// hash = entry[0];
-	// metadata = entry[1].split(" ");
-	// tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]),
-	// metadata[2], metadata[3]));
-	// }
-	// metadataMap = tempMap;
-	// }
 
 	/**
 	 * isInTheRange Method that takes the key sent from the client and verify
@@ -221,12 +198,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	}
 
 	private String hashMD5(String key) throws NoSuchAlgorithmException {
-//		byte[] msgToHash = key.getBytes();
-//		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
-//
-//		// get the result in hexadecimal
-//		String result = new String(Hex.encodeHex(hashedMsg));
-//		return result;
+
 		MessageDigest msg = MessageDigest.getInstance("MD5");
 		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
 		return new String(digested);
