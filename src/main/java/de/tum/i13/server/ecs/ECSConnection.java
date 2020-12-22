@@ -68,11 +68,12 @@ public class ECSConnection implements Runnable {
         }
     }
 
-    private String process(String line) {
+    private String process(String line) throws Exception {
         String reply = "";
         String[] lines = line.split(" ");
         if (lines[0].equals("MayIShutDownPlease")) {
-            String serverTransferTo = this.bigECS.shuttingDown(lines[1]);
+            String[] ipport = lines[1].split(":");
+            String serverTransferTo = this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
             reply = "YesYouMay\r\n" + serverTransferTo + "\r\n";
         }
         return reply;

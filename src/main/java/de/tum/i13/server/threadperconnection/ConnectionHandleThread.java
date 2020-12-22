@@ -32,6 +32,8 @@ public class ConnectionHandleThread extends Thread {
 	private final InetSocketAddress bootstrap;
 	private final String hash;
 	private boolean shuttingDown;
+	private String ip;
+	private int port;
 
 	public ConnectionHandleThread(KVCommandProcessor commandProcessor,
 								  Socket clientSocket,
@@ -44,6 +46,8 @@ public class ConnectionHandleThread extends Thread {
 		ConnectionHandleThread.metadata = metadata;
 		this.bootstrap = bootstrap;
 		this.hash = hashMD5(ip + port);
+		this.ip = ip;
+		this.port = port;
 	}
 
 	@Override
@@ -128,7 +132,7 @@ public class ConnectionHandleThread extends Thread {
 					}
 				}
 				if(shuttingDown){
-					outECS.write("MayIShutDownPlease " + this.hash + "\r\n");
+					outECS.write("MayIShutDownPlease " + this.ip + ":" + this.port + " " + this.hash + "\r\n");
 					outECS.flush();
 
 					Thread.yield();

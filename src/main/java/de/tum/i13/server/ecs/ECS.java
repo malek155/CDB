@@ -186,9 +186,9 @@ public class ECS {
      * @param hash is a hashed value of a server-to-remove
      * @return String, a hash of a receiving server
      */
-    public String shuttingDown(String hash){
+    public String shuttingDown(String ip, int port, String hash) throws Exception {
         Map<Integer, String> indexes = this.locate(hash);
-//        this.removeServer(hash);
+        this.removeServer(ip, port);
 
         // we get the index of a previous neighbour of server-to-remove -> +2 to get next one
         int thankUnext = indexes.keySet().stream().findFirst().get() + 2;
