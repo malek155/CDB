@@ -30,7 +30,7 @@ public class Milestone1Main {
 
 	}
 
-	public static void main(String[] args) throws IOException, InterruptedException {
+	public static void main(String[] args) throws IOException, InterruptedException, NoSuchAlgorithmException {
 		Map<String, Metadata> metadataMap = new HashMap<>();
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
@@ -144,7 +144,8 @@ public class Milestone1Main {
 		}
 	}
 
-	private static String sendrequest(ActiveConnection activeConnection, String[] command, String line) {
+	private static String sendrequest(ActiveConnection activeConnection, String[] command, String line)
+			throws NoSuchAlgorithmException {
 		String result = "";
 		if (activeConnection == null) {
 			printEchoLine("Error! Not connected!");
@@ -160,7 +161,7 @@ public class Milestone1Main {
 			return result;
 		}
 
-		activeConnection.write(line);
+		activeConnection.write(line+" "+hashMD5(command[1]));
 		// Pause the current thread for a short time so that we wait for the response of
 		// the server
 		Thread.yield();
