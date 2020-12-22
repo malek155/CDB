@@ -2,12 +2,9 @@ package de.tum.i13.server.ecs;
 
 import de.tum.i13.shared.Constants;
 import de.tum.i13.shared.Metadata;
-import org.apache.commons.codec.binary.Hex;
 
 import java.io.*;
 import java.net.Socket;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -21,27 +18,25 @@ public class ECSConnection implements Runnable {
     }
 
     @Override
-    public void run(){
+    public void run() {
         BufferedReader in = null;
         PrintWriter out = null;
 
-        while (!clientSocket.isClosed()) {
-            try {
-                in = new BufferedReader(
-                        new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
-                out = new PrintWriter(
-                        new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
-
-                String line;
-
-
+        try {
+            in = new BufferedReader(
+                    new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
+            out = new PrintWriter(
+                    new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
+            String line;
+            while (!clientSocket.isClosed()) {
                 line = in.readLine();
                 String message = this.process(line);
+
+                Thread.yield();
                 if (!message.equals("")) {
                     out.write(message);
                     out.flush();
                 }
-
                 if (bigECS.moved) {
                     Map<String, Metadata> map = bigECS.getMetadataMap();
                     String metadata = map.keySet().stream()
@@ -56,19 +51,19 @@ public class ECSConnection implements Runnable {
                     out.flush();
                     bigECS.newlyAdded = false;
                 }
-            } catch (IOException ie) {
-                ie.printStackTrace();
-            } finally {
-                try {
-                    if (out != null)
-                        out.close();
-                    if (in != null) {
-                        out.close();
-                        clientSocket.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
+            }
+        } catch (Exception ie) {
+            ie.printStackTrace();
+        } finally {
+            try {
+                if (out != null)
+                    out.close();
+                if (in != null) {
+                    out.close();
+                    clientSocket.close();
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }

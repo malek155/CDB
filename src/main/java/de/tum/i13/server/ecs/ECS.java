@@ -1,10 +1,7 @@
 package de.tum.i13.server.ecs;
 
 import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-// import MD5 for the hashing
-import java.net.Socket;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -17,7 +14,6 @@ import de.tum.i13.server.kv.*;
 import de.tum.i13.server.threadperconnection.Main;
 import de.tum.i13.shared.Config;
 import de.tum.i13.shared.Metadata;
-import org.apache.commons.codec.binary.Hex;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
 import static de.tum.i13.shared.LogSetup.setupLogging;

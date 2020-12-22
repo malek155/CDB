@@ -1,12 +1,11 @@
 package de.tum.i13.client;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.stream.Stream;
-
-import org.apache.commons.codec.binary.Hex;
 
 import de.tum.i13.shared.Metadata;
 
@@ -26,17 +25,16 @@ public class Milestone1Main {
 	}
 
 	/**
-	 * hashTupel method hashes a given key to its Hexadecimal value with md5
+	 * hashMD5 method hashes a given key to its Hexadecimal value with md5
 	 *
 	 * @return String of hashvalue in Hexadecimal
 	 */
 	private static String hashMD5(String key) throws NoSuchAlgorithmException {
-		byte[] msgToHash = key.getBytes();
-		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
 
-		// get the result in hexadecimal
-		String result = new String(Hex.encodeHex(hashedMsg));
-		return result;
+		MessageDigest msg = MessageDigest.getInstance("MD5");
+		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
+
+		return new String(digested);
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException {

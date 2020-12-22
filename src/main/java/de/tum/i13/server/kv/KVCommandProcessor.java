@@ -18,8 +18,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import org.apache.commons.codec.binary.Hex;
-
 /**
  * KVCommandProcessor to handle the client requests that contains put or get
  * requests
@@ -130,9 +128,6 @@ public class KVCommandProcessor implements CommandProcessor {
 			} else {
 				reply = "server_not_responsible";
 			}
-		} else if (input[0].equals("logLevel")) {
-			logger.setLevel(Level.parse(input[1]));
-			// here should be a msg !
 		} else if (input[0].equals("You'reGoodToGo")) {
 			this.initiated = true;
 		} else if (input[0].equals("keyrange")) {

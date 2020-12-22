@@ -49,23 +49,6 @@ public class Config {
 		Config cfg = new Config();
 		CommandLine.ParseResult parseResult = new CommandLine(cfg)
 				.registerConverter(InetSocketAddress.class, new InetSocketAddressTypeConverter()).parseArgs(args);
-//handling bootstrap
-//        String[] splits = cfg.bootstrap.split(":");
-//        InetSocketAddress bootstrap = new InetSocketAddress(splits[0], Integer.parseInt(splits[1]));
-
-		// handling loglevels
-		Level level = Level.parse(cfg.loglevel);
-
-		// handling logfile
-		if (!Files.exists(cfg.logfile)) {
-			try {
-				Files.createDirectory(cfg.logfile);
-			} catch (IOException e) {
-				System.out.println("Could not create directory" + e.getMessage());
-				e.printStackTrace();
-				System.exit(-1);
-			}
-		}
 
 		// handling the -d directory
 		if (!Files.exists(cfg.dataDir)) {

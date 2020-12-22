@@ -1,21 +1,17 @@
 package de.tum.i13.server.threadperconnection;
 
-import de.tum.i13.server.kv.Cache;
 import de.tum.i13.server.kv.KVCommandProcessor;
-import de.tum.i13.server.kv.KVStoreProcessor;
-import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Constants;
 import de.tum.i13.shared.Metadata;
-import org.apache.commons.codec.binary.Hex;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 /**
  * ConnectionHandleThread class that will handle the thread of each client
@@ -63,6 +59,10 @@ public class ConnectionHandleThread extends Thread {
 		clientConnect();
 	}
 
+
+	/**
+	 * clientConnect method connects with ecs and communicates with it
+	 */
 	private void clientConnect(){
 		boolean done = true;
 		while (!clientSocket.isClosed()) {
@@ -118,6 +118,7 @@ public class ConnectionHandleThread extends Thread {
 		try(Socket socket = new Socket(ip, port)){
 			BufferedReader inECS = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			PrintWriter outECS = new PrintWriter(socket.getOutputStream());
+
 			while(notShutDown){
 				if(inECS.readLine().equals("NewServer")){
 					cutter = inECS.readLine();  				// newly added server
@@ -129,6 +130,8 @@ public class ConnectionHandleThread extends Thread {
 				if(shuttingDown){
 					outECS.write("MayIShutDownPlease " + this.hash + "\r\n");
 					outECS.flush();
+
+					Thread.yield();
 					if(inECS.readLine().equals("YesYouMay")){
 						neighbour = inECS.readLine();
 						this.transfer(neighbour, "");
@@ -143,6 +146,13 @@ public class ConnectionHandleThread extends Thread {
 		}
 	}
 
+
+	/**
+	 * transfer method connects with a neighbour server to transfer all data if it is shutting down,
+	 * 	otherwise only the part of a kvstorage to a new server
+	 * @param transferTo server transfer to
+	 * @param ours is our server to transfer from, a neigbour
+	 */
 	private void transfer(String transferTo, String ours){
 		String newIP = metadata.get(transferTo).getIP();
 		int newPort = metadata.get(transferTo).getPort();
@@ -168,13 +178,17 @@ public class ConnectionHandleThread extends Thread {
 		}
 	}
 
+	/**
+	 * hashMD5 method hashes a given key to its Hexadecimal value with md5
+	 *
+	 * @return String of hashvalue in Hexadecimal
+	 */
 	private String hashMD5(String key) throws NoSuchAlgorithmException {
-		byte[] msgToHash = key.getBytes();
-		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
 
-		//get the result in hexadecimal
-		String result = new String(Hex.encodeHex(hashedMsg));
-		return result;
+		MessageDigest msg = MessageDigest.getInstance("MD5");
+		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
+
+		return new String(digested);
 	}
 
 }
