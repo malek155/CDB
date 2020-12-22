@@ -1,8 +1,6 @@
 package de.tum.i13.server.kv;
 
-import de.tum.i13.server.kv.KVMessage;
 import de.tum.i13.server.kv.KVMessage.StatusType;
-import de.tum.i13.server.threadperconnection.ConnectionHandleThread;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Metadata;
 
@@ -14,7 +12,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -185,6 +182,10 @@ public class KVCommandProcessor implements CommandProcessor {
 
 	public KVStoreProcessor getKVStore() {
 		return this.kvStore;
+	}
+
+	public Map<String, Metadata> getMetadata(){
+		return KVCommandProcessor.metadata;
 	}
 
 	private String hashMD5(String key) throws NoSuchAlgorithmException {

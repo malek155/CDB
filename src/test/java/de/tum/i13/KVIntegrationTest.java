@@ -39,8 +39,11 @@ public class KVIntegrationTest {
             @Override
             public void run() {
                 try {
-                    de.tum.i13.server.nio.StartSimpleNioServer.main(new String[]{port.toString()});
+                    de.tum.i13.server.nio.StartSimpleNioServer.main(new String[] { port.toString() });
                 } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
             }
@@ -62,8 +65,11 @@ public class KVIntegrationTest {
             @Override
             public void run() {
                 try {
-                    de.tum.i13.server.nio.StartSimpleNioServer.main(new String[]{port.toString()});
+                    de.tum.i13.server.nio.StartSimpleNioServer.main(new String[] { port.toString() });
                 } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
             }
@@ -71,9 +77,9 @@ public class KVIntegrationTest {
         th.start(); // started the server
         Thread.sleep(2000);
 
-        for (int tcnt = 0; tcnt < 2; tcnt++){
+        for (int tcnt = 0; tcnt < 2; tcnt++) {
             final int finalTcnt = tcnt;
-            new Thread(){
+            new Thread() {
                 @Override
                 public void run() {
                     try {
@@ -82,7 +88,7 @@ public class KVIntegrationTest {
                         e.printStackTrace();
                     }
                     try {
-                        for(int i = 0; i < 100; i++) {
+                        for (int i = 0; i < 100; i++) {
                             Socket s = new Socket();
                             s.connect(new InetSocketAddress("127.0.0.1", port));
                             String command = "hello " + finalTcnt;
@@ -96,9 +102,7 @@ public class KVIntegrationTest {
             }.start();
         }
 
-
-
-        //Assert.assertThat(doRequest("GET table key"), containsString("valuetest"));
+        // Assert.assertThat(doRequest("GET table key"), containsString("valuetest"));
 
         Thread.sleep(5000);
         th.interrupt();

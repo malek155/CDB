@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verify;
  * @author gr9
  */
 public class KVCommandProcessorTest {
-	//mock objects
+	// mock objects
 	KVStoreProcessor kv = mock(KVStoreProcessor.class);
 	ECS ecs = mock(ECS.class);
 	Cache cache = mock(Cache.class);
@@ -67,12 +67,11 @@ public class KVCommandProcessorTest {
 	@Test
 	public void correctHash() throws NoSuchAlgorithmException {
 		String testStr = "";
-		//this is the hash value of an empty string with MD5
+		// this is the hash value of an empty string with MD5
 		String hashVal = "d41d8cd98f00b204e9800998ecf8427e";
 
 		ECS ecs = mock(ECS.class);
 		Assertions.assertTrue(ecs.hashMD5(testStr).equals(hashVal));
 	}
-
 
 }

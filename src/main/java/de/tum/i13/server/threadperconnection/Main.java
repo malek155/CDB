@@ -25,7 +25,6 @@ public class Main {
 
 	public Main nextServer;
 	private static Cache cache;
-	private static Map<String, Metadata> metadata;
 	public String start;
 	public String end;
 
@@ -77,7 +76,7 @@ public class Main {
 			Socket clientSocket = serverSocket.accept();
 
 			// When we accept a connection, we start a new Thread for this connection
-			Thread th = new ConnectionHandleThread(logic, clientSocket, metadata, cfg.bootstrap, cfg.listenaddr, cfg.port);
+			Thread th = new ConnectionHandleThread(logic, clientSocket, cfg.bootstrap, cfg.listenaddr, cfg.port);
 		}
 
 	}

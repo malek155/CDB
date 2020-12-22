@@ -28,7 +28,6 @@ public class ConnectionHandleThread extends Thread {
 	private PrintWriter out = null;
 	private InetSocketAddress remote = null;
 
-	private static Map<String, Metadata> metadata;
 	private final InetSocketAddress bootstrap;
 	private final String hash;
 	private boolean shuttingDown;
@@ -37,13 +36,11 @@ public class ConnectionHandleThread extends Thread {
 
 	public ConnectionHandleThread(KVCommandProcessor commandProcessor,
 								  Socket clientSocket,
-								  Map<String, Metadata> metadata,
 								  InetSocketAddress bootstrap,
 								  String ip,
 								  int port) throws NoSuchAlgorithmException {
 		this.cp = commandProcessor;
 		this.clientSocket = clientSocket;
-		ConnectionHandleThread.metadata = metadata;
 		this.bootstrap = bootstrap;
 		this.hash = hashMD5(ip + port);
 		this.ip = ip;
@@ -158,8 +155,8 @@ public class ConnectionHandleThread extends Thread {
 	 * @param ours is our server to transfer from, a neigbour
 	 */
 	private void transfer(String transferTo, String ours){
-		String newIP = metadata.get(transferTo).getIP();
-		int newPort = metadata.get(transferTo).getPort();
+		String newIP = cp.getMetadata().get(transferTo).getIP();
+		int newPort = cp.getMetadata().get(transferTo).getPort();
 
 		try (Socket socket = new Socket(newIP, newPort)){
 			File storage = (ours.equals("")) ? this.cp.getKVStore().getStorage("")

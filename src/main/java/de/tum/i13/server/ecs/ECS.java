@@ -10,7 +10,6 @@ import java.util.LinkedList;
 import java.util.Map;
 
 //import Maven dependency
-import de.tum.i13.server.kv.*;
 import de.tum.i13.server.threadperconnection.Main;
 import de.tum.i13.shared.Config;
 import de.tum.i13.shared.Metadata;
@@ -34,9 +33,6 @@ public class ECS {
 
     //metadata, String is a hashkey
     private static Map<String, Metadata> metadataMap = new HashMap<>();
-
-    //One cache to rule them all
-    private static Cache cache;
 
     /*moved is a flag that is set to true when the ranges on the ring must be updated*/
     boolean moved;
@@ -270,15 +266,6 @@ public class ECS {
 
         Config cfg = parseCommandlineArgs(args); // Do not change this
         setupLogging(cfg.logfile);
-
-        //configuring cache for all servers
-        if (cfg.cache.equals("FIFO")) {
-            ECS.cache = new FIFOLRUCache(cfg.cacheSize, false);
-        } else if (cfg.cache.equals("LRU")) {
-            ECS.cache = new FIFOLRUCache(cfg.cacheSize, true);
-        } else if (cfg.cache.equals("LFU")) {
-            ECS.cache = new LFUCache(cfg.cacheSize);
-        } else System.out.println("Please check your input for a cache strategy and try again.");
 
         ServerSocket serverSocket = new ServerSocket();
 

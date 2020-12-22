@@ -1,43 +1,36 @@
 package de.tum.i13.client;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 import java.util.stream.Stream;
 
 import de.tum.i13.shared.Metadata;
 
 public class Milestone1Main {
-	// Metadata static for all clients ?? otherwise I can not access it from main ,
-	// I will initialize it in main for now
-	// private Map<String, Metadata> metadataMap = new HashMap<>();
-
-	/**
-	 * hashKey method hashes the key a keyvalue to its Hexadecimal value with md5
-	 *
-	 * @return String of hashvalue in Hexadecimal
-	 */
-	private String hashKey(String key) throws NoSuchAlgorithmException {
-
-		return hashMD5(key);
-	}
 
 	/**
 	 * hashMD5 method hashes a given key to its Hexadecimal value with md5
 	 *
 	 * @return String of hashvalue in Hexadecimal
 	 */
-	private static String hashMD5(String key) throws NoSuchAlgorithmException {
+	public static String hashMD5(String key) throws NoSuchAlgorithmException {
 
 		MessageDigest msg = MessageDigest.getInstance("MD5");
 		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
-
 		return new String(digested);
+
 	}
 
-	public static void main(String[] args) throws IOException, InterruptedException {
+	public static void main(String[] args) throws IOException, InterruptedException, NoSuchAlgorithmException {
 		Map<String, Metadata> metadataMap = new HashMap<>();
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
@@ -59,6 +52,7 @@ public class Milestone1Main {
 					break;
 				case "put":
 				case "get":
+				case "delete":
 					// number of retry
 					int count = 0;
 					// the maximum number of retry is 5
@@ -129,6 +123,7 @@ public class Milestone1Main {
 							sendrequest(activeConnection, command, line);
 							// updating count
 							count = 0;
+
 						}
 					}
 
@@ -149,7 +144,8 @@ public class Milestone1Main {
 		}
 	}
 
-	private static String sendrequest(ActiveConnection activeConnection, String[] command, String line) {
+	private static String sendrequest(ActiveConnection activeConnection, String[] command, String line)
+			throws NoSuchAlgorithmException {
 		String result = "";
 		if (activeConnection == null) {
 			printEchoLine("Error! Not connected!");
@@ -165,7 +161,7 @@ public class Milestone1Main {
 			return result;
 		}
 
-		activeConnection.write(line);
+		activeConnection.write(line + " " + hashMD5(command[1]));
 		// Pause the current thread for a short time so that we wait for the response of
 		// the server
 		Thread.yield();
@@ -279,6 +275,7 @@ public class Milestone1Main {
 
 				}
 			}
+
 		}
 		return result;
 
