@@ -127,7 +127,7 @@ public class ECS {
         Map<Integer, String> returnIndexes = new HashMap();
 
         Metadata mdToRemove = null;
-        String newEnd = null;
+        String newStart = null;
 
         //count is the index of the next server (the new responsible server)
         int count = 1;
@@ -137,15 +137,15 @@ public class ECS {
             if (entry.getKey().toString().equals(hashMD5(ip + port))) {
                 //the metadata of the server to be removed
                 mdToRemove = (Metadata) entry.getValue();
-                newEnd = mdToRemove.getEnd();
+                newStart = mdToRemove.getStart();
                 //remove the metadata
                 mdToRemove = null;
                 break;
             }
         }
 
-//        //updating the metadata of the next server
-//        metadataMap.get(count).setEnd(newEnd);
+//updating the metadata of the next server
+        metadataMap.get(count).setStart(newStart);
 
         //removing the main in server respository
         Main predMain = null;
