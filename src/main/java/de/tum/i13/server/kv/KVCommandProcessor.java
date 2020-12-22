@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.apache.commons.codec.binary.Hex;
 
@@ -138,7 +139,12 @@ public class KVCommandProcessor implements CommandProcessor {
 			 * the server will send the metadata to the client
 			 */
 			// structuring the metadata as following : "keyrange_success <kr-from>, <kr-to>, <ip:port>; <kr-from>, <kr-to>, <ip:port>;..."
-
+			reply = "keyrange_success " + KVCommandProcessor.metadata.keySet().stream()
+					.map(key -> KVCommandProcessor.metadata.get(key).getStart() + ","
+							+ key + ","
+							+ KVCommandProcessor.metadata.get(key).getIP() + ":"
+							+ KVCommandProcessor.metadata.get(key).getPort())
+					.collect(Collectors.joining(";"));
 		} else if (input[0].equals("transferring")) {
 			this.kvStore.put(input[1], input[2], input[3]);
 		} else if (input[0].equals("metadata")) {

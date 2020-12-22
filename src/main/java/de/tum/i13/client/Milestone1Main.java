@@ -122,6 +122,7 @@ public class Milestone1Main {
 									new Metadata(ipAndPort[0], Integer.parseInt(ipAndPort[1]), entry2[0], entry2[1]));
 
 						});
+						metadataMap = metadataMap2;
 						Metadata meta = null;
 						try {
 							// getting the server which is responsible of this key
