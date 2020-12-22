@@ -16,22 +16,9 @@ import java.util.stream.Stream;
 import de.tum.i13.shared.Metadata;
 
 public class Milestone1Main {
-	// Metadata static for all clients ?? otherwise I can not access it from main ,
-	// I will initialize it in main for now
-	// private Map<String, Metadata> metadataMap = new HashMap<>();
 
 	/**
-	 * hashKey method hashes the key a keyvalue to its Hexadecimal value with md5
-	 *
-	 * @return String of hashvalue in Hexadecimal
-	 */
-	private String hashKey(String key) throws NoSuchAlgorithmException {
-
-		return hashMD5(key);
-	}
-
-	/**
-	 * hashTupel method hashes a given key to its Hexadecimal value with md5
+	 * hashMD5 method hashes a given key to its Hexadecimal value with md5
 	 *
 	 * @return String of hashvalue in Hexadecimal
 	 */
@@ -40,12 +27,7 @@ public class Milestone1Main {
 		MessageDigest msg = MessageDigest.getInstance("MD5");
 		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
 		return new String(digested);
-//		byte[] msgToHash = key.getBytes();
-//		byte[] hashedMsg = MessageDigest.getInstance("MD5").digest(msgToHash);
-//
-//		// get the result in hexadecimal
-//		String result = new String(Hex.encodeHex(hashedMsg));
-//		return result;
+
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException {

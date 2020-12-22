@@ -1,10 +1,7 @@
 package de.tum.i13.server.ecs;
 
 import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-// import MD5 for the hashing
-import java.net.Socket;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -43,7 +40,7 @@ public class ECS {
 
 	/*
 	 * moved is a flag that is set to true when the ranges on the ring must be
-	 * upadated
+	 * updated
 	 */
 	boolean moved;
 
@@ -52,7 +49,7 @@ public class ECS {
 	 *
 	 * @return String of hashvalue in Hexadecimal
 	 */
-	private String hashMD5(String key) throws NoSuchAlgorithmException {
+	public String hashMD5(String key) throws NoSuchAlgorithmException {
 
 		MessageDigest msg = MessageDigest.getInstance("MD5");
 		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
@@ -116,45 +113,45 @@ public class ECS {
 		neighbourHash = newMain.nextServer.end;
 	}
 
-	private void removeServer(ServerSocket ss) throws Exception {
+	/**
+	 * removeServer method deletes a server from the serverRepository and deletes
+	 * its data from metadataMap, updates circular relationships
+	 *
+	 * @param (ip,port) are credentials for the server to remove
+	 */
+	private void removeServer(String ip, int port) throws Exception {
 		moved = true;
 
-		// locate the server to be removed
+		String hash = this.hashMD5(ip + port);
+
 		Map<Integer, String> returnIndexes = new HashMap();
+
 		Metadata mdToRemove = null;
+		String newEnd = null;
 
-		// count is used to define the next server
-		int count = 0;
+		// count is the index of the next server (the new responsible server)
+		int count = 1;
+
 		for (Map.Entry entry : metadataMap.entrySet()) {
-//            if (entry.getKey().toString().equals(hashServer(ss))) {
-//                //the metadata of the server to be removed
-//                mdToRemove = (Metadata) entry.getValue();
-//                break;
-//            }
 			count++;
+			if (entry.getKey().toString().equals(hashMD5(ip + port))) {
+				// the metadata of the server to be removed
+				mdToRemove = (Metadata) entry.getValue();
+				newEnd = mdToRemove.getEnd();
+				// remove the metadata
+				mdToRemove = null;
+				break;
+			}
 		}
-		// end and start of the server to be removed
-		String startToRemove = mdToRemove.getStart();
 
-		// case differentiation ->?
+//        //updating the metadata of the next server
+//        metadataMap.get(count).setEnd(newEnd);
 
-//        removing the server
-//        metadataMap.remove(hashServer(ss));
-
-		// updating the metadata of the next server IN THE METADATA
-		metadataMap.get(count + 1).setStart(startToRemove);
-
-		// now deleting the mains in server respository
+		// removing the main in server respository
 		Main predMain = null;
+
 		// find the main to be deleted
 		Main tempServer = headServer;
-
-		// Main newRespServer = new Main(cache,
-		// hashMD5(predMain.getServerSocket().getInetAddress().toString()),
-		// hashMD5(ss.getInetAddress().toString()));
-
-		// delete the actual server
-		this.serverRepository.remove(count); // not possible in circular structure
 
 		// if respository is empty
 		if (this.headServer == null) {
@@ -195,9 +192,9 @@ public class ECS {
 	 * @param hash is a hashed value of a server-to-remove
 	 * @return String, a hash of a receiving server
 	 */
-	public String shuttingDown(String hash) {
+	public String shuttingDown(String ip, int port, String hash) throws Exception {
 		Map<Integer, String> indexes = this.locate(hash);
-//        this.removeServer(hash);
+		this.removeServer(ip, port);
 
 		// we get the index of a previous neighbour of server-to-remove -> +2 to get
 		// next one

@@ -36,4 +36,8 @@ public class Metadata {
 	public String toString() {
 		return ip + " " + port + " " + start + " " + end;
 	}
+
+	public void setEnd(String end) {
+		this.end = end;
+	}
 }

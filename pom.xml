@@ -89,8 +89,8 @@
 							<goal>single</goal>
 						</goals>
 					</execution>
-					<execution>
-						<id>thread-echo</id>
+					<execution> <!--If we want to build multiple jar-with-dependencies, add multiple executions -->
+						<id>echo</id>
 						<configuration>
 							<appendAssemblyId>false</appendAssemblyId>
 							<archive>
@@ -101,7 +101,26 @@
 							<descriptorRefs>
 								<descriptorRef>jar-with-dependencies</descriptorRef>
 							</descriptorRefs>
-							<finalName>thread-echo-server</finalName>
+							<finalName>echo-server</finalName>
+						</configuration>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+					<execution> <!--If we want to build multiple jar-with-dependencies, add multiple executions -->
+						<id>ecs</id>
+						<configuration>
+							<appendAssemblyId>false</appendAssemblyId>
+							<archive>
+								<manifest>
+									<mainClass>de.tum.i13.server.ecs.ECS</mainClass>
+								</manifest>
+							</archive>
+							<descriptorRefs>
+								<descriptorRef>jar-with-dependencies</descriptorRef>
+							</descriptorRefs>
+							<finalName>ecs</finalName>
 						</configuration>
 						<phase>package</phase>
 						<goals>
@@ -138,7 +157,6 @@
 			<version>2.2-rc1</version>
 			<scope>test</scope>
 		</dependency>
-
 
 	</dependencies>
 
