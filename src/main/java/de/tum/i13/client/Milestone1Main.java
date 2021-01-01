@@ -1,16 +1,9 @@
 package de.tum.i13.client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.ServerSocket;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.security.*;
+import java.util.*;
 import java.util.stream.Stream;
 
 import de.tum.i13.shared.Metadata;
@@ -23,11 +16,9 @@ public class Milestone1Main {
 	 * @return String of hashvalue in Hexadecimal
 	 */
 	public static String hashMD5(String key) throws NoSuchAlgorithmException {
-
 		MessageDigest msg = MessageDigest.getInstance("MD5");
 		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
 		return new String(digested);
-
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException, NoSuchAlgorithmException {
@@ -41,8 +32,6 @@ public class Milestone1Main {
 			System.out.print("EchoClient> ");
 			String line = reader.readLine();
 			String[] command = line.split(" ");
-			// System.out.print("command:");
-			// System.out.println(line);
 			switch (command[0]) {
 				case "connect":
 					activeConnection = buildconnection(command);
@@ -69,7 +58,6 @@ public class Milestone1Main {
 							String[] a = { null, meta.getIP(), "" + meta.getPort() };
 							// building a new connection to this server
 							activeConnection = buildconnection(a);
-
 						}
 						// send the request
 						String result = sendrequest(activeConnection, command, line);
@@ -90,7 +78,7 @@ public class Milestone1Main {
 						// that our metadata is stale and we need to update it
 						else if (result.equals("server_not_responsible")) {
 							// we ask the server to send us the most recent metadata version
-							activeConnection.write("keyrange" + "\r\n");
+							activeConnection.write("keyrange\r\n");
 							Thread.yield();
 							/*
 							 * reading the metadata from the server and updating its metadata
@@ -101,12 +89,11 @@ public class Milestone1Main {
 							Map<String, Metadata> metadataMap2 = new HashMap<>();
 							sp.forEach(str -> {
 								String[] entry2 = str.split(",");
-								if (entry2[0].substring(0, 17).equals("keyrange_success "))
+								if (entry2[0].startsWith("keyrange_success"))
 									entry2[0] = entry2[0].substring(17);
 								String[] ipAndPort = entry2[2].split(":");
 								metadataMap2.put(entry2[1],
 										new Metadata(ipAndPort[0], Integer.parseInt(ipAndPort[1]), entry2[0], entry2[1]));
-
 							});
 							metadataMap = metadataMap2;
 							Metadata meta = null;
@@ -179,7 +166,7 @@ public class Milestone1Main {
 
 	}
 
-	private static void printHelp() {
+	private static void printHelp(){
 		System.out.println("Available commands:");
 		System.out.println(
 				"connect <address> <port> - Tries to establish a TCP- connection to the echo server based on the given server address and the port number of the echo service.");
@@ -261,24 +248,22 @@ public class Milestone1Main {
 	private static Metadata getServer(Map<String, Metadata> metadataMap, String hash) {
 		Metadata result = null;
 		int intHash = (int) Long.parseLong(hash, 16);
-		Map<String, Metadata> meta = metadataMap;
-		for (Metadata md : meta.values()) {
+		for (Metadata md : metadataMap.values()) {
 			int intStart = (int) Long.parseLong(md.getStart(), 16);
 			int intEnd = (int) Long.parseLong(md.getEnd(), 16);
 			if (intStart < intEnd) {
-				if (intHash >= intStart && intHash <= intEnd)
+				if (intHash >= intStart && intHash <= intEnd){
 					result = md;
-
+					break;
+				}
 			} else if (intStart > intEnd) {
 				if (intHash >= intStart || intHash <= intEnd) {
 					result = md;
-
+					break;
 				}
 			}
-
 		}
 		return result;
-
 	}
 
 }

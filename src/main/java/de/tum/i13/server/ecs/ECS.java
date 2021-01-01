@@ -8,8 +8,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.logging.Logger;
 
 //import Maven dependency
+import de.tum.i13.server.kv.KVCommandProcessor;
 import de.tum.i13.server.threadperconnection.Main;
 import de.tum.i13.shared.Config;
 import de.tum.i13.shared.Metadata;
@@ -18,14 +20,13 @@ import static de.tum.i13.shared.Config.parseCommandlineArgs;
 import static de.tum.i13.shared.LogSetup.setupLogging;
 
 //external configuration service
-//assigns a position to both servers and Tuples on the ring
 public class ECS {
-    public String newServer;
-    public String neighbourHash;
-    public boolean newlyAdded;
+    private String newServer;
+    private String neighbourHash;
+    private boolean newlyAdded;
 
     //Servers repository, also a circular structure? meh we'll see
-    LinkedList<Main> serverRepository = new LinkedList<>();
+    private LinkedList<Main> serverRepository = new LinkedList<>();
 
     // chaining servers in a ecs
     private Main headServer;
@@ -35,7 +36,9 @@ public class ECS {
     private static Map<String, Metadata> metadataMap = new HashMap<>();
 
     /*moved is a flag that is set to true when the ranges on the ring must be updated*/
-    boolean moved;
+    private boolean moved;
+
+    public static Logger logger = Logger.getLogger(ECS.class.getName());
 
     /**
      * hashMD5 method hashes a given key to its Hexadecimal value with md5
@@ -43,7 +46,6 @@ public class ECS {
      * @return String of hashvalue in Hexadecimal
      */
     public String hashMD5(String key) throws NoSuchAlgorithmException {
-
         MessageDigest msg = MessageDigest.getInstance("MD5");
         byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
 
@@ -100,13 +102,15 @@ public class ECS {
             prevServer.end = endrangeOfPrev;
         }
 
-        this.metadataMap.put(hash, new Metadata(ip, port, startHash, hash));
+        metadataMap.put(hash, new Metadata(ip, port, startHash, hash));
         this.serverRepository.add(startIndex, newMain);
 
         //for ecs connection
         newlyAdded = true;
         newServer = hash;
         neighbourHash = newMain.nextServer.end;
+
+        logger.info("Added a new server, listening on " + ip + ":" + port);
     }
 
     /**
@@ -143,7 +147,7 @@ public class ECS {
 //updating the metadata of the next server
         metadataMap.get(count).setStart(newStart);
 
-        //removing the main in server respository
+        //removing the main in server repository
         Main predMain = null;
 
         //find the main to be deleted
@@ -178,6 +182,8 @@ public class ECS {
 
             //if ss in the middle (normal case)
         else predMain.nextServer = tempServer.nextServer;
+
+        logger.info("Removed a server, listening on: " + ip + ":" + port);
     }
 
     /**
@@ -188,15 +194,11 @@ public class ECS {
     public String shuttingDown(String ip, int port, String hash) throws Exception {
         Map<Integer, String> indexes = this.locate(hash);
         this.removeServer(ip, port);
-
         // we get the index of a previous neighbour of server-to-remove -> +2 to get next one
         int thankUnext = indexes.keySet().stream().findFirst().get() + 2;
 
+        logger.info("Approving shutting down of a server, rebalancing is in the process");
         return serverRepository.get(thankUnext).end;
-    }
-
-    public Map<String, Metadata> getMetadataMap(){
-        return metadataMap;
     }
 
     // find the right location of a new server
@@ -208,7 +210,7 @@ public class ECS {
      *                  String is responsible for hashValue of previous Server+1 -> startHash of a server-to-add
      *      by finding: Integer is responsible for N(natural) index of a previous server
      */
-    private Map<Integer, String> locate(String hash) {
+    private Map<Integer, String> locate(String hash){
         Map<Integer, String> returnIndexes = new HashMap();
         int count = 0;
         String startRange = "";
@@ -253,6 +255,20 @@ public class ECS {
     public void setMoved(boolean update) {
         this.moved = update;
     }
+
+    public boolean getMoved(){return moved;}
+
+    public Map<String, Metadata> getMetadataMap(){
+        return metadataMap;
+    }
+
+    public String getNewServer(){return newServer;}
+
+    public String getNeighbourHash(){return neighbourHash;}
+
+    public boolean isNewlyAdded(){return this.newlyAdded;}
+
+    public void setNewlyAdded(boolean newly){this.newlyAdded = newly;}
 
     /**
      * main() method where our serversocket will be initialized

@@ -24,11 +24,13 @@ import static de.tum.i13.shared.LogSetup.setupLogging;
 public class Main {
 
 	public Main nextServer;
+	public Main nextNextServer;
 	private static Cache cache;
 	public String start;
 	public String end;
 
 	public Main(){
+		nextNextServer = nextServer.nextServer;
 	}
 
 	/**
@@ -40,7 +42,6 @@ public class Main {
 	public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
 
 		Config cfg = parseCommandlineArgs(args); // Do not change this
-		setupLogging(cfg.logfile);
 		KVStoreProcessor kvStore = new KVStoreProcessor();
 		kvStore.setPath(cfg.dataDir);
 
@@ -52,7 +53,7 @@ public class Main {
 			public void run() {
 				System.out.println("Closing thread per connection kv server");
 				try {
-						serverSocket.close();
+					serverSocket.close();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -76,9 +77,12 @@ public class Main {
 			Socket clientSocket = serverSocket.accept();
 
 			// When we accept a connection, we start a new Thread for this connection
-			Thread th = new ConnectionHandleThread(logic, clientSocket, cfg.bootstrap, cfg.listenaddr, cfg.port);
-		}
+			ConnectionHandleThread clientThread = new ConnectionHandleThread(logic, clientSocket);
+			ECSConnectionHandleThread innerThread = new ECSConnectionHandleThread(logic, cfg.bootstrap, cfg.listenaddr, cfg.port, clientThread);
 
+			new Thread(innerThread).start();
+			new Thread(clientThread).start();
+		}
 	}
 
 

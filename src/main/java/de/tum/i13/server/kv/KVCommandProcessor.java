@@ -33,6 +33,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	private static Map<String, Metadata> metadata;
 	// start and end (for now I suppose that I am able to get them from the main)
 	private String start;
+	private String replicaStart;
 	private String end;
 	private String hash;
 	// static boolean variable for read only
@@ -42,8 +43,10 @@ public class KVCommandProcessor implements CommandProcessor {
 	// thread
 	private volatile boolean initiated;
 
-	public KVCommandProcessor() {
+	public KVCommandProcessor(){
 	}
+
+	public static Logger logger = Logger.getLogger(KVCommandProcessor.class.getName());
 
 	// new constructor having the metadata instance and start end of the range
 	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache, String ip,
@@ -53,14 +56,15 @@ public class KVCommandProcessor implements CommandProcessor {
 		kvStore.setCache(this.cache);
 		this.hash = this.hashMD5(ip + port);
 		this.initiated = false;
+		logger.info("New thread for server started, initializing");
 	}
-
-	public static Logger logger = Logger.getLogger(KVCommandProcessor.class.getName());
 
 	// if we will use the cache here it should be static so that only one instance
 	// is accessed by all the KVCommandProcessors
 	/**
-	 * process() method that handles the requests
+	 * process method that handles the requests
+	 * @param command - command got from a client or another server
+	 * @return answer after processing
 	 */
 	@Override
 	public String process(String command) throws Exception {
@@ -71,8 +75,8 @@ public class KVCommandProcessor implements CommandProcessor {
 
 		String reply = command;
 
-		if (input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) {
-			if (isInTheRange(input[1], start, end)) {
+		if (input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")){
+			if (isInTheRange(input[1], replicaStart, end)){
 				KVMessage msg;
 				String response = "";
 
@@ -83,34 +87,48 @@ public class KVCommandProcessor implements CommandProcessor {
 
 					// put request
 					// adding new read only functionality
-					if (!initiated) {
+					if (!initiated){
+						logger.info("Server is under initialization");
 						response = "server_stopped";
 					} else {
-						if (input[0].equals("put") && readOnly) {
+						if ((input[0].equals("put") || input[0].equals("delete")) && readOnly){
+							logger.info("Server is under rebalancing, only getting keys is available");
 							response = "server_write_lock";
 						}
-						if ((input[0].equals("put") || input[0].equals("delete"))  && !readOnly) {
+						if ((input[0].equals("put") || input[0].equals("delete"))  && !readOnly && isInTheRange(input[1], start, end)){
 							if (input.length != 4 && input[0].equals("put")) {
+								logger.warning("not a suitable command for putting keys-values!");
 								throw new IOException("Put Request needs a key and a value !");
 							}
 							else if(input.length != 3 && input[0].equals("delete")){
+								logger.warning("not a suitable command for deleting keys-values!");
 								throw new IOException("Delete Request needs only a key !");
 							}
 							msg = input[0].equals("put")? this.kvStore.put(input[1], input[2], input[3])
 									: this.kvStore.put(input[1], null, "");
 							if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
+								logger.info("Error occured by getting a value ");
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							} else {
+								logger.info("Put a new kv-pair");
 								response = msg.getStatus().toString() + " " + msg.getKey();
 							}
-						} else if (input[0].equals("get")) {
+						} else if ((input[0].equals("put") || input[0].equals("delete"))  && !readOnly && !isInTheRange(input[1], start, end)){
+							logger.info("Server has only replicas oof requested key, readonly");
+							String value = input[1].equals("delete") ? "" : input[2];
+
+							response = "server_not_responsible " + input[1] + " " + value;
+						} if (input[0].equals("get")) {
 							if (input.length != 2) {
+								logger.warning("not a suitable command for getting values!");
 								throw new Exception("Get Request needs only a key !");
 							}
 							msg = this.kvStore.get(input[1]);
 							if (msg.getStatus().equals(StatusType.GET_ERROR)) {
+								logger.info("Error occured by getting a value ");
 								response = msg.getStatus().toString() + " " + msg.getKey();
 							} else {
+								logger.info("Got a value");
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							}
 						}
@@ -120,6 +138,7 @@ public class KVCommandProcessor implements CommandProcessor {
 				}
 				reply = response;
 			} else {
+				logger.info("Server is not responsible for a key");
 				reply = "server_not_responsible";
 			}
 		} else if (input[0].equals("You'reGoodToGo")) {
@@ -128,6 +147,7 @@ public class KVCommandProcessor implements CommandProcessor {
 				this.start = metadata.get(hash).getStart();
 				this.end = metadata.get(hash).getEnd();
 			}
+			logger.info("Server is ready");
 		} else if (input[0].equals("keyrange")) {
 			reply = "keyrange_success " + KVCommandProcessor.metadata.keySet().stream()
 						.map(key -> KVCommandProcessor.metadata.get(key).getStart() + ","
@@ -135,22 +155,30 @@ public class KVCommandProcessor implements CommandProcessor {
 								+ KVCommandProcessor.metadata.get(key).getIP() + ":"
 								+ KVCommandProcessor.metadata.get(key).getPort())
 						.collect(Collectors.joining(";"));
+			logger.info("Updating metadata on the client side, sending");
 		} else if (input[0].equals("transferring")) {
 			this.kvStore.put(input[1], input[2], input[3]);
+			logger.info("Putting a new kv-pair, transferred from other servers");
 		} else if (input[0].equals("metadata")) {
 			String[] entry = command.split("=");
 			hash = entry[0];
 			String[] metadata = entry[1].split(" ");
 			tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]), metadata[2], metadata[3]));
 			this.metadata = tempMap;
+			logger.info("Updated metadata from ECS");
+		} else if (input[0].equals("keyrange_read")) {
+			// new task
 
-		} else {
-			// here should be the send request because a wrong request will be handled in
-			// the client side
-			// logger.warning("Please check your input and try again.");
+			logger.info("Updating keyranges for a client to read");
 		}
-		if (readOnly && reply.length() == 0)
+		else{
+			reply = "error: wrong command, please try again!";
+			logger.warning("Wrong input from a client");
+		}
+		if (readOnly && reply.length() == 0){
 			reply = "the server is read only at the moment and can not handle any put request please try later ";
+			logger.info("Server is under rebalancing its storage right now, readonly");
+		}
 		return reply;
 	}
 
@@ -198,7 +226,6 @@ public class KVCommandProcessor implements CommandProcessor {
 	@Override
 	public String connectionAccepted(InetSocketAddress address, InetSocketAddress remoteAddress) {
 		logger.info("new connection: " + remoteAddress.toString());
-
 		return "Connection to MSRG Echo server established: " + address.toString() + "\r\n";
 	}
 
