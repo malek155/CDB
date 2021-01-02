@@ -1,22 +1,15 @@
 package de.tum.i13.server.threadperconnection;
 
-import de.tum.i13.server.ecs.ECS;
 import de.tum.i13.server.kv.*;
 import de.tum.i13.shared.Config;
-import de.tum.i13.shared.Metadata;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.Buffer;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
-import static de.tum.i13.shared.LogSetup.setupLogging;
 
 /**
  * Created by chris on 09.01.15.
@@ -78,7 +71,7 @@ public class Main {
 
 			// When we accept a connection, we start a new Thread for this connection
 			ConnectionHandleThread clientThread = new ConnectionHandleThread(logic, clientSocket);
-			ECSConnectionHandleThread innerThread = new ECSConnectionHandleThread(logic, cfg.bootstrap, cfg.listenaddr, cfg.port, clientThread);
+			InnerConnectionHandleThread innerThread = new InnerConnectionHandleThread(logic, cfg.bootstrap, cfg.listenaddr, cfg.port, clientThread);
 
 			new Thread(innerThread).start();
 			new Thread(clientThread).start();

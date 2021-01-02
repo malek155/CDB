@@ -148,6 +148,19 @@ public class KVCommandProcessor implements CommandProcessor {
 				this.end = metadata.get(hash).getEnd();
 			}
 			logger.info("Server is ready");
+		} else if (input[0].equals("replica1")) {
+
+
+
+			// putting a new line in a replica line by line
+			//
+
+			logger.info("Updating replica1");
+		} else if (input[0].equals("replica2")) {
+
+
+			// putting a new line in a replica line by line
+			logger.info("Updating replica2");
 		} else if (input[0].equals("keyrange")) {
 			reply = "keyrange_success " + KVCommandProcessor.metadata.keySet().stream()
 						.map(key -> KVCommandProcessor.metadata.get(key).getStart() + ","

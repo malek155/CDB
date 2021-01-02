@@ -5,13 +5,10 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 //import Maven dependency
-import de.tum.i13.server.kv.KVCommandProcessor;
 import de.tum.i13.server.threadperconnection.Main;
 import de.tum.i13.shared.Config;
 import de.tum.i13.shared.Metadata;
@@ -22,7 +19,9 @@ import static de.tum.i13.shared.LogSetup.setupLogging;
 //external configuration service
 public class ECS {
     private String newServer;
-    private String neighbourHash;
+    private String nextHash;
+    private String prevHash;
+    private String nextNextHash;
     private boolean newlyAdded;
 
     //Servers repository, also a circular structure? meh we'll see
@@ -62,6 +61,8 @@ public class ECS {
         String startHash;   // startHash
         Main newMain = new Main();;       // new added server
 
+        Main prevServer = null;
+
         String hash = this.hashMD5(ip+port);
 
         //getting an index and a hashvalue of a predecessor to be -> startrange
@@ -83,7 +84,7 @@ public class ECS {
                 ? Integer.toHexString((int) Long.parseLong(tailServer.end, 16) + 1)
                 : indexes.get(startIndex);        // already incremented hashvalue
 
-            Main prevServer = (startIndex == 0)
+            prevServer = (startIndex == 0)
                 ? serverRepository.getLast()
                 : this.serverRepository.get(startIndex - 1);
 
@@ -108,7 +109,9 @@ public class ECS {
         //for ecs connection
         newlyAdded = true;
         newServer = hash;
-        neighbourHash = newMain.nextServer.end;
+        nextHash = newMain.nextServer.end;
+        nextNextHash = newMain.nextServer.nextServer.end;
+        if(prevServer != null) prevHash = prevServer.end;
 
         logger.info("Added a new server, listening on " + ip + ":" + port);
     }
@@ -264,7 +267,11 @@ public class ECS {
 
     public String getNewServer(){return newServer;}
 
-    public String getNeighbourHash(){return neighbourHash;}
+    public String getNextHash(){return nextHash;}
+
+    public String getPrevHash(){return prevHash;}
+
+    public String getNextNextHash(){return nextNextHash;}
 
     public boolean isNewlyAdded(){return this.newlyAdded;}
 

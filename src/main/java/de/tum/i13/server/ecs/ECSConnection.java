@@ -51,9 +51,10 @@ public class ECSConnection implements Runnable {
                     out.flush();
                     this.bigECS.setMoved(false);
                 }
-                if (bigECS.isNewlyAdded()) {
+                if (bigECS.isNewlyAdded()){
                     logger.info("Notifying a server, that it needs to send a data to a new server");
-                    out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n" + bigECS.getNeighbourHash() + "\r\n");
+                    out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n" + bigECS.getNextHash() + "\r\n"
+                                    + bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");
                     out.flush();
                     bigECS.setNewlyAdded(false);
                 }
@@ -75,8 +76,8 @@ public class ECSConnection implements Runnable {
         String[] lines = line.split(" ");
         if (lines[0].equals("MayIShutDownPlease")) {
             String[] ipport = lines[1].split(":");
-            String serverTransferTo = this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
-            reply = "YesYouMay\r\n" + serverTransferTo + "\r\n";
+            String nextHash = this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
+            reply = "YesYouMay\r\n" + nextHash + "\r\n";
         }
         return reply;
     }
