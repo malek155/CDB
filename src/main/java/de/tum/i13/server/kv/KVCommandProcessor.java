@@ -35,6 +35,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	private static Map<String, Metadata> metadata;
 	// start and end (for now I suppose that I am able to get them from the main)
 	private String start;
+	private String replicaStart;
 	private String end;
 	private String hash;
 	// static boolean variable for read only
@@ -47,10 +48,14 @@ public class KVCommandProcessor implements CommandProcessor {
 	public KVCommandProcessor() {
 	}
 
+	// Logger
+	public static Logger logger = Logger.getLogger(KVCommandProcessor.class.getName());
+
 	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache) {
 		this.kvStore = kvStore;
 		this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
 		kvStore.setCache(this.cache);
+		logger.info("New thread for server started, initializing");
 	}
 
 	// new constructor having the start end of the range
@@ -61,9 +66,8 @@ public class KVCommandProcessor implements CommandProcessor {
 		kvStore.setCache(this.cache);
 		this.hash = this.hashMD5(ip + port);
 		this.initiated = false;
+		logger.info("New thread for server started, initializing");
 	}
-
-	public static Logger logger = Logger.getLogger(KVCommandProcessor.class.getName());
 
 	// if we will use the cache here it should be static so that only one instance
 	// is accessed by all the KVCommandProcessors
@@ -93,32 +97,41 @@ public class KVCommandProcessor implements CommandProcessor {
 					// put request
 					// adding new read only functionality
 					if (!initiated) {
+						logger.info("Server is under initialization");
 						response = "server_stopped";
 					} else {
 						if (input[0].equals("put") && readOnly) {
+							logger.info("Server is under rebalancing, only getting keys is available");
 							response = "server_write_lock";
 						}
 						if ((input[0].equals("put") || input[0].equals("delete")) && !readOnly) {
 							if (input.length != 4 && input[0].equals("put")) {
+								logger.warning("not a suitable command for putting keys-values!");
 								throw new IOException("Put Request needs a key and a value !");
 							} else if (input.length != 3 && input[0].equals("delete")) {
+								logger.warning("not a suitable command for deleting keys-values!");
 								throw new IOException("Delete Request needs only a key !");
 							}
 							msg = input[0].equals("put") ? this.kvStore.put(input[1], input[2], input[3])
 									: this.kvStore.put(input[1], null, "");
 							if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
+								logger.info("Error occured by getting a value ");
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							} else {
+								logger.info("Put a new kv-pair");
 								response = msg.getStatus().toString() + " " + msg.getKey();
 							}
 						} else if (input[0].equals("get")) {
 							if (input.length != 2) {
+								logger.warning("not a suitable command for getting values!");
 								throw new Exception("Get Request needs only a key !");
 							}
 							msg = this.kvStore.get(input[1]);
 							if (msg.getStatus().equals(StatusType.GET_ERROR)) {
+								logger.info("Error occured by getting a value ");
 								response = msg.getStatus().toString() + " " + msg.getKey();
 							} else {
+								logger.info("Got a value");
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							}
 						}
@@ -128,6 +141,7 @@ public class KVCommandProcessor implements CommandProcessor {
 				}
 				reply = response;
 			} else {
+				logger.info("Server is not responsible for a key");
 				reply = "server_not_responsible";
 			}
 
@@ -195,6 +209,10 @@ public class KVCommandProcessor implements CommandProcessor {
 
 	public KVStoreProcessor getKVStore() {
 		return this.kvStore;
+	}
+
+	public Map<String, Metadata> getMetadata() {
+		return KVCommandProcessor.metadata;
 	}
 
 	private String hashMD5(String key) throws NoSuchAlgorithmException {

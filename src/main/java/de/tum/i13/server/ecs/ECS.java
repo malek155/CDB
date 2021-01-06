@@ -5,12 +5,10 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
+import java.util.logging.Logger;
 
 //import Maven dependency
-import de.tum.i13.server.kv.*;
 import de.tum.i13.server.threadperconnection.Main;
 import de.tum.i13.shared.Config;
 import de.tum.i13.shared.Metadata;
@@ -19,14 +17,15 @@ import static de.tum.i13.shared.Config.parseCommandlineArgs;
 import static de.tum.i13.shared.LogSetup.setupLogging;
 
 //external configuration service
-//assigns a position to both servers and Tuples on the ring
 public class ECS {
-	public String newServer;
-	public String neighbourHash;
-	public boolean newlyAdded;
+	private String newServer;
+	private String nextHash;
+	private String prevHash;
+	private String nextNextHash;
+	private boolean newlyAdded;
 
 	// Servers repository, also a circular structure? meh we'll see
-	LinkedList<Main> serverRepository = new LinkedList<>();
+	private LinkedList<Main> serverRepository = new LinkedList<>();
 
 	// chaining servers in a ecs
 	private Main headServer;
@@ -35,14 +34,13 @@ public class ECS {
 	// metadata, String is a hashkey
 	private static Map<String, Metadata> metadataMap = new HashMap<>();
 
-	// One cache to rule them all
-	private static Cache cache;
-
 	/*
 	 * moved is a flag that is set to true when the ranges on the ring must be
 	 * updated
 	 */
-	boolean moved;
+	private boolean moved;
+
+	public static Logger logger = Logger.getLogger(ECS.class.getName());
 
 	/**
 	 * hashMD5 method hashes a given key to its Hexadecimal value with md5
@@ -50,7 +48,6 @@ public class ECS {
 	 * @return String of hashvalue in Hexadecimal
 	 */
 	public String hashMD5(String key) throws NoSuchAlgorithmException {
-
 		MessageDigest msg = MessageDigest.getInstance("MD5");
 		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
 
@@ -69,6 +66,8 @@ public class ECS {
 		String startHash; // startHash
 		Main newMain = new Main();
 		; // new added server
+
+		Main prevServer = null;
 
 		String hash = this.hashMD5(ip + port);
 
@@ -90,8 +89,7 @@ public class ECS {
 			startHash = (startIndex == 0) ? Integer.toHexString((int) Long.parseLong(tailServer.end, 16) + 1)
 					: indexes.get(startIndex); // already incremented hashvalue
 
-			Main prevServer = (startIndex == 0) ? serverRepository.getLast()
-					: this.serverRepository.get(startIndex - 1);
+			prevServer = (startIndex == 0) ? serverRepository.getLast() : this.serverRepository.get(startIndex - 1);
 
 			if (this.tailServer == prevServer) {
 				this.tailServer = newMain;
@@ -108,13 +106,18 @@ public class ECS {
 			prevServer.end = endrangeOfPrev;
 		}
 
-		this.metadataMap.put(hash, new Metadata(ip, port, startHash, hash));
+		metadataMap.put(hash, new Metadata(ip, port, startHash, hash));
 		this.serverRepository.add(startIndex, newMain);
 
 		// for ecs connection
 		newlyAdded = true;
 		newServer = hash;
-		neighbourHash = newMain.nextServer.end;
+		nextHash = newMain.nextServer.end;
+		nextNextHash = newMain.nextServer.nextServer.end;
+		if (prevServer != null)
+			prevHash = prevServer.end;
+
+		logger.info("Added a new server, listening on " + ip + ":" + port);
 	}
 
 	/**
@@ -151,7 +154,7 @@ public class ECS {
 //updating the metadata of the next server
 		metadataMap.get(count).setStart(newStart);
 
-		// removing the main in server respository
+		// removing the main in server repository
 		Main predMain = null;
 
 		// find the main to be deleted
@@ -187,6 +190,8 @@ public class ECS {
 		// if ss in the middle (normal case)
 		else
 			predMain.nextServer = tempServer.nextServer;
+
+		logger.info("Removed a server, listening on: " + ip + ":" + port);
 	}
 
 	/**
@@ -199,16 +204,12 @@ public class ECS {
 	public String shuttingDown(String ip, int port, String hash) throws Exception {
 		Map<Integer, String> indexes = this.locate(hash);
 		this.removeServer(ip, port);
-
 		// we get the index of a previous neighbour of server-to-remove -> +2 to get
 		// next one
 		int thankUnext = indexes.keySet().stream().findFirst().get() + 2;
 
+		logger.info("Approving shutting down of a server, rebalancing is in the process");
 		return serverRepository.get(thankUnext).end;
-	}
-
-	public Map<String, Metadata> getMetadataMap() {
-		return metadataMap;
 	}
 
 	// find the right location of a new server
@@ -270,6 +271,38 @@ public class ECS {
 		this.moved = update;
 	}
 
+	public boolean getMoved() {
+		return moved;
+	}
+
+	public Map<String, Metadata> getMetadataMap() {
+		return metadataMap;
+	}
+
+	public String getNewServer() {
+		return newServer;
+	}
+
+	public String getNextHash() {
+		return nextHash;
+	}
+
+	public String getPrevHash() {
+		return prevHash;
+	}
+
+	public String getNextNextHash() {
+		return nextNextHash;
+	}
+
+	public boolean isNewlyAdded() {
+		return this.newlyAdded;
+	}
+
+	public void setNewlyAdded(boolean newly) {
+		this.newlyAdded = newly;
+	}
+
 	/**
 	 * main() method where our serversocket will be initialized
 	 *
@@ -282,16 +315,6 @@ public class ECS {
 
 		Config cfg = parseCommandlineArgs(args); // Do not change this
 		setupLogging(cfg.logfile);
-
-		// configuring cache for all servers
-		if (cfg.cache.equals("FIFO")) {
-			ECS.cache = new FIFOLRUCache(cfg.cacheSize, false);
-		} else if (cfg.cache.equals("LRU")) {
-			ECS.cache = new FIFOLRUCache(cfg.cacheSize, true);
-		} else if (cfg.cache.equals("LFU")) {
-			ECS.cache = new LFUCache(cfg.cacheSize);
-		} else
-			System.out.println("Please check your input for a cache strategy and try again.");
 
 		ServerSocket serverSocket = new ServerSocket();
 

@@ -6,11 +6,14 @@ import de.tum.i13.shared.Metadata;
 import java.io.*;
 import java.net.Socket;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class ECSConnection implements Runnable {
 	private Socket clientSocket;
 	private ECS bigECS; // is watching you
+
+	public static Logger logger = Logger.getLogger(ECSConnection.class.getName());
 
 	public ECSConnection(Socket clientSocket, ECS bigECS) {
 		this.clientSocket = clientSocket;
@@ -19,12 +22,15 @@ public class ECSConnection implements Runnable {
 
 	@Override
 	public void run() {
-		BufferedReader in = null;
-		PrintWriter out = null;
 
 		try {
-			in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
-			out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
+			BufferedReader in = new BufferedReader(
+					new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
+			PrintWriter out = new PrintWriter(
+					new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
+
+			logger.info("Started the ECS connection");
+
 			String line;
 			while (!clientSocket.isClosed()) {
 				line = in.readLine();
@@ -35,7 +41,8 @@ public class ECSConnection implements Runnable {
 					out.write(message);
 					out.flush();
 				}
-				if (bigECS.moved) {
+				if (bigECS.getMoved()) {
+					logger.info("Updating metadata in servers");
 					Map<String, Metadata> map = bigECS.getMetadataMap();
 					String metadata = map.keySet().stream()
 							.map(key -> "metadata " + key + "=" + map.get(key).toString())
@@ -44,25 +51,23 @@ public class ECSConnection implements Runnable {
 					out.flush();
 					this.bigECS.setMoved(false);
 				}
-				if (bigECS.newlyAdded) {
-					out.write("NewServer\r\n" + bigECS.newServer + "\r\n" + bigECS.neighbourHash + "\r\n");
+				if (bigECS.isNewlyAdded()) {
+					logger.info("Notifying a server, that it needs to send a data to a new server");
+					out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n" + bigECS.getNextHash() + "\r\n"
+							+ bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");
 					out.flush();
-					bigECS.newlyAdded = false;
+					bigECS.setNewlyAdded(false);
 				}
+			}
+			logger.info("Closing the ECS connection");
+			if (out != null)
+				out.close();
+			if (in != null) {
+				in.close();
+				clientSocket.close();
 			}
 		} catch (Exception ie) {
 			ie.printStackTrace();
-		} finally {
-			try {
-				if (out != null)
-					out.close();
-				if (in != null) {
-					out.close();
-					clientSocket.close();
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 		}
 	}
 
@@ -71,8 +76,8 @@ public class ECSConnection implements Runnable {
 		String[] lines = line.split(" ");
 		if (lines[0].equals("MayIShutDownPlease")) {
 			String[] ipport = lines[1].split(":");
-			String serverTransferTo = this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
-			reply = "YesYouMay\r\n" + serverTransferTo + "\r\n";
+			String nextHash = this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
+			reply = "YesYouMay\r\n" + nextHash + "\r\n";
 		}
 		return reply;
 	}

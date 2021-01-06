@@ -2,20 +2,14 @@ package de.tum.i13.server.threadperconnection;
 
 import de.tum.i13.server.kv.*;
 import de.tum.i13.shared.Config;
-import de.tum.i13.shared.Metadata;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.Buffer;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
-import static de.tum.i13.shared.LogSetup.setupLogging;
 
 /**
  * Created by chris on 09.01.15.
@@ -23,14 +17,13 @@ import static de.tum.i13.shared.LogSetup.setupLogging;
 public class Main {
 
 	public Main nextServer;
-
+	public Main nextNextServer;
 	private static Cache cache;
-	private static Map<String, Metadata> metadata;
-
 	public String start;
 	public String end;
 
 	public Main() {
+		nextNextServer = nextServer.nextServer;
 	}
 
 	/**
@@ -38,12 +31,10 @@ public class Main {
 	 *
 	 * @param args
 	 * @throws IOException
-	 * @throws NoSuchAlgorithmException
 	 */
 	public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
 
 		Config cfg = parseCommandlineArgs(args); // Do not change this
-		setupLogging(cfg.logfile);
 		KVStoreProcessor kvStore = new KVStoreProcessor();
 		kvStore.setPath(cfg.dataDir);
 
@@ -54,9 +45,7 @@ public class Main {
 			@Override
 			public void run() {
 				System.out.println("Closing thread per connection kv server");
-//				shuttingDown = true;
 				try {
-//					if(shutDown)
 					serverSocket.close();
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -82,9 +71,12 @@ public class Main {
 			Socket clientSocket = serverSocket.accept();
 
 			// When we accept a connection, we start a new Thread for this connection
-			Thread th = new ConnectionHandleThread(logic, clientSocket, metadata, cfg.bootstrap, cfg.listenaddr,
-					cfg.port);
-			th.start();
+			ConnectionHandleThread clientThread = new ConnectionHandleThread(logic, clientSocket);
+			InnerConnectionHandleThread innerThread = new InnerConnectionHandleThread(logic, cfg.bootstrap,
+					cfg.listenaddr, cfg.port, clientThread);
+
+			new Thread(innerThread).start();
+			new Thread(clientThread).start();
 		}
 	}
 

@@ -18,10 +18,11 @@ import java.util.stream.Stream;
 public class KVStoreProcessor implements KVStore {
 	private Path path;
 	private File storage;
+	private File replica1;
+	private File replica2;
 	private Scanner scanner;
 	private KVMessageProcessor kvmessage;
 	private String[] keyvalue;
-	private boolean change;
 	private Cache cache;
 
 	public void setPath(Path path) {
@@ -177,5 +178,21 @@ public class KVStoreProcessor implements KVStore {
 
 			return toReturn;
 		}
+	}
+
+	public File getReplica1() {
+		return replica1;
+	}
+
+	public File getReplica2() {
+		return replica2;
+	}
+
+	public void removeReplica1() {
+
+	}
+
+	public void removeReplica2() {
+
 	}
 }
