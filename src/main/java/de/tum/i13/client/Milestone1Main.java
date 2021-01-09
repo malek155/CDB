@@ -1,6 +1,7 @@
 package de.tum.i13.client;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.util.*;
@@ -18,7 +19,9 @@ public class Milestone1Main {
 	public static String hashMD5(String key) throws NoSuchAlgorithmException {
 		MessageDigest msg = MessageDigest.getInstance("MD5");
 		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
-		return new String(digested);
+		String myHash = new BigInteger(1, digested).toString(16);
+
+		return myHash;
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException, NoSuchAlgorithmException {

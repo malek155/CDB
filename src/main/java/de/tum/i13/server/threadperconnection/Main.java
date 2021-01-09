@@ -17,14 +17,11 @@ import static de.tum.i13.shared.Config.parseCommandlineArgs;
 public class Main {
 
 	public Main nextServer;
-	public Main nextNextServer;
 	private static Cache cache;
 	public String start;
 	public String end;
 
-	public Main(){
-		nextNextServer = nextServer.nextServer;
-	}
+	public Main(){}
 
 	/**
 	 * main() method where our serversocket will be initialized
@@ -52,6 +49,8 @@ public class Main {
 				}
 			}
 		});
+
+
 		// binding to the server
 		serverSocket.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
 
@@ -65,15 +64,15 @@ public class Main {
 
 		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache, cfg.listenaddr, cfg.port);
 
+		InnerConnectionHandleThread innerThread = new InnerConnectionHandleThread(logic, cfg.bootstrap, cfg.listenaddr, cfg.port);
+		new Thread(innerThread).start();
+
 		while (true) {
 			// Waiting for client to connect
 			Socket clientSocket = serverSocket.accept();
 
 			// When we accept a connection, we start a new Thread for this connection
 			ConnectionHandleThread clientThread = new ConnectionHandleThread(logic, clientSocket);
-			InnerConnectionHandleThread innerThread = new InnerConnectionHandleThread(logic, cfg.bootstrap, cfg.listenaddr, cfg.port, clientThread);
-
-			new Thread(innerThread).start();
 			new Thread(clientThread).start();
 		}
 	}

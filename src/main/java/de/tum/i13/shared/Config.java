@@ -24,7 +24,7 @@ public class Config {
 	@CommandLine.Option(names = "-a", description = "which address the server should listen to", defaultValue = "127.0.0.1")
 	public String listenaddr;
 
-	@CommandLine.Option(names = "-b", description = "bootstrap broker where clients and other brokers connect first to retrieve configuration, port and ip, e.g., 192.168.1.1:5153", defaultValue = "clouddatabases.i13.in.tum.de:5153")
+	@CommandLine.Option(names = "-b", description = "bootstrap broker where clients and other brokers connect first to retrieve configuration, port and ip, e.g., 192.168.1.1:5153", defaultValue = "127.0.0.2:5153")
 	public InetSocketAddress bootstrap;
 
 	@CommandLine.Option(names = "-d", description = "Directory for files", defaultValue = "data/")

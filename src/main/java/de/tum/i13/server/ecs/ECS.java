@@ -1,6 +1,7 @@
 package de.tum.i13.server.ecs;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -47,19 +48,21 @@ public class ECS {
     public String hashMD5(String key) throws NoSuchAlgorithmException {
         MessageDigest msg = MessageDigest.getInstance("MD5");
         byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
+        String myHash = new BigInteger(1, digested).toString(16);
 
-        return new String(digested);
+        return myHash;
     }
 
     /**
      * addServer method adds a server to serverRepository, its data to metadataMap, updates circular relationships
      * @param ip, port are credentials of a new server
      */
-    private void addServer(String ip, int port) throws NoSuchAlgorithmException {
+    public void addServer(String ip, int port) throws NoSuchAlgorithmException {
+        logger.info("started adding a servers");
         moved = true;
         int startIndex;     // number if starthash
         String startHash;   // startHash
-        Main newMain = new Main();;       // new added server
+        Main newMain = new Main();       // new added server
 
         Main prevServer = null;
 
@@ -69,11 +72,13 @@ public class ECS {
         if (headServer == null) {     // means we have no servers in rep yet
             startIndex = 0;
             //the beginning of th range is an incremented hashvalue
-            startHash = Integer.toHexString((int) Long.parseLong(hash, 16) + 1);
+
+            startHash = this.arithmeticHash(hash, true);
 
             this.headServer = newMain;
             this.tailServer = newMain;
             this.tailServer.nextServer = headServer;
+            newMain.nextServer = tailServer;
         } else {
             Map<Integer, String> indexes = this.locate(hash);
             //findfirst because we have there only one keyvalue :/
@@ -81,7 +86,7 @@ public class ECS {
 
             // checking if we're in the beginning of the circle -> end smaller than start
             startHash = (startIndex == 0)
-                ? Integer.toHexString((int) Long.parseLong(tailServer.end, 16) + 1)
+                ? this.arithmeticHash(tailServer.end, true)
                 : indexes.get(startIndex);        // already incremented hashvalue
 
             prevServer = (startIndex == 0)
@@ -97,9 +102,9 @@ public class ECS {
             prevServer.nextServer = newMain;
 
             //change next server startrange
-            this.serverRepository.get(startIndex + 1).start = Integer.toHexString((int) Long.parseLong(hash, 16) + 1);
+            this.serverRepository.get(startIndex + 1).start = this.arithmeticHash(hash, true);
             //change prev server endrange
-            String endrangeOfPrev = Integer.toHexString((int) Long.parseLong(startHash, 16) - 1);
+            String endrangeOfPrev = this.arithmeticHash(startHash, false);
             prevServer.end = endrangeOfPrev;
         }
 
@@ -217,18 +222,25 @@ public class ECS {
         Map<Integer, String> returnIndexes = new HashMap();
         int count = 0;
         String startRange = "";
-        int hashedValue = (int) Long.parseLong(hash, 16);
+        int hashToLocateFst = (int) Long.parseLong(hash.substring(0, hash.length()/2), 16);
+        int hashToLocateSnd = (int) Long.parseLong(hash.substring(hash.length()/2), 16);
+
+        String hashToCmpString;
+        int hashToCmpFst;
+        int hashToCmpSnd;
         //looking for an interval for our new hashed value
         for (Map.Entry element : metadataMap.entrySet()) {
-            String hashString = (String) element.getKey();
-            int intHash = (int) Long.parseLong(hashString, 16);
-            if (hashedValue <= intHash) {
-                // start index
+            hashToCmpString = (String) element.getKey();
+            hashToCmpFst = (int) Long.parseLong(hashToCmpString.substring(0, hashToCmpString.length()/2), 16);
+            hashToCmpSnd = (int) Long.parseLong(hashToCmpString.substring(hashToCmpString.length()/2), 16);
+
+            if (hashToLocateFst <= hashToCmpFst || (hashToLocateFst == hashToCmpFst && hashToLocateSnd <= hashToCmpSnd)) {
                 returnIndexes.put(count, startRange);
                 break;
             }
+
             count++;
-            startRange = Integer.toHexString(intHash + 1);
+            startRange = arithmeticHash(hashToCmpString, true);
         }
         return returnIndexes;
     }
@@ -238,7 +250,7 @@ public class ECS {
      * @param ip, port of a possible server to add
      * @return boolean: true if already existing
      */
-    private boolean isAdded(String ip, int port){
+    public boolean isAdded(String ip, int port){
         boolean added = false;
         for (Map.Entry element : metadataMap.entrySet()) {
             Metadata metadata = (Metadata) element.getValue();
@@ -259,6 +271,24 @@ public class ECS {
         this.moved = update;
     }
 
+    private String arithmeticHash(String hash, boolean increment){
+        String hashFstString = hash.substring(hash.length()/2);
+
+        String hashSndString = hash.substring(0, hash.length()/2);
+        char letter = hashSndString.charAt(0);
+        int hashSnd = (int) Long.parseLong(hashSndString, 16);
+
+        if (increment) hashSnd++; else hashSnd--;
+
+        hashSndString = Integer.toHexString(hashSnd);
+        if (hashSndString.charAt(0) != letter){
+            int hashFst = (int) Long.parseLong(hashFstString, 16);
+            if (increment) hashFst++; else hashFst--;
+            hashFstString = Integer.toHexString(hashFst);
+        }
+        return hashFstString+hashSndString;
+    }
+
     public boolean getMoved(){return moved;}
 
     public Map<String, Metadata> getMetadataMap(){
@@ -276,6 +306,8 @@ public class ECS {
     public boolean isNewlyAdded(){return this.newlyAdded;}
 
     public void setNewlyAdded(boolean newly){this.newlyAdded = newly;}
+
+    public LinkedList<Main> getServerRepository(){return this.serverRepository;}
 
     /**
      * main() method where our serversocket will be initialized
@@ -316,12 +348,8 @@ public class ECS {
                 ECSConnection connection = new ECSConnection(clientSocket, ecs);
 
                 new Thread(connection).start();
-
-                if(!ecs.isAdded(cfg.listenaddr, cfg.port)){
-                    ecs.addServer(cfg.listenaddr, cfg.port);
-                }
             }
-        }catch(IOException | NoSuchAlgorithmException ie){
+        }catch(IOException ie){
             ie.printStackTrace();
         }
     }

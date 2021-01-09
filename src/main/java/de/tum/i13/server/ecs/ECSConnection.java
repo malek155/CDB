@@ -2,7 +2,6 @@ package de.tum.i13.server.ecs;
 
 import de.tum.i13.shared.Constants;
 import de.tum.i13.shared.Metadata;
-import org.jcp.xml.dsig.internal.SignerOutputStream;
 
 import java.io.*;
 import java.net.Socket;
@@ -52,7 +51,7 @@ public class ECSConnection implements Runnable {
                     out.flush();
                     this.bigECS.setMoved(false);
                 }
-                if (bigECS.isNewlyAdded()){
+                if (bigECS.isNewlyAdded() && !bigECS.getServerRepository().isEmpty()){
                     logger.info("Notifying a server, that it needs to send a data to a new server");
                     out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n" + bigECS.getNextHash() + "\r\n"
                                     + bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");
@@ -73,12 +72,20 @@ public class ECSConnection implements Runnable {
     }
 
     private String process(String line) throws Exception {
+        logger.info("processing");
         String reply = "";
+        String[] ipport;
         String[] lines = line.split(" ");
         if (lines[0].equals("MayIShutDownPlease")) {
-            String[] ipport = lines[1].split(":");
+            ipport = lines[1].split(":");
             String nextHash = this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
             reply = "YesYouMay\r\n" + nextHash + "\r\n";
+        }
+        else if (lines[0].equals("IAmNew")) {
+            ipport = lines[1].split(":");
+            if(!bigECS.isAdded(ipport[0], Integer.parseInt(ipport[1]))){
+                bigECS.addServer(ipport[0], Integer.parseInt(ipport[1]));
+            }
         }
         return reply;
     }
