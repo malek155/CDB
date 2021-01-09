@@ -109,7 +109,7 @@
                         </goals>
                     </execution>
                     <execution> <!--If we want to build multiple jar-with-dependencies, add multiple executions-->
-                        <id>ecs</id>
+                        <id>ecs-server</id>
                         <configuration>
                             <appendAssemblyId>false</appendAssemblyId>
                             <archive>
@@ -120,7 +120,7 @@
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
-                            <finalName>ecs</finalName>
+                            <finalName>ecs-server</finalName>
                         </configuration>
                         <phase>package</phase>
                         <goals>

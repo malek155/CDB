@@ -2,6 +2,7 @@ package de.tum.i13.server.ecs;
 
 import de.tum.i13.shared.Constants;
 import de.tum.i13.shared.Metadata;
+import org.jcp.xml.dsig.internal.SignerOutputStream;
 
 import java.io.*;
 import java.net.Socket;
