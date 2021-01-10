@@ -47,11 +47,11 @@ public class ECSConnection implements Runnable {
                     String metadata = map.keySet().stream()
                             .map(key -> "metadata " + key + "=" + map.get(key).toString())
                             .collect(Collectors.joining("\r\n"));
-                    out.write(metadata);
+                    out.write(metadata + "\r\n");
                     out.flush();
                     this.bigECS.setMoved(false);
                 }
-                if (bigECS.isNewlyAdded() && !bigECS.getServerRepository().isEmpty()){
+                if (bigECS.isNewlyAdded() && bigECS.getServerRepository().size() > 1){
                     logger.info("Notifying a server, that it needs to send a data to a new server");
                     out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n" + bigECS.getNextHash() + "\r\n"
                                     + bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");

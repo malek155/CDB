@@ -1,11 +1,15 @@
 package de.tum.i13.server.kv;
 
+import de.tum.i13.server.threadperconnection.ConnectionHandleThread;
+
 import java.io.*;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Scanner;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,6 +28,7 @@ public class KVStoreProcessor implements KVStore {
 	private KVMessageProcessor kvmessage;
 	private String[] keyvalue;
 	private Cache cache;
+	private Logger logger;
 
 	public void setPath(Path path) {
 		this.path = path;
@@ -33,8 +38,18 @@ public class KVStoreProcessor implements KVStore {
 		this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
 	}
 
-	public KVStoreProcessor() {
-		storage = new File(String.valueOf(path));
+	public KVStoreProcessor(Path path1) throws IOException {
+		this.setPath(path1);
+		storage = new File(String.valueOf(this.path) + "/storage.txt");
+		logger = Logger.getLogger(ConnectionHandleThread.class.getName());
+//		Files.createDirectories(this.path);
+		if (storage.createNewFile()){
+			logger.info("has been created");
+		}
+		else{
+			logger.info("already");
+		}
+
 	}
 
 	// We have to put the both methods as synchronized because many threads will
@@ -49,21 +64,20 @@ public class KVStoreProcessor implements KVStore {
 	@Override
 	public synchronized KVMessageProcessor put(String key, String value, String hash) throws Exception {
 		boolean added;
-		int hashToAdd = (int) Long.parseLong(hash, 16);
-		int hashToCompare;
+		BigInteger hashToAdd = new BigInteger(hash, 16);
+		BigInteger hashToCompare;
 		try {
 			scanner = new Scanner(new FileInputStream(storage));
 			while (scanner.hasNextLine()) {
 				String replacingLine;
 				String line = scanner.nextLine();
 				keyvalue = line.split(" ");
-				hashToCompare = (int) Long.parseLong(keyvalue[2], 16);
-				if (hashToAdd >= hashToCompare) {
-
+				hashToCompare = new BigInteger(keyvalue[2], 16);
+				if (hashToAdd.compareTo(hashToCompare)>= 0) {
 					Path path1 = Paths.get(String.valueOf(path));
 					Stream<String> lines = Files.lines(path1);
 
-					if (hashToAdd == hashToCompare) {
+					if (hashToAdd.equals(hashToCompare)) {
 						replacingLine = (value == null) ? "" : key + " " + value + " " + hash + "\r\n";
 						added = false;
 					} else {
@@ -88,9 +102,9 @@ public class KVStoreProcessor implements KVStore {
 			}
 			scanner.close();
 		} catch (FileNotFoundException fe) {
-			System.out.println(fe);
+			logger.warning(fe.getMessage());
 			kvmessage = (value == null) ? new KVMessageProcessor(KVMessage.StatusType.DELETE_ERROR, key, null)
-					: new KVMessageProcessor(KVMessage.StatusType.PUT_ERROR, key, null);
+					: new KVMessageProcessor(KVMessage.StatusType.PUT_ERROR, key, value);
 
 		}
 		return kvmessage;
@@ -136,8 +150,8 @@ public class KVStoreProcessor implements KVStore {
 			return storage;
 		}
 		else {
-			int hashEdge = (int) Long.parseLong(hash, 16);
-			int hashToCompare;
+			BigInteger hashEdge = new BigInteger(hash, 16);
+			BigInteger hashToCompare;
 
 			//creating tmp paths
 			Path returnPath = Files.createTempFile("rebalancing", ".txt");
@@ -155,8 +169,8 @@ public class KVStoreProcessor implements KVStore {
 				while (scanner.hasNextLine()) {
 					String line = scanner.nextLine();
 					keyvalue = line.split(" ");
-					hashToCompare = (int) Long.parseLong(keyvalue[2], 16);
-					if(hashEdge >= hashToCompare){
+					hashToCompare = new BigInteger(keyvalue[2], 16);
+					if(hashEdge.compareTo(hashToCompare)>= 0){
 						bw2.write(line);
 					}
 					else{
@@ -189,5 +203,14 @@ public class KVStoreProcessor implements KVStore {
 
 	public void removeReplica2(){
 
+	}
+
+	public static void main(String[] args) throws Exception {
+		Path p = Paths.get("/data/");
+		KVStore kv = new KVStoreProcessor(p);
+		Cache cache = new LFUCache(100);
+		kv.setCache(cache);
+		kv.put("key1", "value1", "c909baa32094a7ffcf5cd99655931f55");
+		System.out.println(kv.get("key1"));
 	}
 }

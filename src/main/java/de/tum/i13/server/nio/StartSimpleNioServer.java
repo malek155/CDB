@@ -18,10 +18,12 @@ public class StartSimpleNioServer {
     public static Logger logger = Logger.getLogger(StartSimpleNioServer.class.getName());
 
     public static void main(String[] args) throws IOException {
-    	KVStoreProcessor kvStore = new KVStoreProcessor();
-        LFUCache cache = new LFUCache(100);
         Config cfg = parseCommandlineArgs(args);  //Do not change this
         setupLogging(cfg.logfile);
+
+    	KVStoreProcessor kvStore = new KVStoreProcessor(cfg.dataDir);
+        LFUCache cache = new LFUCache(100);
+
         logger.info("Config: " + cfg.toString());
 
         logger.info("starting server");

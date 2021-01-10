@@ -222,19 +222,16 @@ public class ECS {
         Map<Integer, String> returnIndexes = new HashMap();
         int count = 0;
         String startRange = "";
-        int hashToLocateFst = (int) Long.parseLong(hash.substring(0, hash.length()/2), 16);
-        int hashToLocateSnd = (int) Long.parseLong(hash.substring(hash.length()/2), 16);
+        BigInteger hashToLocate = new BigInteger(hash, 16);
 
         String hashToCmpString;
-        int hashToCmpFst;
-        int hashToCmpSnd;
+        BigInteger hashToCmp;
         //looking for an interval for our new hashed value
         for (Map.Entry element : metadataMap.entrySet()) {
             hashToCmpString = (String) element.getKey();
-            hashToCmpFst = (int) Long.parseLong(hashToCmpString.substring(0, hashToCmpString.length()/2), 16);
-            hashToCmpSnd = (int) Long.parseLong(hashToCmpString.substring(hashToCmpString.length()/2), 16);
+            hashToCmp = new BigInteger(hashToCmpString, 16);
 
-            if (hashToLocateFst <= hashToCmpFst || (hashToLocateFst == hashToCmpFst && hashToLocateSnd <= hashToCmpSnd)) {
+            if (hashToLocate.compareTo(hashToCmp)<=0) {
                 returnIndexes.put(count, startRange);
                 break;
             }
@@ -272,21 +269,9 @@ public class ECS {
     }
 
     private String arithmeticHash(String hash, boolean increment){
-        String hashFstString = hash.substring(hash.length()/2);
-
-        String hashSndString = hash.substring(0, hash.length()/2);
-        char letter = hashSndString.charAt(0);
-        int hashSnd = (int) Long.parseLong(hashSndString, 16);
-
-        if (increment) hashSnd++; else hashSnd--;
-
-        hashSndString = Integer.toHexString(hashSnd);
-        if (hashSndString.charAt(0) != letter){
-            int hashFst = (int) Long.parseLong(hashFstString, 16);
-            if (increment) hashFst++; else hashFst--;
-            hashFstString = Integer.toHexString(hashFst);
-        }
-        return hashFstString+hashSndString;
+        BigInteger bigHash = new BigInteger(hash, 16);
+        bigHash = bigHash.add(BigInteger.ONE);
+        return bigHash.toString(16);
     }
 
     public boolean getMoved(){return moved;}

@@ -5,15 +5,11 @@ import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Metadata;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
+import java.security.*;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -39,7 +35,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	private String end;
 	private String hash;
 	// static boolean variable for read only
-	private static boolean readOnly;
+	private boolean readOnly;
 	// boolean variable to know if the server is initiated from the ECS
 	// volatile keyword because this variable is expected to be changed from another
 	// thread
@@ -59,7 +55,7 @@ public class KVCommandProcessor implements CommandProcessor {
 		this.hash = this.hashMD5(ip + port);
 		this.end = this.hash;
 		this.initiated = false;
-		readOnly = true;
+		this.readOnly = true;
 		logger.info("New thread for server started, initializing");
 	}
 
@@ -82,7 +78,7 @@ public class KVCommandProcessor implements CommandProcessor {
 
 		if (input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) {
 			this.start = metadata.get(hash).getStart();
-			if (isInTheRange(input[1], start, end)) {
+			if (isInTheRange(this.hashMD5(input[1]), start, end)) {
 				KVMessage msg;
 				String response = "";
 
@@ -102,14 +98,14 @@ public class KVCommandProcessor implements CommandProcessor {
 							response = "server_write_lock";
 						}
 						if ((input[0].equals("put") || input[0].equals("delete")) && !readOnly) {
-							if (input.length != 4 && input[0].equals("put")) {
+							if (input.length != 3 && input[0].equals("put")) {
 								logger.warning("not a suitable command for putting keys-values!");
 								throw new IOException("Put Request needs a key and a value !");
-							} else if (input.length != 3 && input[0].equals("delete")) {
+							} else if (input.length != 2 && input[0].equals("delete")){
 								logger.warning("not a suitable command for deleting keys-values!");
 								throw new IOException("Delete Request needs only a key !");
 							}
-							msg = input[0].equals("put") ? this.kvStore.put(input[1], input[2], input[3])
+							msg = input[0].equals("put") ? this.kvStore.put(input[1], input[2], hashMD5(input[1]))
 									: this.kvStore.put(input[1], null, "");
 							if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
 								logger.info("Error occured by getting a value ");
@@ -119,7 +115,7 @@ public class KVCommandProcessor implements CommandProcessor {
 								response = msg.getStatus().toString() + " " + msg.getKey();
 							}
 						} else if (input[0].equals("get")) {
-							if (input.length != 2) {
+							if (input.length != 2){
 								logger.warning("not a suitable command for getting values!");
 								throw new Exception("Get Request needs only a key !");
 							}
@@ -141,8 +137,9 @@ public class KVCommandProcessor implements CommandProcessor {
 				logger.info("Server is not responsible for a key");
 				reply = "server_not_responsible";
 			}
-		} else if (input[0].equals("You'reGoodToGo")) {
+		} else if (input[0].equals("You'reGoodToGo")){
 			this.initiated = true;
+			readOnly = false;
 			if(KVCommandProcessor.metadata != null){
 				this.start = metadata.get(hash).getStart();
 				this.end = metadata.get(hash).getEnd();
@@ -176,9 +173,14 @@ public class KVCommandProcessor implements CommandProcessor {
 		} else if (input[0].equals("metadata")) {
 			String[] entry = command.split("=");
 			hash = entry[0];
-			String[] metadata = entry[1].split(" ");
-			tempMap.put(hash, new Metadata(metadata[0], Integer.parseInt(metadata[1]), metadata[2], metadata[3]));
-			this.metadata = tempMap;
+			String[] metadatanew = entry[1].split(" ");
+			tempMap.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
+
+			if(KVCommandProcessor.metadata==null){
+				this.initiated = true;
+				this.readOnly = false;
+			}
+			KVCommandProcessor.metadata = tempMap;
 			logger.info("Updated metadata from ECS");
 		} else if (input[0].equals("keyrange_read")) {
 			// new task
@@ -186,6 +188,7 @@ public class KVCommandProcessor implements CommandProcessor {
 			logger.info("Updating keyranges for a client to read");
 		}
 		else{
+			logger.info(String.valueOf(initiated));
 			reply = "error: wrong command, please try again!";
 			logger.warning("Wrong input from a client");
 		}
@@ -205,37 +208,52 @@ public class KVCommandProcessor implements CommandProcessor {
 	 * @param end   end value of hash
 	 * @return a boolean saying if the KVServers range contains this key
 	 */
-	private boolean isInTheRange(String key, String start, String end) throws UnsupportedEncodingException {
+	private boolean isInTheRange(String key, String start, String end){
 		boolean result = false;
 
-		String keyFst = key.substring(0, key.length()/2);
-		String keySnd = key.substring(key.length()/2);
+		logger.info(key + " " + start + " " + end);
 
-		String startFst = start.substring(0, start.length()/2);
-		String startSnd = start.substring(start.length()/2);
-
-		String endFst = end.substring(0, end.length()/2);
-		String endSnd = end.substring(end.length()/2);
-
-		int intKeyFst = (int) Long.parseLong(keyFst, 16);
-		int intKeySnd = (int) Long.parseLong(keySnd, 16);
-		int intStartFst = (int) Long.parseLong(startFst, 16);
-		int intStartSnd = (int) Long.parseLong(startSnd, 16);
-		int intEndFst = (int) Long.parseLong(endFst, 16);
-		int intEndSnd = (int) Long.parseLong(endSnd, 16);
+		BigInteger intKey = new BigInteger(key, 16);
+		BigInteger intStart = new BigInteger(start, 16);
+		BigInteger intEnd = new BigInteger(end, 16);
 
 		// where the start < end
-		if (intStartFst < intEndFst || (intStartFst == intEndFst && intStartSnd < intEndSnd)) {
-			if (intKeyFst >= intStartFst && intKeyFst <= intEndFst
-					|| intKeyFst == intStartFst && intKeySnd >= intStartSnd
-					&& intKeyFst == intEndFst && intKeySnd <= intEndSnd)
+		if (intStart.compareTo(intEnd) == -1) {
+			if (intKey.compareTo(intStart) >= 0 && intKey.compareTo(intEnd) <= 0)
 				result = true;
 		} else {
-			if (intKeyFst >= intStartFst || intKeyFst <= intEndFst
-					|| intKeyFst == intStartFst && intKeySnd >= intStartSnd
-					|| intKeyFst == intEndFst && intKeySnd <= intEndSnd)
+			if (intKey.compareTo(intStart) >= 0 || intKey.compareTo(intEnd)<=0)
 				result = true;
 		}
+
+//		String keyFst = key.substring(0, key.length()/2-1);
+//		String keySnd = key.substring(key.length()/2);
+//
+//		String startFst = start.substring(0, start.length()/2-1);
+//		String startSnd = start.substring(start.length()/2);
+//
+//		String endFst = end.substring(0, end.length()/2-1);
+//		String endSnd = end.substring(end.length()/2);
+//
+//		int intKeyFst = (int) Long.parseLong(keyFst, 16);
+//		int intKeySnd = (int) Long.parseLong(keySnd, 16);
+//		int intStartFst = (int) Long.parseLong(startFst, 16);
+//		int intStartSnd = (int) Long.parseLong(startSnd, 16);
+//		int intEndFst = (int) Long.parseLong(endFst, 16);
+//		int intEndSnd = (int) Long.parseLong(endSnd, 16);
+//
+//		// where the start < end
+//		if (intStartFst < intEndFst || (intStartFst == intEndFst && intStartSnd < intEndSnd)) {
+//			if (intKeyFst >= intStartFst && intKeyFst <= intEndFst
+//					|| intKeyFst == intStartFst && intKeySnd >= intStartSnd
+//					&& intKeyFst == intEndFst && intKeySnd <= intEndSnd)
+//				result = true;
+//		} else {
+//			if (intKeyFst >= intStartFst || intKeyFst <= intEndFst
+//					|| intKeyFst == intStartFst && intKeySnd >= intStartSnd
+//					|| intKeyFst == intEndFst && intKeySnd <= intEndSnd)
+//				result = true;
+//		}
 
 		return result;
 	}
@@ -254,10 +272,6 @@ public class KVCommandProcessor implements CommandProcessor {
 		String myHash = new BigInteger(1, digested).toString(16);
 
 		return myHash;
-	}
-
-	public String toHex(String arg){
-		return String.format("%040x", new BigInteger(1, arg.getBytes()));
 	}
 
 	@Override
