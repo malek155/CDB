@@ -26,6 +26,8 @@ public class InnerConnectionHandleThread extends Thread {
     private final String hash;
     private final String ip;
     private final int port;
+    private boolean shuttingDown;
+    private boolean notShutDown;
 
     public InnerConnectionHandleThread(KVCommandProcessor commandProcessor,
                                        InetSocketAddress bootstrap,
@@ -36,6 +38,7 @@ public class InnerConnectionHandleThread extends Thread {
         this.hash = hashMD5(ip + port);
         this.ip = ip;
         this.port = port;
+        notShutDown = true;
     }
 
     public static Logger logger = Logger.getLogger(InnerConnectionHandleThread.class.getName());
@@ -45,8 +48,6 @@ public class InnerConnectionHandleThread extends Thread {
      * run() method
      */
     public void run() {
-
-        boolean notShutDown = true;
         String nextNeighbour;
         String nextNextNeighbour;
         String prevNeighbour;
@@ -94,22 +95,20 @@ public class InnerConnectionHandleThread extends Thread {
                 }else if(line.startsWith("metadata")){
                     cp.process(line);
                 }
-//                if(client.getShuttingDown()){
-//                    outECS.write("MayIShutDownPlease " + this.ip + ":" + this.port + " " + this.hash + "\r\n");
-//                    outECS.flush();
-//                    logger.info("Request to ECS to be allowed to shut down");
-//
-//                    Thread.yield();
-//                    if(inECS.readLine().equals("YesYouMay")){
-//                        nextNeighbour = inECS.readLine();
-//                        this.transfer(nextNeighbour, "");
-//
-//
-//                        this.client.setClosing(true);
-//                        notShutDown = false;
-//                        logger.info("Shutting down in a process");
-//                    }
-//                }
+                if(this.shuttingDown){
+                    outECS.write("MayIShutDownPlease " + this.ip + ":" + this.port + " " + this.hash + "\r\n");
+                    outECS.flush();
+                    logger.info("Request to ECS to be allowed to shut down");
+
+                    Thread.yield();
+                    if(inECS.readLine().equals("YesYouMay")){
+                        nextNeighbour = inECS.readLine();
+                        this.transfer(nextNeighbour, "");
+
+                        notShutDown = false;
+                        logger.info("Shutting down in a process");
+                    }
+                }
             }
             inECS.close();
             outECS.close();
@@ -213,6 +212,14 @@ public class InnerConnectionHandleThread extends Thread {
         String myHash = new BigInteger(1, digested).toString(16);
 
         return myHash;
+    }
+
+    public void setShuttingDown(boolean shuttingDown){
+        this.shuttingDown = shuttingDown;
+    }
+
+    public boolean getShutDown(){
+        return this.notShutDown;
     }
 
 }

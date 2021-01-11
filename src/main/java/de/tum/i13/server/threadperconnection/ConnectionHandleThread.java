@@ -72,6 +72,7 @@ public class ConnectionHandleThread extends Thread {
 				while ((firstLine = in.readLine()) != null) {
 					res = cp.process(firstLine) + "\r\n";
 
+					logger.info(res);
 					out.write(res);
 					out.flush();
 				}

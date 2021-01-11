@@ -47,13 +47,20 @@ public class Main {
 		// now we can open a listening serversocket
 		final ServerSocket serverSocket = new ServerSocket();
 
+		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache, cfg.listenaddr, cfg.port);
+		InnerConnectionHandleThread innerThread = new InnerConnectionHandleThread(logic, cfg.bootstrap, cfg.listenaddr, cfg.port);
+
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
 				System.out.println("Closing thread per connection kv server");
 				try {
+					innerThread.setShuttingDown(true);
+					while(!innerThread.getShutDown()){
+						Thread.sleep(2000);
+					}
 					serverSocket.close();
-				} catch (IOException e) {
+				} catch (IOException | InterruptedException e) {
 					e.printStackTrace();
 				}
 			}
@@ -63,12 +70,11 @@ public class Main {
 		// binding to the server
 		serverSocket.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
 
-		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache, cfg.listenaddr, cfg.port);
 
-		InnerConnectionHandleThread innerThread = new InnerConnectionHandleThread(logic, cfg.bootstrap, cfg.listenaddr, cfg.port);
+
 		new Thread(innerThread).start();
 
-		while (true) {
+		while(true){
 			// Waiting for client to connect
 			Socket clientSocket = serverSocket.accept();
 

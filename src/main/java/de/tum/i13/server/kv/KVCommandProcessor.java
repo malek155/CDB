@@ -98,7 +98,7 @@ public class KVCommandProcessor implements CommandProcessor {
 							response = "server_write_lock";
 						}
 						if ((input[0].equals("put") || input[0].equals("delete")) && !readOnly) {
-							if (input.length != 3 && input[0].equals("put")) {
+							if (input.length != 3 && input[0].equals("put")){
 								logger.warning("not a suitable command for putting keys-values!");
 								throw new IOException("Put Request needs a key and a value !");
 							} else if (input.length != 2 && input[0].equals("delete")){
@@ -107,10 +107,11 @@ public class KVCommandProcessor implements CommandProcessor {
 							}
 							msg = input[0].equals("put") ? this.kvStore.put(input[1], input[2], hashMD5(input[1]))
 									: this.kvStore.put(input[1], null, "");
+							logger.info("status:" + msg.getStatus().toString());
 							if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
 								logger.info("Error occured by getting a value ");
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
-							} else {
+							} else{
 								logger.info("Put a new kv-pair");
 								response = msg.getStatus().toString() + " " + msg.getKey();
 							}
@@ -130,7 +131,7 @@ public class KVCommandProcessor implements CommandProcessor {
 						}
 					}
 				} catch (Exception e) {
-					e.printStackTrace();
+					System.out.println(e.getMessage());
 				}
 				reply = response;
 			} else {
@@ -172,7 +173,7 @@ public class KVCommandProcessor implements CommandProcessor {
 			logger.info("Putting a new kv-pair, transferred from other servers");
 		} else if (input[0].equals("metadata")) {
 			String[] entry = command.split("=");
-			hash = entry[0];
+			hash = entry[0].split(" ")[1];
 			String[] metadatanew = entry[1].split(" ");
 			tempMap.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
@@ -211,8 +212,6 @@ public class KVCommandProcessor implements CommandProcessor {
 	private boolean isInTheRange(String key, String start, String end){
 		boolean result = false;
 
-		logger.info(key + " " + start + " " + end);
-
 		BigInteger intKey = new BigInteger(key, 16);
 		BigInteger intStart = new BigInteger(start, 16);
 		BigInteger intEnd = new BigInteger(end, 16);
@@ -225,35 +224,6 @@ public class KVCommandProcessor implements CommandProcessor {
 			if (intKey.compareTo(intStart) >= 0 || intKey.compareTo(intEnd)<=0)
 				result = true;
 		}
-
-//		String keyFst = key.substring(0, key.length()/2-1);
-//		String keySnd = key.substring(key.length()/2);
-//
-//		String startFst = start.substring(0, start.length()/2-1);
-//		String startSnd = start.substring(start.length()/2);
-//
-//		String endFst = end.substring(0, end.length()/2-1);
-//		String endSnd = end.substring(end.length()/2);
-//
-//		int intKeyFst = (int) Long.parseLong(keyFst, 16);
-//		int intKeySnd = (int) Long.parseLong(keySnd, 16);
-//		int intStartFst = (int) Long.parseLong(startFst, 16);
-//		int intStartSnd = (int) Long.parseLong(startSnd, 16);
-//		int intEndFst = (int) Long.parseLong(endFst, 16);
-//		int intEndSnd = (int) Long.parseLong(endSnd, 16);
-//
-//		// where the start < end
-//		if (intStartFst < intEndFst || (intStartFst == intEndFst && intStartSnd < intEndSnd)) {
-//			if (intKeyFst >= intStartFst && intKeyFst <= intEndFst
-//					|| intKeyFst == intStartFst && intKeySnd >= intStartSnd
-//					&& intKeyFst == intEndFst && intKeySnd <= intEndSnd)
-//				result = true;
-//		} else {
-//			if (intKeyFst >= intStartFst || intKeyFst <= intEndFst
-//					|| intKeyFst == intStartFst && intKeySnd >= intStartSnd
-//					|| intKeyFst == intEndFst && intKeySnd <= intEndSnd)
-//				result = true;
-//		}
 
 		return result;
 	}

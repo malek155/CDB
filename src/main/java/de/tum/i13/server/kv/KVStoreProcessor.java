@@ -40,7 +40,7 @@ public class KVStoreProcessor implements KVStore {
 
 	public KVStoreProcessor(Path path1) throws IOException {
 		this.setPath(path1);
-		storage = new File(String.valueOf(this.path) + "/storage.txt");
+		storage = new File(String.valueOf(this.path));
 		logger = Logger.getLogger(ConnectionHandleThread.class.getName());
 //		Files.createDirectories(this.path);
 		if (storage.createNewFile()){
@@ -68,6 +68,18 @@ public class KVStoreProcessor implements KVStore {
 		BigInteger hashToCompare;
 		try {
 			scanner = new Scanner(new FileInputStream(storage));
+			logger.info("still before");
+			if(!scanner.hasNextLine()){
+				Path path1 = Paths.get(String.valueOf(path));
+				Stream<String> lines = Files.lines(path1);
+				String lineToReplace = key + " " + value + " " + hash + "\r\n";
+				List<String> replaced = lines.map(row -> row.replaceAll("", lineToReplace))
+						.collect(Collectors.toList());
+				Files.write(path1, replaced);
+				lines.close();
+
+				kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value);
+			}
 			while (scanner.hasNextLine()) {
 				String replacingLine;
 				String line = scanner.nextLine();

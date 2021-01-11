@@ -323,6 +323,7 @@ public class ECS {
 
         try {
             // binding to the server through specified bootstrap ip and port
+//            serverSocket.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
             serverSocket.bind(new InetSocketAddress(cfg.bootstrap.getAddress(), cfg.bootstrap.getPort()));
 
             while (true){
