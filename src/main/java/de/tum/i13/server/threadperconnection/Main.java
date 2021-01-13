@@ -66,11 +66,8 @@ public class Main {
 			}
 		});
 
-
 		// binding to the server
 		serverSocket.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
-
-
 
 		new Thread(innerThread).start();
 

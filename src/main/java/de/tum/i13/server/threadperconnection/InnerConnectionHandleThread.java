@@ -92,7 +92,7 @@ public class InnerConnectionHandleThread extends Thread {
                         this.transferFromPrev(cutter);
                         logger.info("Transferred replicas to a new server");
                     }
-                }else if(line.startsWith("metadata")){
+                }else if(line.startsWith("metadata") || line.startsWith("firstmetadata")){
                     cp.process(line);
                 }
                 if(this.shuttingDown){

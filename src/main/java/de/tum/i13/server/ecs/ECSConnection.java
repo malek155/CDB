@@ -4,6 +4,7 @@ import de.tum.i13.shared.Constants;
 import de.tum.i13.shared.Metadata;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -22,7 +23,6 @@ public class ECSConnection implements Runnable {
 
     @Override
     public void run() {
-
         try {
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
@@ -30,24 +30,24 @@ public class ECSConnection implements Runnable {
                     new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
 
             logger.info("Started the ECS connection");
+            InetAddress ip = clientSocket.getInetAddress();
 
             String line;
             while (!clientSocket.isClosed()){
                 line = in.readLine();
                 String message = this.process(line);
-
                 Thread.yield();
                 if (!message.equals("")) {
                     out.write(message);
                     out.flush();
                 }
-                if (bigECS.getMoved()) {
+                if (bigECS.getMoved()){
                     logger.info("Updating metadata in servers");
                     Map<String, Metadata> map = bigECS.getMetadataMap();
                     String metadata = map.keySet().stream()
                             .map(key -> "metadata " + key + "=" + map.get(key).toString())
                             .collect(Collectors.joining("\r\n"));
-                    out.write(metadata + "\r\n");
+                    out.write("first"+ metadata + " last" + "\r\n");
                     out.flush();
                     this.bigECS.setMoved(false);
                 }

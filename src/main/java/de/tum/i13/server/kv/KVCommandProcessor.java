@@ -57,6 +57,7 @@ public class KVCommandProcessor implements CommandProcessor {
 		this.initiated = false;
 		this.readOnly = true;
 		logger.info("New thread for server started, initializing");
+		metadata = new HashMap<>();
 	}
 
 	// if we will use the cache here it should be static so that only one instance
@@ -160,29 +161,48 @@ public class KVCommandProcessor implements CommandProcessor {
 
 			// putting a new line in a replica line by line
 			logger.info("Updating replica2");
-		} else if (input[0].equals("keyrange")) {
-			reply = "keyrange_success " + KVCommandProcessor.metadata.keySet().stream()
-						.map(key -> KVCommandProcessor.metadata.get(key).getStart() + ","
-								+ key + ","
-								+ KVCommandProcessor.metadata.get(key).getIP() + ":"
-								+ KVCommandProcessor.metadata.get(key).getPort())
-						.collect(Collectors.joining(";"));
-			logger.info("Updating metadata on the client side, sending");
 		} else if (input[0].equals("transferring")) {
 			this.kvStore.put(input[1], input[2], input[3]);
 			logger.info("Putting a new kv-pair, transferred from other servers");
-		} else if (input[0].equals("metadata")) {
+		} else if (input[0].equals("metadata")){
 			String[] entry = command.split("=");
 			hash = entry[0].split(" ")[1];
 			String[] metadatanew = entry[1].split(" ");
-			tempMap.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
-			if(KVCommandProcessor.metadata==null){
+			metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
+
+			if(metadatanew.length == 5){
+//				metadata = tempMap;
+				logger.info("Updated metadata from ECS");
+				logger.info(metadata.toString());
+			}
+		} else if (input[0].equals("firstmetadata")){
+//			tempMap.clear();
+			if(metadata.isEmpty()){
 				this.initiated = true;
 				this.readOnly = false;
+			}else{
+				metadata.clear();
 			}
-			KVCommandProcessor.metadata = tempMap;
-			logger.info("Updated metadata from ECS");
+			String[] entry = command.split("=");
+			hash = entry[0].split(" ")[1];
+			String[] metadatanew = entry[1].split(" ");
+
+			metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
+
+			if(metadatanew.length == 5){
+//				metadata = tempMap;
+				logger.info("Updated metadata from ECS");
+			}
+		} else if (input[0].equals("keyrange")){
+			reply = "keyrange_success " + metadata.keySet().stream()
+					.map(key -> metadata.get(key).getStart() + ","
+							+ key + ","
+							+ metadata.get(key).getIP() + ":"
+							+ metadata.get(key).getPort())
+					.collect(Collectors.joining(";"));
+			logger.info("Updating metadata on the client side, sending");
+			logger.info(metadata.toString());
 		} else if (input[0].equals("keyrange_read")) {
 			// new task
 

@@ -58,8 +58,7 @@ public class ECS {
      * @param ip, port are credentials of a new server
      */
     public void addServer(String ip, int port) throws NoSuchAlgorithmException {
-        logger.info("started adding a servers");
-        moved = true;
+        logger.info("started adding a server");
         int startIndex;     // number if starthash
         String startHash;   // startHash
         Main newMain = new Main();       // new added server
@@ -74,11 +73,11 @@ public class ECS {
             //the beginning of th range is an incremented hashvalue
 
             startHash = this.arithmeticHash(hash, true);
-
+            newMain.end = hash;
+            newMain.start = this.arithmeticHash(hash, true);
+            newMain.nextServer = newMain;
             this.headServer = newMain;
             this.tailServer = newMain;
-            this.tailServer.nextServer = headServer;
-            newMain.nextServer = tailServer;
         } else {
             Map<Integer, String> indexes = this.locate(hash);
             //findfirst because we have there only one keyvalue :/
@@ -89,27 +88,35 @@ public class ECS {
                 ? this.arithmeticHash(tailServer.end, true)
                 : indexes.get(startIndex);        // already incremented hashvalue
 
+            newMain.start = startHash;
+            newMain.end = hash;
+
             prevServer = (startIndex == 0)
                 ? serverRepository.getLast()
                 : this.serverRepository.get(startIndex - 1);
 
-            if (this.tailServer == prevServer) {
-                this.tailServer = newMain;
+            if (this.tailServer == prevServer && startIndex != 0) {
                 newMain.nextServer = headServer;
-            } else {
+                this.tailServer = newMain;
+            }else if(startIndex == 0){
+                newMain.nextServer = serverRepository.getLast().nextServer;
+                this.headServer = newMain;
+                this.tailServer.nextServer = newMain;
+            }else{
                 newMain.nextServer = prevServer.nextServer;
             }
-            prevServer.nextServer = newMain;
-
             //change next server startrange
-            this.serverRepository.get(startIndex + 1).start = this.arithmeticHash(hash, true);
-            //change prev server endrange
-            String endrangeOfPrev = this.arithmeticHash(startHash, false);
-            prevServer.end = endrangeOfPrev;
+            this.serverRepository.get(startIndex).start = this.arithmeticHash(hash, true);
+
+            //change start of a next server in metadata
+            Metadata nextMeta = metadataMap.get(newMain.nextServer.end);
+            metadataMap.put(nextMeta.getEnd(), new Metadata(nextMeta.getIP(), nextMeta.getPort(), this.arithmeticHash(hash, true), nextMeta.getEnd()));
         }
 
         metadataMap.put(hash, new Metadata(ip, port, startHash, hash));
         this.serverRepository.add(startIndex, newMain);
+
+        this.moved = true;
 
         //for ecs connection
         newlyAdded = true;
@@ -270,7 +277,7 @@ public class ECS {
 
     private String arithmeticHash(String hash, boolean increment){
         BigInteger bigHash = new BigInteger(hash, 16);
-        bigHash = bigHash.add(BigInteger.ONE);
+        bigHash = (increment) ? bigHash.add(BigInteger.ONE) : bigHash.subtract(BigInteger.ONE);
         return bigHash.toString(16);
     }
 
