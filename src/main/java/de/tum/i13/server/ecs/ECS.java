@@ -33,7 +33,7 @@ public class ECS {
     private Main tailServer;
 
     //metadata, String is a hashkey
-    private static Map<String, Metadata> metadataMap = new HashMap<>();
+    private static TreeMap<String, Metadata> metadataMap = new TreeMap<>();
 
     /*moved is a flag that is set to true when the ranges on the ring must be updated*/
     private boolean moved;
@@ -112,7 +112,6 @@ public class ECS {
             Metadata nextMeta = metadataMap.get(newMain.nextServer.end);
             metadataMap.put(nextMeta.getEnd(), new Metadata(nextMeta.getIP(), nextMeta.getPort(), this.arithmeticHash(hash, true), nextMeta.getEnd()));
         }
-
         metadataMap.put(hash, new Metadata(ip, port, startHash, hash));
         this.serverRepository.add(startIndex, newMain);
 
@@ -233,6 +232,7 @@ public class ECS {
 
         String hashToCmpString;
         BigInteger hashToCmp;
+        BigInteger lastHash;
         //looking for an interval for our new hashed value
         for (Map.Entry element : metadataMap.entrySet()) {
             hashToCmpString = (String) element.getKey();
@@ -242,9 +242,12 @@ public class ECS {
                 returnIndexes.put(count, startRange);
                 break;
             }
-
             count++;
             startRange = arithmeticHash(hashToCmpString, true);
+            if(hashToCmpString.equals(metadataMap.lastKey())){
+                returnIndexes.put(count, startRange);
+                break;
+            }
         }
         return returnIndexes;
     }

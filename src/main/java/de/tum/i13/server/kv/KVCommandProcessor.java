@@ -28,7 +28,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	private Cache cache;
 
 	// static instance of metadata
-	private static Map<String, Metadata> metadata;
+	private static TreeMap<String, Metadata> metadata;
 	// start and end (for now I suppose that I am able to get them from the main)
 	private String start;
 	private String replicaStart;
@@ -57,7 +57,7 @@ public class KVCommandProcessor implements CommandProcessor {
 		this.initiated = false;
 		this.readOnly = true;
 		logger.info("New thread for server started, initializing");
-		metadata = new HashMap<>();
+		metadata = new TreeMap<>();
 	}
 
 	// if we will use the cache here it should be static so that only one instance
