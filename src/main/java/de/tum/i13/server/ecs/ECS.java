@@ -35,7 +35,6 @@ public class ECS {
     //metadata, String is a hashkey
     private static TreeMap<String, Metadata> metadataMap = new TreeMap<>();
 
-    /*moved is a flag that is set to true when the ranges on the ring must be updated*/
     private boolean moved;
 
     public static Logger logger = Logger.getLogger(ECS.class.getName());
@@ -106,7 +105,10 @@ public class ECS {
                 newMain.nextServer = prevServer.nextServer;
             }
             //change next server startrange
-            this.serverRepository.get(startIndex).start = this.arithmeticHash(hash, true);
+            if(startIndex==serverRepository.size())
+                this.serverRepository.get(startIndex-1).start = this.arithmeticHash(hash, true);
+            else
+                this.serverRepository.get(startIndex).start = this.arithmeticHash(hash, true);
 
             //change start of a next server in metadata
             Metadata nextMeta = metadataMap.get(newMain.nextServer.end);
@@ -331,6 +333,7 @@ public class ECS {
             }
         });
 
+        logger.info("initialized the ECS");
         try {
             // binding to the server through specified bootstrap ip and port
 //            serverSocket.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
