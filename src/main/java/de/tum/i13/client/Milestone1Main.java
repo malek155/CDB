@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -11,7 +12,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.logging.*;
 
 import java.util.stream.Stream;
@@ -38,7 +38,10 @@ public class Milestone1Main {
 
 		MessageDigest msg = MessageDigest.getInstance("MD5");
 		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
-		return new String(digested);
+		// return new String(digested);
+		String myHash = new BigInteger(1, digested).toString(16);
+
+		return myHash;
 
 	}
 

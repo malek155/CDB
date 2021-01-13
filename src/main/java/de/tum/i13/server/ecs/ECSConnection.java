@@ -4,6 +4,7 @@ import de.tum.i13.shared.Constants;
 import de.tum.i13.shared.Metadata;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -22,7 +23,6 @@ public class ECSConnection implements Runnable {
 
 	@Override
 	public void run() {
-
 		try {
 			BufferedReader in = new BufferedReader(
 					new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
@@ -30,12 +30,12 @@ public class ECSConnection implements Runnable {
 					new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
 
 			logger.info("Started the ECS connection");
+			InetAddress ip = clientSocket.getInetAddress();
 
 			String line;
 			while (!clientSocket.isClosed()) {
 				line = in.readLine();
 				String message = this.process(line);
-
 				Thread.yield();
 				if (!message.equals("")) {
 					out.write(message);
@@ -47,11 +47,11 @@ public class ECSConnection implements Runnable {
 					String metadata = map.keySet().stream()
 							.map(key -> "metadata " + key + "=" + map.get(key).toString())
 							.collect(Collectors.joining("\r\n"));
-					out.write(metadata);
+					out.write("first" + metadata + " last" + "\r\n");
 					out.flush();
 					this.bigECS.setMoved(false);
 				}
-				if (bigECS.isNewlyAdded()) {
+				if (bigECS.isNewlyAdded() && bigECS.getServerRepository().size() > 1) {
 					logger.info("Notifying a server, that it needs to send a data to a new server");
 					out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n" + bigECS.getNextHash() + "\r\n"
 							+ bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");
@@ -72,12 +72,19 @@ public class ECSConnection implements Runnable {
 	}
 
 	private String process(String line) throws Exception {
+		logger.info("processing");
 		String reply = "";
+		String[] ipport;
 		String[] lines = line.split(" ");
 		if (lines[0].equals("MayIShutDownPlease")) {
-			String[] ipport = lines[1].split(":");
+			ipport = lines[1].split(":");
 			String nextHash = this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
 			reply = "YesYouMay\r\n" + nextHash + "\r\n";
+		} else if (lines[0].equals("IAmNew")) {
+			ipport = lines[1].split(":");
+			if (!bigECS.isAdded(ipport[0], Integer.parseInt(ipport[1]))) {
+				bigECS.addServer(ipport[0], Integer.parseInt(ipport[1]));
+			}
 		}
 		return reply;
 	}

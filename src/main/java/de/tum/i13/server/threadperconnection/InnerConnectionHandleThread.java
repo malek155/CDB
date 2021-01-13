@@ -3,6 +3,7 @@ package de.tum.i13.server.threadperconnection;
 import de.tum.i13.server.kv.KVCommandProcessor;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -25,16 +26,17 @@ public class InnerConnectionHandleThread extends Thread {
 	private final String hash;
 	private final String ip;
 	private final int port;
-	private final ConnectionHandleThread client;
+	private boolean shuttingDown;
+	private boolean notShutDown;
 
 	public InnerConnectionHandleThread(KVCommandProcessor commandProcessor, InetSocketAddress bootstrap, String ip,
-			int port, ConnectionHandleThread client) throws NoSuchAlgorithmException {
+			int port) throws NoSuchAlgorithmException {
 		this.cp = commandProcessor;
 		this.bootstrap = bootstrap;
 		this.hash = hashMD5(ip + port);
 		this.ip = ip;
 		this.port = port;
-		this.client = client;
+		notShutDown = true;
 	}
 
 	public static Logger logger = Logger.getLogger(InnerConnectionHandleThread.class.getName());
@@ -44,12 +46,12 @@ public class InnerConnectionHandleThread extends Thread {
 	 * run() method
 	 */
 	public void run() {
-
-		boolean notShutDown = true;
 		String nextNeighbour;
 		String nextNextNeighbour;
 		String prevNeighbour;
 		String cutter;
+
+		logger.info(bootstrap.getHostString() + ":" + bootstrap.getPort());
 
 		// ip, port -> bootstrap, ecs ip, port
 		try (Socket socket = new Socket(bootstrap.getHostString(), bootstrap.getPort())) {
@@ -58,8 +60,14 @@ public class InnerConnectionHandleThread extends Thread {
 
 			logger.info("Started an ECS connection");
 
+			outECS.write("IAmNew" + " " + this.ip + ":" + this.port + "\r\n");
+			outECS.flush();
+
+			logger.info("Notified ecs about a new server");
+
 			while (notShutDown) {
-				if (inECS.readLine().equals("NewServer")) {
+				String line = inECS.readLine();
+				if (line.equals("NewServer")) {
 					cutter = inECS.readLine(); // newly added server
 					nextNeighbour = inECS.readLine(); // server we have our data at
 					nextNextNeighbour = inECS.readLine();
@@ -82,8 +90,10 @@ public class InnerConnectionHandleThread extends Thread {
 						this.transferFromPrev(cutter);
 						logger.info("Transferred replicas to a new server");
 					}
+				} else if (line.startsWith("metadata") || line.startsWith("firstmetadata")) {
+					cp.process(line);
 				}
-				if (client.getShuttingDown()) {
+				if (this.shuttingDown) {
 					outECS.write("MayIShutDownPlease " + this.ip + ":" + this.port + " " + this.hash + "\r\n");
 					outECS.flush();
 					logger.info("Request to ECS to be allowed to shut down");
@@ -93,7 +103,6 @@ public class InnerConnectionHandleThread extends Thread {
 						nextNeighbour = inECS.readLine();
 						this.transfer(nextNeighbour, "");
 
-						this.client.setClosing(true);
 						notShutDown = false;
 						logger.info("Shutting down in a process");
 					}
@@ -102,7 +111,7 @@ public class InnerConnectionHandleThread extends Thread {
 			inECS.close();
 			outECS.close();
 			logger.info("Closed an ECS connection");
-		} catch (IOException ie) {
+		} catch (Exception ie) {
 			ie.printStackTrace();
 		}
 	}
@@ -196,11 +205,19 @@ public class InnerConnectionHandleThread extends Thread {
 	 * @return String of hashvalue in Hexadecimal
 	 */
 	private String hashMD5(String key) throws NoSuchAlgorithmException {
-
 		MessageDigest msg = MessageDigest.getInstance("MD5");
 		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
+		String myHash = new BigInteger(1, digested).toString(16);
 
-		return new String(digested);
+		return myHash;
+	}
+
+	public void setShuttingDown(boolean shuttingDown) {
+		this.shuttingDown = shuttingDown;
+	}
+
+	public boolean getShutDown() {
+		return this.notShutDown;
 	}
 
 }

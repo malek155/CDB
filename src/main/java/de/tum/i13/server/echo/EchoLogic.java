@@ -7,6 +7,8 @@ import de.tum.i13.server.kv.KVStoreProcessor;
 
 import de.tum.i13.shared.CommandProcessor;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.logging.Level;
@@ -29,11 +31,12 @@ public class EchoLogic implements CommandProcessor {
 	 * 
 	 * @param cache   the static cach
 	 * @param kvStore interacting with the strorage
+	 * @throws IOException
 	 */
-	public EchoLogic(Cache cache, KVStore kvStore) {
+	public EchoLogic(Cache cache, KVStore kvStore) throws IOException {
 		this.cache = cache;
 		this.kvStore = kvStore;
-		this.CommProc = new KVCommandProcessor(new KVStoreProcessor(), this.cache);
+		this.CommProc = new KVCommandProcessor();
 	}
 
 	public static Logger logger = Logger.getLogger(EchoLogic.class.getName());
