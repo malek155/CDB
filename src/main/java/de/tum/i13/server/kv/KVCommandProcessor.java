@@ -25,7 +25,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	// class because it is responsible to interact with the KVStore and handle those
 	// commands
 	private KVStoreProcessor kvStore;
-	private Cache cache;
+	private static Cache cache;
 
 	// static instance of metadata
 	private TreeMap<String, Metadata> metadata;
@@ -50,8 +50,8 @@ public class KVCommandProcessor implements CommandProcessor {
 	public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache, String ip,
 							  int port) throws NoSuchAlgorithmException {
 		this.kvStore = kvStore;
-		this.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
-		kvStore.setCache(this.cache);
+		KVCommandProcessor.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
+		kvStore.setCache(cache);
 		this.hash = this.hashMD5(ip + port);
 		this.end = this.hash;
 		this.initiated = false;
@@ -59,8 +59,6 @@ public class KVCommandProcessor implements CommandProcessor {
 		logger.info("New thread for server started, initializing");
 	}
 
-	// if we will use the cache here it should be static so that only one instance
-	// is accessed by all the KVCommandProcessors
 	/**
 	 * process method that handles the requests
 	 * @param command - command got from a client or another server
@@ -106,7 +104,7 @@ public class KVCommandProcessor implements CommandProcessor {
 								throw new IOException("Delete Request needs only a key !");
 							}
 							msg = input[0].equals("put") ? this.kvStore.put(input[1], input[2], hashMD5(input[1]))
-									: this.kvStore.put(input[1], null, "");
+									: this.kvStore.put(input[1], "null", hashMD5(input[1]));
 							logger.info("status:" + msg.getStatus().toString());
 							if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
 								logger.info("Error occured by getting a value ");

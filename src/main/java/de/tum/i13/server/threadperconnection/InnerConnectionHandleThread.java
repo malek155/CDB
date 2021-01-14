@@ -69,11 +69,18 @@ public class InnerConnectionHandleThread extends Thread {
 
             while(notShutDown){
                 String line = inECS.readLine();
+
                 if(line.equals("NewServer")){
+
                     cutter = inECS.readLine();  				// newly added server
                     nextNeighbour = inECS.readLine();           // server we have our data at
+
                     nextNextNeighbour = inECS.readLine();
                     prevNeighbour = inECS.readLine();
+                    logger.info("cutter:" + cutter);
+                    logger.info("next:" + nextNeighbour);
+                    logger.info("nextnext:" + nextNextNeighbour);
+                    logger.info("prev:" + prevNeighbour);
 
                     if(nextNextNeighbour.equals(this.hash)){
                         logger.info("nextnext");

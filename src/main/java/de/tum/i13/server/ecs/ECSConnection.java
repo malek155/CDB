@@ -22,7 +22,7 @@ public class ECSConnection implements Runnable {
     }
 
     @Override
-    public void run() {
+    public void run(){
         try {
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
@@ -41,15 +41,8 @@ public class ECSConnection implements Runnable {
                     out.write(message);
                     out.flush();
                 }
-                if (bigECS.getMoved()){
-                    logger.info("Updating metadata in servers");
-                    Map<String, Metadata> map = bigECS.getMetadataMap();
-                    String metadata = map.keySet().stream()
-                            .map(key -> "metadata " + key + "=" + map.get(key).toString())
-                            .collect(Collectors.joining("\r\n"));
-                    out.write("first"+ metadata + " last" + "\r\n");
-                    out.flush();
-                    this.bigECS.setMoved(false);
+                if(bigECS.getMoved()){
+                    bigECS.movedMeta();
                 }
                 if (bigECS.isNewlyAdded() && bigECS.getServerRepository().size() > 1){
                     logger.info("Notifying a server, that it needs to send a data to a new server");
@@ -92,6 +85,16 @@ public class ECSConnection implements Runnable {
             }
         }
         return reply;
+    }
+
+    public void sendMeta() throws IOException {
+        PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
+        Map<String, Metadata> map = bigECS.getMetadataMap();
+        String metadata = map.keySet().stream()
+                .map(key -> "metadata " + key + "=" + map.get(key).toString())
+                .collect(Collectors.joining("\r\n"));
+        out.write("first"+ metadata + " last" + "\r\n");
+        out.flush();
     }
 
 }

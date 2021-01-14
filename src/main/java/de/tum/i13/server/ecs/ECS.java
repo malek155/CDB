@@ -24,6 +24,7 @@ public class ECS {
     private String prevHash;
     private String nextNextHash;
     private boolean newlyAdded;
+    public ArrayList<ECSConnection> connections = new ArrayList<>();
 
     //Servers repository, also a circular structure? meh we'll see
     private LinkedList<Main> serverRepository = new LinkedList<>();
@@ -271,6 +272,14 @@ public class ECS {
         return added;
     }
 
+    public void movedMeta() throws IOException {
+        for(ECSConnection ecsConnection : connections)
+            ecsConnection.sendMeta();
+        this.setMoved(false);
+        logger.info("Updating metadata in servers");
+    }
+
+
     /**
      * setMoved method sets the boolean "moved" for consistent updating of metadata
      *
@@ -313,7 +322,6 @@ public class ECS {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-
         ECS ecs = new ECS();
 
         Config cfg = parseCommandlineArgs(args); // Do not change this
@@ -345,6 +353,7 @@ public class ECS {
 
                 // When we accept a connection, we start a new Thread for this connection
                 ECSConnection connection = new ECSConnection(clientSocket, ecs);
+                ecs.connections.add(connection);
 
                 new Thread(connection).start();
             }
