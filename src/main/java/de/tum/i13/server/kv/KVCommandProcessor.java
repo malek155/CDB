@@ -28,7 +28,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	private Cache cache;
 
 	// static instance of metadata
-	private static TreeMap<String, Metadata> metadata;
+	private TreeMap<String, Metadata> metadata;
 	// start and end (for now I suppose that I am able to get them from the main)
 	private String start;
 	private String replicaStart;
@@ -57,7 +57,6 @@ public class KVCommandProcessor implements CommandProcessor {
 		this.initiated = false;
 		this.readOnly = true;
 		logger.info("New thread for server started, initializing");
-		metadata = new TreeMap<>();
 	}
 
 	// if we will use the cache here it should be static so that only one instance
@@ -72,8 +71,6 @@ public class KVCommandProcessor implements CommandProcessor {
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
-		Map<String, Metadata> tempMap = new HashMap<>();
-
 
 		String reply = command;
 
@@ -142,7 +139,7 @@ public class KVCommandProcessor implements CommandProcessor {
 		} else if (input[0].equals("You'reGoodToGo")){
 			this.initiated = true;
 			readOnly = false;
-			if(KVCommandProcessor.metadata != null){
+			if(metadata != null){
 				this.start = metadata.get(hash).getStart();
 				this.end = metadata.get(hash).getEnd();
 			}
@@ -177,8 +174,8 @@ public class KVCommandProcessor implements CommandProcessor {
 				logger.info(metadata.toString());
 			}
 		} else if (input[0].equals("firstmetadata")){
-//			tempMap.clear();
-			if(metadata.isEmpty()){
+			if(metadata == null){
+				metadata = new TreeMap<>();
 				this.initiated = true;
 				this.readOnly = false;
 			}else{
@@ -253,7 +250,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	}
 
 	public Map<String, Metadata> getMetadata(){
-		return KVCommandProcessor.metadata;
+		return metadata;
 	}
 
 	public String hashMD5(String key) throws NoSuchAlgorithmException {

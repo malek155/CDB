@@ -53,8 +53,12 @@ public class ECSConnection implements Runnable {
                 }
                 if (bigECS.isNewlyAdded() && bigECS.getServerRepository().size() > 1){
                     logger.info("Notifying a server, that it needs to send a data to a new server");
-                    out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n" + bigECS.getNextHash() + "\r\n"
-                                    + bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");
+                    out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n" + bigECS.getNextHash() + "\r\n");
+                    if(bigECS.getServerRepository().size()>2)
+                        out.write(bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");
+                    else{
+                        out.write(" \r\n \r\n");
+                    }
                     out.flush();
                     bigECS.setNewlyAdded(false);
                 }

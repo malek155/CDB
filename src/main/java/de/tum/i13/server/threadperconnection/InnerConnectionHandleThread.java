@@ -71,14 +71,16 @@ public class InnerConnectionHandleThread extends Thread {
                 String line = inECS.readLine();
                 if(line.equals("NewServer")){
                     cutter = inECS.readLine();  				// newly added server
-                    nextNeighbour = inECS.readLine();       // server we have our data at
+                    nextNeighbour = inECS.readLine();           // server we have our data at
                     nextNextNeighbour = inECS.readLine();
                     prevNeighbour = inECS.readLine();
 
                     if(nextNextNeighbour.equals(this.hash)){
+                        logger.info("nextnext");
                         this.cp.getKVStore().removeReplica2();
                     }
                     if(nextNeighbour.equals(this.hash)){
+                        logger.info("next");
                         this.cp.getKVStore().removeReplica2();
 
                         // in kvstoreprocessor toReturn should be saved to the fst replica
@@ -89,6 +91,7 @@ public class InnerConnectionHandleThread extends Thread {
                         logger.info("Transferred replica of a new server to a next after next server");
                     }
                     if(prevNeighbour.equals(this.hash)){
+                        logger.info("prev");
                         this.transferFromPrev(cutter);
                         logger.info("Transferred replicas to a new server");
                     }

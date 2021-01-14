@@ -4,11 +4,14 @@ import de.tum.i13.server.threadperconnection.ConnectionHandleThread;
 
 import java.io.*;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Scanner;
+import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -29,6 +32,7 @@ public class KVStoreProcessor implements KVStore {
 	private String[] keyvalue;
 	private Cache cache;
 	private Logger logger;
+	private FileWriter fw;
 
 	public void setPath(Path path) {
 		this.path = path;
@@ -40,16 +44,12 @@ public class KVStoreProcessor implements KVStore {
 
 	public KVStoreProcessor(Path path1) throws IOException {
 		this.setPath(path1);
-		storage = new File(String.valueOf(this.path));
 		logger = Logger.getLogger(ConnectionHandleThread.class.getName());
-//		Files.createDirectories(this.path);
-		if (storage.createNewFile()){
-			logger.info("has been created");
-		}
-		else{
-			logger.info("already");
-		}
-
+		storage = new File(path + "/storage.txt");
+//		if (!storage.exists()) {
+//			storage.createNewFile();
+//		}
+		fw = new FileWriter(storage, false);
 	}
 
 	// We have to put the both methods as synchronized because many threads will
@@ -64,55 +64,73 @@ public class KVStoreProcessor implements KVStore {
 	@Override
 	public synchronized KVMessageProcessor put(String key, String value, String hash) throws Exception {
 		boolean added;
+		boolean gonethrough = false;
 		BigInteger hashToAdd = new BigInteger(hash, 16);
 		BigInteger hashToCompare;
+
 		try {
-			scanner = new Scanner(new FileInputStream(storage));
-			logger.info("still before");
-			if(!scanner.hasNextLine()){
-				Path path1 = Paths.get(String.valueOf(path));
-				Stream<String> lines = Files.lines(path1);
-				String lineToReplace = key + " " + value + " " + hash + "\r\n";
-				List<String> replaced = lines.map(row -> row.replaceAll("", lineToReplace))
-						.collect(Collectors.toList());
-				Files.write(path1, replaced);
-				lines.close();
+			if(storage.length() == 0){
+				fw.write(key + " " + value + " " + hash + "\r\n");
 
+				fw.close();
 				kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value);
+
+				this.cache.put(key, value);
 			}
-			while (scanner.hasNextLine()) {
-				String replacingLine;
-				String line = scanner.nextLine();
-				keyvalue = line.split(" ");
-				hashToCompare = new BigInteger(keyvalue[2], 16);
-				if (hashToAdd.compareTo(hashToCompare)>= 0) {
-					Path path1 = Paths.get(String.valueOf(path));
-					Stream<String> lines = Files.lines(path1);
+			else{
+				scanner = new Scanner(new FileInputStream(storage));
+				while (scanner.hasNextLine()){
+					String replacingLine;
+					String line = scanner.nextLine();
+					if(line.equals(""))
+						break;
 
-					if (hashToAdd.equals(hashToCompare)) {
-						replacingLine = (value == null) ? "" : key + " " + value + " " + hash + "\r\n";
-						added = false;
-					} else {
-						replacingLine = key + " " + value + " " + hash + "\r\n" + line + "\r\n";
-						added = true;
-					}
-					List<String> replaced = lines.map(row -> row.replaceAll(line, replacingLine))
-							.collect(Collectors.toList());
-					Files.write(path1, replaced);
-					lines.close();
-					this.cache.removeKey(key);
+					keyvalue = line.split(" ");
+					hashToCompare = new BigInteger(keyvalue[2], 16);
+					logger.info(hash);
+					if (hashToAdd.compareTo(hashToCompare) <= 0){
+						logger.info("still before");
 
-					if (value != null) {
-						kvmessage = (added) ? new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value)
-								: new KVMessageProcessor(KVMessage.StatusType.PUT_UPDATE, key, value);
-						this.cache.put(key, value);
-					} else {
-						kvmessage = new KVMessageProcessor(KVMessage.StatusType.DELETE_SUCCESS, key, null);
+						if(hashToAdd.equals(hashToCompare)){
+							replacingLine = (value == null) ? "" : key + " " + value + " " + hash + "\r\n";
+							added = false;
+						} else {
+							replacingLine = line + "\r\n" +  key + " " + value + " " + hash + "\r\n";
+							added = true;
+						}
+
+						Stream<String> lines = Files.lines(path);
+						List<String> replaced = lines.map(row -> row.replaceAll(line, replacingLine))
+								.collect(Collectors.toList());
+
+						fw.write(replaced.toString());
+						fw.close();
+						lines.close();
+						this.cache.removeKey(key);
+
+						if (value != null){
+							kvmessage = (added) ? new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value)
+									: new KVMessageProcessor(KVMessage.StatusType.PUT_UPDATE, key, value);
+							this.cache.put(key, value);
+						} else {
+							kvmessage = new KVMessageProcessor(KVMessage.StatusType.DELETE_SUCCESS, key, null);
+						}
+						scanner.close();
+						gonethrough = true;
+						break;
 					}
-					break;
+				}
+				if(!gonethrough){
+					String content = Files.readString(path, Charset.defaultCharset());
+					fw.write(content + key + " " + value + " " + hash + "\r\n");
+					kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value);
+					this.cache.put(key, value);
+				}
+				else{
+					kvmessage = (value == null) ? new KVMessageProcessor(KVMessage.StatusType.DELETE_ERROR, key, null)
+							: new KVMessageProcessor(KVMessage.StatusType.PUT_ERROR, key, value);
 				}
 			}
-			scanner.close();
 		} catch (FileNotFoundException fe) {
 			logger.warning(fe.getMessage());
 			kvmessage = (value == null) ? new KVMessageProcessor(KVMessage.StatusType.DELETE_ERROR, key, null)
