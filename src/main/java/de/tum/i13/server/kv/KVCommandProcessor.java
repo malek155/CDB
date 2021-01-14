@@ -98,9 +98,11 @@ public class KVCommandProcessor implements CommandProcessor {
 						if ((input[0].equals("put") || input[0].equals("delete")) && !readOnly) {
 							if (input.length != 3 && input[0].equals("put")){
 								logger.warning("not a suitable command for putting keys-values!");
+								response = "not a suitable command for putting keys-values!";
 								throw new IOException("Put Request needs a key and a value !");
 							} else if (input.length != 2 && input[0].equals("delete")){
 								logger.warning("not a suitable command for deleting keys-values!");
+								response = "not a suitable command for deleting keys-values!";
 								throw new IOException("Delete Request needs only a key !");
 							}
 							msg = input[0].equals("put") ? this.kvStore.put(input[1], input[2], hashMD5(input[1]))
@@ -115,6 +117,7 @@ public class KVCommandProcessor implements CommandProcessor {
 							}
 						} else if (input[0].equals("get")) {
 							if (input.length != 2){
+								response = "not a suitable command for getting values!";
 								logger.warning("not a suitable command for getting values!");
 								throw new Exception("Get Request needs only a key !");
 							}

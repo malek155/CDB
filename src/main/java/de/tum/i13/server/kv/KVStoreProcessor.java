@@ -71,10 +71,9 @@ public class KVStoreProcessor implements KVStore {
 		try {
 			if(storage.length() == 0){
 				fw.write(key + " " + value + " " + hash + "\r\n");
-
-				fw.close();
+				fw.flush();
 				kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value);
-
+				logger.info("start");
 				this.cache.put(key, value);
 			}
 			else{
@@ -83,32 +82,32 @@ public class KVStoreProcessor implements KVStore {
 					String replacingLine;
 					String line = scanner.nextLine();
 					if(line.equals(""))
-						break;
+						continue;
 
 					keyvalue = line.split(" ");
 					hashToCompare = new BigInteger(keyvalue[2], 16);
 					logger.info(hash);
 					if (hashToAdd.compareTo(hashToCompare) <= 0){
-						logger.info("still before");
 
 						if(hashToAdd.equals(hashToCompare)){
-							replacingLine = (value == null) ? "" : key + " " + value + " " + hash + "\r\n";
+							replacingLine = (value.equals("null")) ? "" : key + " " + value + " " + hash;
 							added = false;
 						} else {
-							replacingLine = line + "\r\n" +  key + " " + value + " " + hash + "\r\n";
+							replacingLine = key + " " + value + " " + hash + "\r\n" +  line;
 							added = true;
 						}
-
-						Stream<String> lines = Files.lines(path);
-						List<String> replaced = lines.map(row -> row.replaceAll(line, replacingLine))
-								.collect(Collectors.toList());
-
-						fw.write(replaced.toString());
-						fw.close();
+						logger.info("continue");
+						Stream<String> lines = Files.lines(Paths.get(path + "/storage.txt"));
+						String replaced = lines.map(row -> row.replaceAll(line, replacingLine))
+								.collect(Collectors.joining("\r\n"));
 						lines.close();
+
+						fw = new FileWriter(storage, false);
+						fw.write(replaced + "\r\n");
+						fw.flush();
 						this.cache.removeKey(key);
 
-						if (value != null){
+						if (!value.equals("null")){
 							kvmessage = (added) ? new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value)
 									: new KVMessageProcessor(KVMessage.StatusType.PUT_UPDATE, key, value);
 							this.cache.put(key, value);
@@ -121,19 +120,16 @@ public class KVStoreProcessor implements KVStore {
 					}
 				}
 				if(!gonethrough){
-					String content = Files.readString(path, Charset.defaultCharset());
-					fw.write(content + key + " " + value + " " + hash + "\r\n");
+					logger.info("still before");
+					fw.write(key + " " + value + " " + hash + "\r\n");
+					fw.flush();
 					kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value);
 					this.cache.put(key, value);
-				}
-				else{
-					kvmessage = (value == null) ? new KVMessageProcessor(KVMessage.StatusType.DELETE_ERROR, key, null)
-							: new KVMessageProcessor(KVMessage.StatusType.PUT_ERROR, key, value);
 				}
 			}
 		} catch (FileNotFoundException fe) {
 			logger.warning(fe.getMessage());
-			kvmessage = (value == null) ? new KVMessageProcessor(KVMessage.StatusType.DELETE_ERROR, key, null)
+			kvmessage = (value.equals("null")) ? new KVMessageProcessor(KVMessage.StatusType.DELETE_ERROR, key, null)
 					: new KVMessageProcessor(KVMessage.StatusType.PUT_ERROR, key, value);
 
 		}
