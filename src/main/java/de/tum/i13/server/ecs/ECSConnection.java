@@ -45,15 +45,8 @@ public class ECSConnection implements Runnable {
                     bigECS.movedMeta();
                 }
                 if (bigECS.isNewlyAdded() && bigECS.getServerRepository().size() > 1){
+                    bigECS.notifyServers();
                     logger.info("Notifying a server, that it needs to send a data to a new server");
-                    out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n" + bigECS.getNextHash() + "\r\n");
-                    if(bigECS.getServerRepository().size()>2)
-                        out.write(bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");
-                    else{
-                        out.write(" \r\n \r\n");
-                    }
-                    out.flush();
-                    bigECS.setNewlyAdded(false);
                 }
             }
             logger.info("Closing the ECS connection");
@@ -96,5 +89,15 @@ public class ECSConnection implements Runnable {
         out.write("first"+ metadata + " last" + "\r\n");
         out.flush();
     }
+
+     public void reallocate() throws IOException{
+         PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
+         out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n" + bigECS.getNextHash() + "\r\n");
+         if(bigECS.getServerRepository().size()>2)
+             out.write(bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");
+         else
+             out.write(" \r\n \r\n");
+         out.flush();
+     }
 
 }

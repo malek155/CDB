@@ -37,14 +37,6 @@ public class ConnectionHandleThread extends Thread {
 
 	public static Logger logger = Logger.getLogger(ConnectionHandleThread.class.getName());
 
-	public boolean getShuttingDown(){
-		return shuttingDown;
-	}
-
-	public void setClosing(boolean closing){
-		this.closing = closing;
-	}
-
 	@Override
 	/*
 	 * run() method

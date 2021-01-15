@@ -272,11 +272,17 @@ public class ECS {
         return added;
     }
 
-    public void movedMeta() throws IOException {
+    public void movedMeta() throws IOException{
         for(ECSConnection ecsConnection : connections)
             ecsConnection.sendMeta();
         this.setMoved(false);
         logger.info("Updating metadata in servers");
+    }
+
+    public void notifyServers() throws IOException {
+        for(ECSConnection ecsConnection : connections)
+            ecsConnection.reallocate();
+        this.newlyAdded = false;
     }
 
 

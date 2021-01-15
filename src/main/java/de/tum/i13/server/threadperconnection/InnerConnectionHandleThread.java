@@ -92,10 +92,12 @@ public class InnerConnectionHandleThread extends Thread {
 
                         // in kvstoreprocessor toReturn should be saved to the fst replica
                         this.transfer(cutter, nextNeighbour);
-                        logger.info("Transferred data to a new server");
+                        logger.info("Transferring data to a new server");
 
-                        this.transferToNextNext(nextNextNeighbour);
-                        logger.info("Transferred replica of a new server to a next after next server");
+                        if(!nextNextNeighbour.equals(" ")){
+                            this.transferToNextNext(nextNextNeighbour);
+                            logger.info("Transferring replica of a new server to a next after next server");
+                        }
                     }
                     if(prevNeighbour.equals(this.hash)){
                         logger.info("prev");
@@ -142,7 +144,7 @@ public class InnerConnectionHandleThread extends Thread {
         File storage = (nextServer.equals("")) ? this.cp.getKVStore().getStorage("")
                 : this.cp.getKVStore().getStorage(newServer);
 
-        try (Socket socket = new Socket(newIP, newPort)){
+        try(Socket socket = new Socket(newIP, newPort)){
             PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
             Scanner scanner = new Scanner(new FileInputStream(storage));
 

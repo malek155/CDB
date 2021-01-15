@@ -46,9 +46,6 @@ public class KVStoreProcessor implements KVStore {
 		this.setPath(path1);
 		logger = Logger.getLogger(ConnectionHandleThread.class.getName());
 		storage = new File(path + "/storage.txt");
-//		if (!storage.exists()) {
-//			storage.createNewFile();
-//		}
 		fw = new FileWriter(storage, false);
 	}
 
@@ -120,7 +117,6 @@ public class KVStoreProcessor implements KVStore {
 					}
 				}
 				if(!gonethrough){
-					logger.info("still before");
 					fw.write(key + " " + value + " " + hash + "\r\n");
 					fw.flush();
 					kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value);
@@ -180,15 +176,11 @@ public class KVStoreProcessor implements KVStore {
 			BigInteger hashToCompare;
 
 			//creating tmp paths
-			Path returnPath = Files.createTempFile("rebalancing", ".txt");
-			Path stayPath = Files.createTempFile("rebalancing", ".txt");
-			toReturn = new File(String.valueOf(returnPath));
-			toStay = new File(String.valueOf(stayPath));
+			toStay = new File(path + "/rebalancing1.txt");
+			toReturn = new File(path + "/rebalancing2.txt");
 
-			FileWriter fwToReturn = new FileWriter(toReturn.getName(), true);
-			FileWriter fwToStay = new FileWriter(toStay.getName(), false);
-			BufferedWriter bw1 = new BufferedWriter(fwToReturn);
-			BufferedWriter bw2 = new BufferedWriter(fwToStay);
+			FileWriter fwToReturn = new FileWriter(toReturn, true);
+			FileWriter fwToStay = new FileWriter(toStay, true);
 
 			try {
 				scanner = new Scanner(new FileInputStream(storage));
@@ -196,24 +188,27 @@ public class KVStoreProcessor implements KVStore {
 					String line = scanner.nextLine();
 					keyvalue = line.split(" ");
 					hashToCompare = new BigInteger(keyvalue[2], 16);
-					if(hashEdge.compareTo(hashToCompare)>= 0){
-						bw2.write(line);
+					if(hashEdge.compareTo(hashToCompare) > 0){
+						fwToStay.write(line + "\r\n");
 					}
 					else{
-						bw1.write(line);
+						fwToReturn.write(line + "\r\n");
 					}
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			Path path1 = Paths.get(String.valueOf(stayPath));
-			List <String> lines = Files.lines(path1).collect(Collectors.toList());
-			Files.write(path, lines);
-
 			fwToReturn.close();
 			fwToStay.close();
-			bw1.close();
-			bw2.close();
+
+			String lines = Files.lines(Paths.get(path + "/rebalancing1.txt")).collect(Collectors.joining("\r\n"));
+
+			fw = new FileWriter(storage, false);
+			fw.write(lines + "\r\n");
+			fw.close();
+
+			toStay.deleteOnExit();
+			toReturn.deleteOnExit();
 
 			return toReturn;
 		}
@@ -229,14 +224,5 @@ public class KVStoreProcessor implements KVStore {
 
 	public void removeReplica2(){
 
-	}
-
-	public static void main(String[] args) throws Exception {
-		Path p = Paths.get("/data/");
-		KVStore kv = new KVStoreProcessor(p);
-		Cache cache = new LFUCache(100);
-		kv.setCache(cache);
-		kv.put("key1", "value1", "c909baa32094a7ffcf5cd99655931f55");
-		System.out.println(kv.get("key1"));
 	}
 }
