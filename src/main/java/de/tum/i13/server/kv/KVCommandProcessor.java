@@ -94,7 +94,7 @@ public class KVCommandProcessor implements CommandProcessor {
 							response = "server_write_lock";
 						}
 						if ((input[0].equals("put") || input[0].equals("delete")) && !readOnly) {
-							if (input.length != 3 && input[0].equals("put")){
+							if (input.length != 3 && input[0].equals("put") || input[1].trim().equals("") || input[2].trim().equals("")){
 								logger.warning("not a suitable command for putting keys-values!");
 								response = "not a suitable command for putting keys-values!";
 								throw new IOException("Put Request needs a key and a value !");
@@ -114,7 +114,7 @@ public class KVCommandProcessor implements CommandProcessor {
 								response = msg.getStatus().toString() + " " + msg.getKey();
 							}
 						} else if (input[0].equals("get")) {
-							if (input.length != 2){
+							if (input.length != 2 || input[1].trim().equals("") ){
 								response = "not a suitable command for getting values!";
 								logger.warning("not a suitable command for getting values!");
 								throw new Exception("Get Request needs only a key !");
