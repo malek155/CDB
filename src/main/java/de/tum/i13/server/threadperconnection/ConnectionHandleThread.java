@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 
 /**
  * ConnectionHandleThread class that will handle the thread of each client
- * 
+ *
  * @author gr9
  *
  */
@@ -27,8 +27,8 @@ public class ConnectionHandleThread extends Thread {
 	private boolean shuttingDown;
 	private boolean closing;
 
-	public ConnectionHandleThread(KVCommandProcessor commandProcessor, Socket clientSocket)
-			throws NoSuchAlgorithmException {
+	public ConnectionHandleThread(KVCommandProcessor commandProcessor,
+								  Socket clientSocket) throws NoSuchAlgorithmException {
 		this.cp = commandProcessor;
 		this.clientSocket = clientSocket;
 		this.shuttingDown = false;
@@ -36,14 +36,6 @@ public class ConnectionHandleThread extends Thread {
 	}
 
 	public static Logger logger = Logger.getLogger(ConnectionHandleThread.class.getName());
-
-	public boolean getShuttingDown() {
-		return shuttingDown;
-	}
-
-	public void setClosing(boolean closing) {
-		this.closing = closing;
-	}
 
 	@Override
 	/*
@@ -54,8 +46,10 @@ public class ConnectionHandleThread extends Thread {
 		try {
 			logger.info("Started a new client connection");
 
-			in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
-			out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
+			in = new BufferedReader(
+					new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
+			out = new PrintWriter(
+					new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
 			// first we call the connection accepted method of the commandprocessor
 			remote = (InetSocketAddress) clientSocket.getRemoteSocketAddress();
 			// So that we are sending the connectionaccepted msg only once in the beginning
@@ -66,7 +60,7 @@ public class ConnectionHandleThread extends Thread {
 
 			String firstLine;
 			String res;
-			while (!clientSocket.isClosed()) {
+			while (!clientSocket.isClosed()){
 				while ((firstLine = in.readLine()) != null) {
 					res = cp.process(firstLine) + "\r\n";
 
@@ -87,7 +81,7 @@ public class ConnectionHandleThread extends Thread {
 
 		try {
 			shuttingDown = true;
-			if (this.closing) {
+			if(this.closing){
 				logger.info("Closing a client connection");
 				clientSocket.close();
 				in.close();

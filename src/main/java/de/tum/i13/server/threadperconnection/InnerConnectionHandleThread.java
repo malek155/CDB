@@ -29,8 +29,10 @@ public class InnerConnectionHandleThread extends Thread {
 	private boolean shuttingDown;
 	private boolean notShutDown;
 
-	public InnerConnectionHandleThread(KVCommandProcessor commandProcessor, InetSocketAddress bootstrap, String ip,
-			int port) throws NoSuchAlgorithmException {
+	public InnerConnectionHandleThread(KVCommandProcessor commandProcessor,
+									   InetSocketAddress bootstrap,
+									   String ip,
+									   int port) throws NoSuchAlgorithmException {
 		this.cp = commandProcessor;
 		this.bootstrap = bootstrap;
 		this.hash = hashMD5(ip + port);
@@ -51,10 +53,10 @@ public class InnerConnectionHandleThread extends Thread {
 		String prevNeighbour;
 		String cutter;
 
-		logger.info(bootstrap.getHostString() + ":" + bootstrap.getPort());
+		logger.info(bootstrap.getHostString() + ":" +  bootstrap.getPort());
 
 		// ip, port -> bootstrap, ecs ip, port
-		try (Socket socket = new Socket(bootstrap.getHostString(), bootstrap.getPort())) {
+		try(Socket socket = new Socket(bootstrap.getHostString(), bootstrap.getPort())){
 			BufferedReader inECS = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			PrintWriter outECS = new PrintWriter(socket.getOutputStream());
 
@@ -65,41 +67,53 @@ public class InnerConnectionHandleThread extends Thread {
 
 			logger.info("Notified ecs about a new server");
 
-			while (notShutDown) {
+			while(notShutDown){
 				String line = inECS.readLine();
-				if (line.equals("NewServer")) {
-					cutter = inECS.readLine(); // newly added server
-					nextNeighbour = inECS.readLine(); // server we have our data at
+
+				if(line.equals("NewServer")){
+
+					cutter = inECS.readLine();  				// newly added server
+					nextNeighbour = inECS.readLine();           // server we have our data at
+
 					nextNextNeighbour = inECS.readLine();
 					prevNeighbour = inECS.readLine();
+					logger.info("cutter:" + cutter);
+					logger.info("next:" + nextNeighbour);
+					logger.info("nextnext:" + nextNextNeighbour);
+					logger.info("prev:" + prevNeighbour);
 
-					if (nextNextNeighbour.equals(this.hash)) {
+					if(nextNextNeighbour.equals(this.hash)){
+						logger.info("nextnext");
 						this.cp.getKVStore().removeReplica2();
 					}
-					if (nextNeighbour.equals(this.hash)) {
+					if(nextNeighbour.equals(this.hash)){
+						logger.info("next");
 						this.cp.getKVStore().removeReplica2();
 
 						// in kvstoreprocessor toReturn should be saved to the fst replica
 						this.transfer(cutter, nextNeighbour);
-						logger.info("Transferred data to a new server");
+						logger.info("Transferring data to a new server");
 
-						this.transferToNextNext(nextNextNeighbour);
-						logger.info("Transferred replica of a new server to a next after next server");
+						if(!nextNextNeighbour.equals(" ")){
+							this.transferToNextNext(nextNextNeighbour);
+							logger.info("Transferring replica of a new server to a next after next server");
+						}
 					}
-					if (prevNeighbour.equals(this.hash)) {
+					if(prevNeighbour.equals(this.hash)){
+						logger.info("prev");
 						this.transferFromPrev(cutter);
 						logger.info("Transferred replicas to a new server");
 					}
-				} else if (line.startsWith("metadata") || line.startsWith("firstmetadata")) {
+				}else if(line.startsWith("metadata") || line.startsWith("firstmetadata")){
 					cp.process(line);
 				}
-				if (this.shuttingDown) {
+				if(this.shuttingDown){
 					outECS.write("MayIShutDownPlease " + this.ip + ":" + this.port + " " + this.hash + "\r\n");
 					outECS.flush();
 					logger.info("Request to ECS to be allowed to shut down");
 
 					Thread.yield();
-					if (inECS.readLine().equals("YesYouMay")) {
+					if(inECS.readLine().equals("YesYouMay")){
 						nextNeighbour = inECS.readLine();
 						this.transfer(nextNeighbour, "");
 
@@ -111,16 +125,16 @@ public class InnerConnectionHandleThread extends Thread {
 			inECS.close();
 			outECS.close();
 			logger.info("Closed an ECS connection");
-		} catch (Exception ie) {
+		}catch(Exception ie){
 			ie.printStackTrace();
 		}
 	}
 
+
 	/**
-	 * transfer method connects with a neighbour server to transfer all data if it
-	 * is shutting down, otherwise only the part of a kvstorage to a new server
-	 * 
-	 * @param newServer  server transfer to
+	 * transfer method connects with a neighbour server to transfer all data if it is shutting down,
+	 * 	otherwise only the part of a kvstorage to a new server
+	 * @param newServer server transfer to
 	 * @param nextServer is our server to transfer from, a neigbour
 	 */
 	private void transfer(String newServer, String nextServer) throws IOException {
@@ -130,15 +144,15 @@ public class InnerConnectionHandleThread extends Thread {
 		File storage = (nextServer.equals("")) ? this.cp.getKVStore().getStorage("")
 				: this.cp.getKVStore().getStorage(newServer);
 
-		try (Socket socket = new Socket(newIP, newPort)) {
+		try(Socket socket = new Socket(newIP, newPort)){
 			PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
 			Scanner scanner = new Scanner(new FileInputStream(storage));
 
-			while (scanner.hasNextLine()) {
+			while (scanner.hasNextLine()){
 				outTransfer.write("transferring " + scanner.nextLine() + "\r\n");
 				outTransfer.flush();
 			}
-			if (nextServer.equals("")) {
+			if(nextServer.equals("")){
 				outTransfer.write("You'reGoodToGo\r\n");
 				outTransfer.flush();
 			}
@@ -157,16 +171,16 @@ public class InnerConnectionHandleThread extends Thread {
 		File replica1 = this.cp.getKVStore().getStorage("");
 		File replica2 = this.cp.getKVStore().getReplica1();
 
-		try (Socket socket = new Socket(newIP, newPort)) {
+		try (Socket socket = new Socket(newIP, newPort)){
 			PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
 			Scanner scanner1 = new Scanner(new FileInputStream(replica1));
 			Scanner scanner2 = new Scanner(new FileInputStream(replica2));
 
-			while (scanner1.hasNextLine()) {
+			while (scanner1.hasNextLine()){
 				outTransfer.write("replica1 " + scanner1.nextLine() + "\r\n");
 				outTransfer.flush();
 			}
-			while (scanner2.hasNextLine()) {
+			while (scanner2.hasNextLine()){
 				outTransfer.write("replica2 " + scanner1.nextLine() + "\r\n");
 				outTransfer.flush();
 			}
@@ -179,16 +193,16 @@ public class InnerConnectionHandleThread extends Thread {
 		}
 	}
 
-	private void transferToNextNext(String nextNextServer) {
+	private void transferToNextNext(String nextNextServer){
 		File replica2 = this.cp.getKVStore().getReplica1();
 		String nextNextIP = cp.getMetadata().get(nextNextServer).getIP();
 		int nextNextPort = cp.getMetadata().get(nextNextServer).getPort();
 
-		try (Socket socket = new Socket(nextNextIP, nextNextPort)) {
+		try (Socket socket = new Socket(nextNextIP, nextNextPort)){
 			PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
 			Scanner scanner = new Scanner(new FileInputStream(replica2));
 
-			while (scanner.hasNextLine()) {
+			while (scanner.hasNextLine()){
 				outTransfer.write("replica2 " + scanner.nextLine() + "\r\n");
 				outTransfer.flush();
 			}
@@ -212,11 +226,11 @@ public class InnerConnectionHandleThread extends Thread {
 		return myHash;
 	}
 
-	public void setShuttingDown(boolean shuttingDown) {
+	public void setShuttingDown(boolean shuttingDown){
 		this.shuttingDown = shuttingDown;
 	}
 
-	public boolean getShutDown() {
+	public boolean getShutDown(){
 		return this.notShutDown;
 	}
 

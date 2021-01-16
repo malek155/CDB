@@ -21,8 +21,7 @@ public class Main {
 	public String start;
 	public String end;
 
-	public Main() {
-	}
+	public Main(){}
 
 	/**
 	 * main() method where our serversocket will be initialized
@@ -41,8 +40,7 @@ public class Main {
 			cache = new FIFOLRUCache(cfg.cacheSize, true);
 		} else if (cfg.cache.equals("LFU")) {
 			cache = new LFUCache(cfg.cacheSize);
-		} else
-			System.out.println("Please check your input for a cache strategy and try again.");
+		} else System.out.println("Please check your input for a cache strategy and try again.");
 
 		kvStore.setCache(cache);
 
@@ -50,8 +48,7 @@ public class Main {
 		final ServerSocket serverSocket = new ServerSocket();
 
 		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache, cfg.listenaddr, cfg.port);
-		InnerConnectionHandleThread innerThread = new InnerConnectionHandleThread(logic, cfg.bootstrap, cfg.listenaddr,
-				cfg.port);
+		InnerConnectionHandleThread innerThread = new InnerConnectionHandleThread(logic, cfg.bootstrap, cfg.listenaddr, cfg.port);
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
@@ -59,7 +56,7 @@ public class Main {
 				System.out.println("Closing thread per connection kv server");
 				try {
 					innerThread.setShuttingDown(true);
-					while (!innerThread.getShutDown()) {
+					while(!innerThread.getShutDown()){
 						Thread.sleep(2000);
 					}
 					serverSocket.close();
@@ -74,7 +71,7 @@ public class Main {
 
 		new Thread(innerThread).start();
 
-		while (true) {
+		while(true){
 			// Waiting for client to connect
 			Socket clientSocket = serverSocket.accept();
 
@@ -83,5 +80,6 @@ public class Main {
 			new Thread(clientThread).start();
 		}
 	}
+
 
 }
