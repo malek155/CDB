@@ -94,7 +94,7 @@ public class KVCommandProcessor implements CommandProcessor {
 							response = "server_write_lock";
 						}
 						if ((input[0].equals("put") || input[0].equals("delete")) && !readOnly) {
-							if (input.length != 3 && input[0].equals("put") || input[1].trim().equals("") || input[2].trim().equals("")){
+							if (input.length != 3 && input[0].equals("put")){
 								logger.warning("not a suitable command for putting keys-values!");
 								response = "not a suitable command for putting keys-values!";
 								throw new IOException("Put Request needs a key and a value !");
@@ -103,8 +103,8 @@ public class KVCommandProcessor implements CommandProcessor {
 								response = "not a suitable command for deleting keys-values!";
 								throw new IOException("Delete Request needs only a key !");
 							}
-							msg = input[0].equals("put") ? this.kvStore.put(input[1], input[2], hashMD5(input[1]))
-									: this.kvStore.put(input[1], "null", hashMD5(input[1]));
+							msg = input[0].equals("put") ? this.kvStore.put(input[1], input[2], hashMD5(input[1]), "storage")
+									: this.kvStore.put(input[1], "null", hashMD5(input[1]), "storage");
 							logger.info("status:" + msg.getStatus().toString());
 							if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
 								logger.info("Error occured by getting a value ");
@@ -114,7 +114,7 @@ public class KVCommandProcessor implements CommandProcessor {
 								response = msg.getStatus().toString() + " " + msg.getKey();
 							}
 						} else if (input[0].equals("get")) {
-							if (input.length != 2 || input[1].trim().equals("") ){
+							if (input.length != 2){
 								response = "not a suitable command for getting values!";
 								logger.warning("not a suitable command for getting values!");
 								throw new Exception("Get Request needs only a key !");
@@ -147,20 +147,15 @@ public class KVCommandProcessor implements CommandProcessor {
 			logger.info("Server is ready");
 			this.readOnly = false;
 		} else if (input[0].equals("replica1")) {
-
-
-
-			// putting a new line in a replica line by line
-			//
-
+			// 1 = key, 2 = value, 3 = hash
+			kvStore.put(input[1], input[2], input[3], "replica1");
 			logger.info("Updating replica1");
 		} else if (input[0].equals("replica2")) {
-
-
-			// putting a new line in a replica line by line
+			kvStore.put(input[1], input[2], input[3], "replica2");
+			logger.info("Updating replica1");
 			logger.info("Updating replica2");
 		} else if (input[0].equals("transferring")) {
-			this.kvStore.put(input[1], input[2], input[3]);
+			this.kvStore.put(input[1], input[2], input[3], "storage");
 			logger.info("Putting a new kv-pair, transferred from other servers");
 		} else if (input[0].equals("metadata")){
 			String[] entry = command.split("=");
@@ -170,7 +165,6 @@ public class KVCommandProcessor implements CommandProcessor {
 			metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
 			if(metadatanew.length == 5){
-//				metadata = tempMap;
 				logger.info("Updated metadata from ECS");
 				logger.info(metadata.toString());
 			}
@@ -189,7 +183,6 @@ public class KVCommandProcessor implements CommandProcessor {
 			metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
 			if(metadatanew.length == 5){
-//				metadata = tempMap;
 				logger.info("Updated metadata from ECS");
 			}
 		} else if (input[0].equals("keyrange")){

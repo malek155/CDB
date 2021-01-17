@@ -13,24 +13,24 @@ import java.util.stream.Collectors;
 public class ECSConnection implements Runnable {
     private Socket clientSocket;
     private ECS bigECS; // is watching you
+    private BufferedReader in;
+    private PrintWriter out;
 
     public static Logger logger = Logger.getLogger(ECSConnection.class.getName());
 
-    public ECSConnection(Socket clientSocket, ECS bigECS){
+    public ECSConnection(Socket clientSocket, ECS bigECS) throws IOException {
         this.clientSocket = clientSocket;
         this.bigECS = bigECS;
+        in = new BufferedReader(
+                new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
+        out = new PrintWriter(
+                new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
     }
 
     @Override
     public void run(){
         try {
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
-            PrintWriter out = new PrintWriter(
-                    new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
-
             logger.info("Started the ECS connection");
-            InetAddress ip = clientSocket.getInetAddress();
 
             String line;
             while (!clientSocket.isClosed()){
@@ -80,8 +80,7 @@ public class ECSConnection implements Runnable {
         return reply;
     }
 
-    public void sendMeta() throws IOException {
-        PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
+    public void sendMeta(){
         Map<String, Metadata> map = bigECS.getMetadataMap();
         String metadata = map.keySet().stream()
                 .map(key -> "metadata " + key + "=" + map.get(key).toString())
@@ -90,8 +89,7 @@ public class ECSConnection implements Runnable {
         out.flush();
     }
 
-     public void reallocate() throws IOException{
-         PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
+     public void reallocate(){
          out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n" + bigECS.getNextHash() + "\r\n");
          if(bigECS.getServerRepository().size()>2)
              out.write(bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");

@@ -24,7 +24,7 @@ public class ECS {
     private String prevHash;
     private String nextNextHash;
     private boolean newlyAdded;
-    public ArrayList<ECSConnection> connections = new ArrayList<>();
+    public TreeMap<String, ECSConnection> connections = new TreeMap<>();
 
     //Servers repository, also a circular structure? meh we'll see
     private LinkedList<Main> serverRepository = new LinkedList<>();
@@ -57,7 +57,7 @@ public class ECS {
      * addServer method adds a server to serverRepository, its data to metadataMap, updates circular relationships
      * @param ip, port are credentials of a new server
      */
-    public void addServer(String ip, int port) throws NoSuchAlgorithmException {
+    public void addServer(String ip, int port) throws NoSuchAlgorithmException{
         logger.info("started adding a server");
         int startIndex;     // number if starthash
         String startHash;   // startHash
@@ -118,9 +118,10 @@ public class ECS {
         metadataMap.put(hash, new Metadata(ip, port, startHash, hash));
         this.serverRepository.add(startIndex, newMain);
 
+        // for updating metadata
         this.moved = true;
 
-        //for ecs connection
+        //for ecs connection, boolean if a new server was added
         newlyAdded = true;
         newServer = hash;
         nextHash = newMain.nextServer.end;
@@ -137,68 +138,50 @@ public class ECS {
      * @param (ip,port) are credentials for the server to remove
      */
     private void removeServer(String ip, int port) throws Exception {
-        moved = true;
-
-        String hash = this.hashMD5(ip + port);
-
-        Map<Integer, String> returnIndexes = new HashMap();
-
-        Metadata mdToRemove = null;
-        String newStart = null;
-
-        //count is the index of the next server (the new responsible server)
-        int count = 1;
-
-        for (Map.Entry entry : metadataMap.entrySet()) {
-            count++;
-            if (entry.getKey().toString().equals(hashMD5(ip + port))) {
-                //the metadata of the server to be removed
-                mdToRemove = (Metadata) entry.getValue();
-                newStart = mdToRemove.getStart();
-                //remove the metadata
-                mdToRemove = null;
-                break;
-            }
+        if(serverRepository.size() == 1){
+            serverRepository.remove(0);
+            metadataMap.clear();
+            headServer = null;
+            tailServer = null;
+            logger.info("There are no servers left");
         }
-
-//updating the metadata of the next server
-        metadataMap.get(count).setStart(newStart);
-
-        //removing the main in server repository
-        Main predMain = null;
-
-        //find the main to be deleted
-        Main tempServer = headServer;
-
-        //if respository is empty
-        if (this.headServer == null) {
+        else if(serverRepository.size() == 0){
+            logger.warning("Server repository is already empty");
             return;
         }
 
-        //if we only have one server in the ring
-        if (tempServer.equals(headServer) && tempServer.nextServer.equals(headServer)) {
-            headServer = null;
-            System.out.println("There are no servers left"); //maybe exception here ?
-            //where does the storage go?
+        String hash = this.hashMD5(ip + port);
+
+        int indexToRemove = this.locate(hash).keySet().stream().findFirst().get();
+
+
+        String prevHash = (indexToRemove == 0)
+                ? tailServer.end
+                : String.valueOf(serverRepository.get(indexToRemove-1));        // hash of a prev server, ugly ugly
+
+        String nextHash = String.valueOf(serverRepository.get(indexToRemove+1));
+
+        if(indexToRemove == 0){
+            headServer = headServer.nextServer;
+            tailServer.nextServer = tailServer;
+        }
+        else if(indexToRemove == serverRepository.size()-1){
+            tailServer = serverRepository.get(indexToRemove-1);
+            tailServer.nextServer = headServer;
+        }
+        else{
+            serverRepository.get(indexToRemove-1).nextServer = serverRepository.get(indexToRemove+1);
         }
 
-        //if ss is the first server in the ring
-        if (tempServer.equals(headServer)) {
-            predMain = headServer;
-            while (!(predMain.nextServer.equals(headServer))) {
-                predMain = predMain.nextServer;
-            }
-            //close the circle
-            headServer = tempServer.nextServer;
-            predMain.nextServer = headServer;
-        }
+        //reallocating metadata
+        metadataMap.get(prevHash).setEnd(metadataMap.get(hash).getEnd());
+        metadataMap.get(nextHash).setStart(metadataMap.get(hash).getStart());
+        metadataMap.remove(hash);
 
-        //if ss is the last server in the ring
-        if (tempServer.nextServer.equals(headServer))
-            predMain.nextServer = headServer;
+        //reallocating server repository
+        serverRepository.remove(indexToRemove);
 
-            //if ss in the middle (normal case)
-        else predMain.nextServer = tempServer.nextServer;
+        this.moved = true;
 
         logger.info("Removed a server, listening on: " + ip + ":" + port);
     }
@@ -235,7 +218,7 @@ public class ECS {
 
         String hashToCmpString;
         BigInteger hashToCmp;
-        BigInteger lastHash;
+
         //looking for an interval for our new hashed value
         for (Map.Entry element : metadataMap.entrySet()) {
             hashToCmpString = (String) element.getKey();
@@ -273,15 +256,21 @@ public class ECS {
     }
 
     public void movedMeta() throws IOException{
-        for(ECSConnection ecsConnection : connections)
-            ecsConnection.sendMeta();
+//        for (Map.Entry<String, ECSConnection> element : connections.entrySet()){
+//            element.getValue().sendMeta();
+//        }
+        for (Iterator i = connections.keySet().iterator(); i.hasNext();) {
+            ECSConnection value = connections.get(i.next());
+            value.sendMeta();
+        }
         this.setMoved(false);
         logger.info("Updating metadata in servers");
     }
 
     public void notifyServers() throws IOException {
-        for(ECSConnection ecsConnection : connections)
-            ecsConnection.reallocate();
+        for (Map.Entry<String, ECSConnection> element : connections.entrySet()) {
+            element.getValue().reallocate();
+        }
         this.newlyAdded = false;
     }
 
@@ -359,7 +348,7 @@ public class ECS {
 
                 // When we accept a connection, we start a new Thread for this connection
                 ECSConnection connection = new ECSConnection(clientSocket, ecs);
-                ecs.connections.add(connection);
+                ecs.connections.put(cfg.bootstrap.getAddress().toString() + cfg.bootstrap.getPort(), connection);
 
                 new Thread(connection).start();
             }

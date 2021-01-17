@@ -31,8 +31,10 @@ public class KVStoreProcessor implements KVStore {
 	private KVMessageProcessor kvmessage;
 	private String[] keyvalue;
 	private Cache cache;
-	private Logger logger;
+	private final Logger logger;
 	private FileWriter fw;
+	private FileWriter fwR1;
+	private FileWriter fwR2;
 
 	public void setPath(Path path) {
 		this.path = path;
@@ -46,7 +48,11 @@ public class KVStoreProcessor implements KVStore {
 		this.setPath(path1);
 		logger = Logger.getLogger(ConnectionHandleThread.class.getName());
 		storage = new File(path + "/storage.txt");
+		replica1 = new File(path + "/replica1.txt");
+		replica2 = new File(path + "/replica2.txt");
 		fw = new FileWriter(storage, false);
+		fwR1 = new FileWriter(replica1, false);
+		fwR2 = new FileWriter(replica2, false);
 	}
 
 	// We have to put the both methods as synchronized because many threads will
@@ -59,31 +65,49 @@ public class KVStoreProcessor implements KVStore {
 	 * @return kvMessage for the status of the operation
 	 */
 	@Override
-	public synchronized KVMessageProcessor put(String key, String value, String hash) throws Exception {
+	public synchronized KVMessageProcessor put(String key, String value, String hash, String kind) throws Exception {
+		File file;
+		FileWriter fWriter;
+
 		boolean added;
 		boolean gonethrough = false;
 		BigInteger hashToAdd = new BigInteger(hash, 16);
 		BigInteger hashToCompare;
 
+		// diff. between replicas or main storage
+		if(kind.equals("storage")){
+			file = storage;
+			fWriter = fw;
+		}
+		else if(kind.equals("replica1")){
+			file = replica1;
+			fWriter = fwR1;
+		}
+		else{
+			file = replica2;
+			fWriter = fwR2;
+		}
+
 		try {
-			if(storage.length() == 0){
-				fw.write(key + " " + value + " " + hash + "\r\n");
-				fw.flush();
+			if(file.length() == 0){
+				fWriter.write(key + " " + value + " " + hash + "\r\n");
+				fWriter.flush();
 				kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value);
 				logger.info("start");
 				this.cache.put(key, value);
 			}
 			else{
-				scanner = new Scanner(new FileInputStream(storage));
+				scanner = new Scanner(new FileInputStream(file));
 				while (scanner.hasNextLine()){
+					String line;
 					String replacingLine;
-					String line = scanner.nextLine();
+					line = scanner.nextLine();
 					if(line.equals(""))
 						continue;
 
+					logger.info("still before");
 					keyvalue = line.split(" ");
 					hashToCompare = new BigInteger(keyvalue[2], 16);
-					logger.info(hash);
 					if (hashToAdd.compareTo(hashToCompare) <= 0){
 
 						if(hashToAdd.equals(hashToCompare)){
@@ -93,15 +117,15 @@ public class KVStoreProcessor implements KVStore {
 							replacingLine = key + " " + value + " " + hash + "\r\n" +  line;
 							added = true;
 						}
-						logger.info("continue");
-						Stream<String> lines = Files.lines(Paths.get(path + "/storage.txt"));
+						logger.info(replacingLine);
+						Stream<String> lines = Files.lines(Paths.get(path + "/" + kind + ".txt"));
 						String replaced = lines.map(row -> row.replaceAll(line, replacingLine))
 								.collect(Collectors.joining("\r\n"));
 						lines.close();
 
-						fw = new FileWriter(storage, false);
-						fw.write(replaced + "\r\n");
-						fw.flush();
+						fWriter = new FileWriter(file, false);
+						fWriter.write(replaced + "\r\n");
+						fWriter.flush();
 						this.cache.removeKey(key);
 
 						if (!value.equals("null")){
@@ -111,17 +135,30 @@ public class KVStoreProcessor implements KVStore {
 						} else {
 							kvmessage = new KVMessageProcessor(KVMessage.StatusType.DELETE_SUCCESS, key, null);
 						}
-						scanner.close();
 						gonethrough = true;
 						break;
 					}
 				}
 				if(!gonethrough){
-					fw.write(key + " " + value + " " + hash + "\r\n");
-					fw.flush();
+					String replacing = key + " " + value + " " + hash + "\r\n";
+
+					logger.info(replacing);
+					Stream<String> lines = Files.lines(Paths.get(path + "/" + kind + ".txt"));
+					String replaced = lines.map(row -> row.replaceAll(line, replacing))
+							.collect(Collectors.joining("\r\n"));
+					lines.close();
+
+					fWriter = new FileWriter(file, false);
+					fWriter.write(replaced + "\r\n");
+					fWriter.flush();
+					logger.info("problem herre");
+					String chain = key + " " + value + " " + hash + "\r\n";
+					fWriter.append(chain);
+					fWriter.flush();
 					kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value);
 					this.cache.put(key, value);
 				}
+				scanner.close();
 			}
 		} catch (FileNotFoundException fe) {
 			logger.warning(fe.getMessage());
@@ -140,20 +177,27 @@ public class KVStoreProcessor implements KVStore {
 	 * @throws Exception if key not found
 	 */
 	@Override
-	public synchronized KVMessageProcessor get(String key) throws Exception {
+	public synchronized KVMessageProcessor get(String key) throws Exception{
 		kvmessage = new KVMessageProcessor(KVMessage.StatusType.GET_ERROR, key, null);
-		Scanner scanner = new Scanner(new FileInputStream(storage));
-		while (scanner.hasNextLine()) {
-			String line = scanner.nextLine();
-			keyvalue = line.split(" ");
-			if (keyvalue[0].equals(key)) {
-				kvmessage = new KVMessageProcessor(KVMessage.StatusType.GET_SUCCESS, keyvalue[0], keyvalue[1]);
-				if (!this.cache.containsKey(key))
-					this.cache.put(key, keyvalue[1]);
-				break;
-			}
+
+		if(cache.containsKey(key)){
+			String value = cache.get(key);
+			kvmessage = new KVMessageProcessor(KVMessage.StatusType.GET_SUCCESS, key, value);
 		}
-		scanner.close();
+		else {
+			Scanner scanner = new Scanner(new FileInputStream(storage));
+			while (scanner.hasNextLine()) {
+				String line = scanner.nextLine();
+				keyvalue = line.split(" ");
+				if (keyvalue[0].equals(key)) {
+					kvmessage = new KVMessageProcessor(KVMessage.StatusType.GET_SUCCESS, keyvalue[0], keyvalue[1]);
+					if (!this.cache.containsKey(key))
+						this.cache.put(key, keyvalue[1]);
+					break;
+				}
+			}
+			scanner.close();
+		}
 		return kvmessage;
 	}
 
@@ -201,10 +245,22 @@ public class KVStoreProcessor implements KVStore {
 			fwToReturn.close();
 			fwToStay.close();
 
-			String lines = Files.lines(Paths.get(path + "/rebalancing1.txt")).collect(Collectors.joining("\r\n"));
+			// cut out part we're also leaving for a replica 1
+			// replica1 gets to be replica2
+			String linesNew = Files.lines(Paths.get(path + "/rebalancing1.txt")).collect(Collectors.joining("\r\n"));
+			String linesR2 = Files.lines(Paths.get(path + "/replica1.txt")).collect(Collectors.joining("\r\n"));
+			String linesR1 = Files.lines(Paths.get(path + "/rebalancing2.txt")).collect(Collectors.joining("\r\n"));
 
+			fwR1 = new FileWriter(replica1, false);
+			fwR2 = new FileWriter(replica2, false);
 			fw = new FileWriter(storage, false);
-			fw.write(lines + "\r\n");
+
+			fwR2.write(linesR2 + "\r\n");
+			fwR1.write(linesR1 + "\r\n");
+			fw.write(linesNew + "\r\n");
+
+			fwR2.close();
+			fwR1.close();
 			fw.close();
 
 			toStay.deleteOnExit();
@@ -216,13 +272,11 @@ public class KVStoreProcessor implements KVStore {
 
 	public File getReplica1(){return replica1;}
 
-	public File getReplica2(){return replica2;}
-
-	public void removeReplica1(){
-
+	public void removeReplica1() throws IOException {
+		fwR1 = new FileWriter(replica1, false);
 	}
 
-	public void removeReplica2(){
-
+	public void removeReplica2() throws IOException {
+		fwR2 = new FileWriter(replica2, false);
 	}
 }

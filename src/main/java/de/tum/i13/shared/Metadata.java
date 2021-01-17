@@ -33,6 +33,10 @@ public class Metadata {
         this.start = start;
     }
 
+    public void setEnd(String end) {
+        this.end = end;
+    }
+
     public String toString(){
         return ip + " " + port + " " + start + " " + end;
     }
