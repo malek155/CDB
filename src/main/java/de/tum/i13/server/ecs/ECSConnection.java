@@ -15,6 +15,8 @@ public class ECSConnection implements Runnable {
     private ECS bigECS; // is watching you
     private BufferedReader in;
     private PrintWriter out;
+    private String ip;
+    private int port;
 
     public static Logger logger = Logger.getLogger(ECSConnection.class.getName());
 
@@ -25,6 +27,8 @@ public class ECSConnection implements Runnable {
                 new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
         out = new PrintWriter(
                 new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
+        ip = clientSocket.getInetAddress().getHostAddress();
+        port = clientSocket.getLocalPort();
     }
 
     @Override
@@ -97,5 +101,9 @@ public class ECSConnection implements Runnable {
              out.write(" \r\n \r\n");
          out.flush();
      }
+
+     public String getIP(){return this.ip;}
+
+     public int getPort(){return port;}
 
 }

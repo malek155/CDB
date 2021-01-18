@@ -157,7 +157,6 @@ public class InnerConnectionHandleThread extends Thread {
             }
 
             scanner.close();
-            outTransfer.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -186,7 +185,6 @@ public class InnerConnectionHandleThread extends Thread {
 
             scanner1.close();
             scanner2.close();
-            outTransfer.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -206,7 +204,6 @@ public class InnerConnectionHandleThread extends Thread {
                 outTransfer.flush();
             }
             scanner.close();
-            outTransfer.close();
         } catch (Exception e) {
             e.printStackTrace();
         }

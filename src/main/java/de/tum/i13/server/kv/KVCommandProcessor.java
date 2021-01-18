@@ -166,7 +166,6 @@ public class KVCommandProcessor implements CommandProcessor {
 
 			if(metadatanew.length == 5){
 				logger.info("Updated metadata from ECS");
-				logger.info(metadata.toString());
 			}
 		} else if (input[0].equals("firstmetadata")){
 			if(metadata == null){

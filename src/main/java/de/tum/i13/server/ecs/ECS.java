@@ -24,7 +24,7 @@ public class ECS {
     private String prevHash;
     private String nextNextHash;
     private boolean newlyAdded;
-    public TreeMap<String, ECSConnection> connections = new TreeMap<>();
+    public ArrayList<ECSConnection> connections = new ArrayList<>();
 
     //Servers repository, also a circular structure? meh we'll see
     private LinkedList<Main> serverRepository = new LinkedList<>();
@@ -173,6 +173,8 @@ public class ECS {
             serverRepository.get(indexToRemove-1).nextServer = serverRepository.get(indexToRemove+1);
         }
 
+        this.removeConnection(ip, port);
+
         //reallocating metadata
         metadataMap.get(prevHash).setEnd(metadataMap.get(hash).getEnd());
         metadataMap.get(nextHash).setStart(metadataMap.get(hash).getStart());
@@ -256,24 +258,24 @@ public class ECS {
     }
 
     public void movedMeta() throws IOException{
-//        for (Map.Entry<String, ECSConnection> element : connections.entrySet()){
-//            element.getValue().sendMeta();
-//        }
-        for (Iterator i = connections.keySet().iterator(); i.hasNext();) {
-            ECSConnection value = connections.get(i.next());
-            value.sendMeta();
-        }
+        for(ECSConnection ecsConnection : connections)
+            ecsConnection.sendMeta();
         this.setMoved(false);
         logger.info("Updating metadata in servers");
     }
 
     public void notifyServers() throws IOException {
-        for (Map.Entry<String, ECSConnection> element : connections.entrySet()) {
-            element.getValue().reallocate();
-        }
+        for(ECSConnection ecsConnection : connections)
+            ecsConnection.reallocate();
         this.newlyAdded = false;
     }
 
+    public void removeConnection(String ip, int port){
+        for(ECSConnection ecsConnection : connections) {
+            if (ecsConnection.getIP().equals(ip) && ecsConnection.getPort() == port)
+                connections.remove(ecsConnection);
+        }
+    }
 
     /**
      * setMoved method sets the boolean "moved" for consistent updating of metadata
@@ -348,7 +350,7 @@ public class ECS {
 
                 // When we accept a connection, we start a new Thread for this connection
                 ECSConnection connection = new ECSConnection(clientSocket, ecs);
-                ecs.connections.put(cfg.bootstrap.getAddress().toString() + cfg.bootstrap.getPort(), connection);
+                ecs.connections.add(connection);
 
                 new Thread(connection).start();
             }

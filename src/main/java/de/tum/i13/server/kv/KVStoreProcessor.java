@@ -93,7 +93,6 @@ public class KVStoreProcessor implements KVStore {
 				fWriter.write(key + " " + value + " " + hash + "\r\n");
 				fWriter.flush();
 				kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value);
-				logger.info("start");
 				this.cache.put(key, value);
 			}
 			else{
@@ -105,7 +104,6 @@ public class KVStoreProcessor implements KVStore {
 					if(line.equals(""))
 						continue;
 
-					logger.info("still before");
 					keyvalue = line.split(" ");
 					hashToCompare = new BigInteger(keyvalue[2], 16);
 					if (hashToAdd.compareTo(hashToCompare) <= 0){
@@ -140,20 +138,14 @@ public class KVStoreProcessor implements KVStore {
 					}
 				}
 				if(!gonethrough){
-					String replacing = key + " " + value + " " + hash + "\r\n";
+					String append = key + " " + value + " " + hash + "\r\n";
 
-					logger.info(replacing);
 					Stream<String> lines = Files.lines(Paths.get(path + "/" + kind + ".txt"));
-					String replaced = lines.map(row -> row.replaceAll(line, replacing))
-							.collect(Collectors.joining("\r\n"));
+					String main = lines.collect(Collectors.joining("\r\n"));
 					lines.close();
 
 					fWriter = new FileWriter(file, false);
-					fWriter.write(replaced + "\r\n");
-					fWriter.flush();
-					logger.info("problem herre");
-					String chain = key + " " + value + " " + hash + "\r\n";
-					fWriter.append(chain);
+					fWriter.write(main + "\r\n" + append);
 					fWriter.flush();
 					kvmessage = new KVMessageProcessor(KVMessage.StatusType.PUT_SUCCESS, key, value);
 					this.cache.put(key, value);
