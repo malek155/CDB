@@ -72,6 +72,10 @@ public class ECSConnection implements Runnable {
         }
     }
 
+    /**
+     * @param line is a command got from servers to process
+     * @return String, a corresponding answer to servers
+     */
     private String process(String line) throws Exception {
         logger.info("processing");
         String reply = "";
@@ -103,6 +107,9 @@ public class ECSConnection implements Runnable {
         return reply;
     }
 
+    /**
+     * sendMeta is a method to send updated metadata  to one server. Invoked from ECS
+     */
     public void sendMeta(){
         Map<String, Metadata> map = bigECS.getMetadataMap();
         String metadata = map.keySet().stream()
@@ -112,6 +119,9 @@ public class ECSConnection implements Runnable {
         out.flush();
     }
 
+    /**
+     * reallocate is a method to send a notification to a server about a newly added server to reallocate data. Invoked from ECS
+     */
      public void reallocate(){
         out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n");
         if(bigECS.getServerRepository().size()>1){
@@ -127,12 +137,18 @@ public class ECSConnection implements Runnable {
         logger.info(String.valueOf(bigECS.getServerRepository().size()));
      }
 
+    /**
+     * notifyIfDelete is a method to send a notification to a server about a server-to-remove to reallocate data. Invoked from ECS
+     */
      public void notifyIfDelete(String current, String next, String nextNext){
         out.write("DeletingAServer\r\n" + current + "\r\n" + next + "\r\n" + nextNext + "\r\n");
         out.flush();
 
      }
 
+    /**
+     * updateReps is a method to send a notification to a server, that has replicas to update. Invoked from ECS
+     */
      public void updateReps(String command, String rep1, String rep2){
         out.write(command + "\r\n" + rep1 + "\r\n" + rep2 + "\r\n");
         out.flush();
