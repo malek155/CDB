@@ -1,6 +1,7 @@
 package de.tum.i13.server.kv;
 
 import de.tum.i13.server.kv.KVMessage.StatusType;
+import de.tum.i13.server.threadperconnection.InnerConnectionHandleThread;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Metadata;
 import de.tum.i13.shared.MetadataReplica;
@@ -41,6 +42,8 @@ public class KVCommandProcessor implements CommandProcessor {
     // volatile keyword because this variable is expected to be changed from another
     // thread
     private volatile boolean initiated;
+    private boolean updateReps = false;
+    private ArrayList<String> toReps;
 
     public KVCommandProcessor() {
     }
@@ -74,7 +77,7 @@ public class KVCommandProcessor implements CommandProcessor {
 
         String reply = command;
 
-        if (input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) {
+        if ((input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) && input.length != 1) {
             this.start = metadata.get(hash).getStart();
             if (isInTheRange(this.hashMD5(input[1]), start, end)) {
                 KVMessage msg;
@@ -108,12 +111,17 @@ public class KVCommandProcessor implements CommandProcessor {
                             msg = input[0].equals("put") ? this.kvStore.put(input[1], input[2], hashMD5(input[1]), "storage")
                                     : this.kvStore.put(input[1], "null", hashMD5(input[1]), "storage");
                             logger.info("status:" + msg.getStatus().toString());
-                            if (msg.getStatus().equals(StatusType.PUT_ERROR)) {
-                                logger.info("Error occured by getting a value ");
+                            if (msg.getStatus().equals(StatusType.PUT_ERROR) || msg.getStatus().equals(StatusType.DELETE_ERROR)) {
+                                logger.info("Error occured by putting/deleting a value ");
                                 response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
                             } else {
-                                logger.info("Put a new kv-pair");
                                 response = msg.getStatus().toString() + " " + msg.getKey();
+                                if (metadata.size() > 2) {
+                                    toReps.add(command + " " + hashMD5(input[1]));
+                                    toReps.add(this.metadata2.get(hash).getEndRep1());
+                                    toReps.add(this.metadata2.get(hash).getEndRep2());
+                                    this.updateReps = true;
+                                }
                             }
                         } else if (input[0].equals("get")) {
                             if (input.length != 2) {
@@ -135,7 +143,7 @@ public class KVCommandProcessor implements CommandProcessor {
                     System.out.println(e.getMessage());
                 }
                 reply = response;
-            } else if (!isInTheRange(this.hashMD5(input[1]), start, end) && input[0].equals("get")) {
+            } else if (input[0].equals("get")) {
                 logger.info("Checking the replicas of the server for get request ");
                 KVMessage msg;
                 String response = "";
@@ -171,11 +179,14 @@ public class KVCommandProcessor implements CommandProcessor {
                     System.out.println(e.getMessage());
                 }
 
+                reply = response;
 
             } else {
                 logger.info("Server is not responsible for a key");
                 reply = "server_not_responsible";
             }
+        } else if ((input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) && input.length == 1) {
+            reply = "not a suitable command";
         } else if (input[0].equals("You'reGoodToGo")) {
             this.initiated = true;
             readOnly = false;
@@ -293,6 +304,18 @@ public class KVCommandProcessor implements CommandProcessor {
         return metadata;
     }
 
+    public boolean getUpdates() {
+        return this.updateReps;
+    }
+
+    public void setUpdateReps(boolean updating) {
+        updateReps = updating;
+    }
+
+    public ArrayList<String> getToReps() {
+        return this.toReps;
+    }
+
     public String hashMD5(String key) throws NoSuchAlgorithmException {
         MessageDigest msg = MessageDigest.getInstance("MD5");
         byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
@@ -300,13 +323,6 @@ public class KVCommandProcessor implements CommandProcessor {
 
         return myHash;
     }
-
-    private String arithmeticHash(String hash, boolean increment) {
-        BigInteger bigHash = new BigInteger(hash, 16);
-        bigHash = (increment) ? bigHash.add(BigInteger.ONE) : bigHash.subtract(BigInteger.ONE);
-        return bigHash.toString(16);
-    }
-
 
     // This method takes the TreeMap of metadata and generates a TreeMap of metadata2 which contains replicas
     public TreeMap<String, MetadataReplica> metadataMap2() {
@@ -324,6 +340,8 @@ public class KVCommandProcessor implements CommandProcessor {
             b = bighash.toString(16);
 
             String a = meta2.get(b).getStart();
+            String end1 = meta2.get(b).getEnd();
+            mdr.setEndRep1(end1);
             mdr.setStartRep1(a);
             BigInteger bighash2 = new BigInteger(a, 16);
             bighash2 = bighash2.subtract(BigInteger.ONE);
@@ -331,15 +349,13 @@ public class KVCommandProcessor implements CommandProcessor {
 
 
             mdr.setStartRep2(meta2.get(a).getStart());
+            mdr.setEndRep2(meta2.get(a).getEnd());
 
             metadataMap2.put(key, mdr);
 
-
         });
 
-
         return metadataMap2;
-
     }
 
     @Override

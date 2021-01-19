@@ -65,9 +65,10 @@ public class InnerConnectionHandleThread extends Thread {
             outECS.flush();
 
             logger.info("Notified ecs about a new server");
+            String line;
 
             while (notShutDown) {
-                String line = inECS.readLine();
+                line = inECS.readLine();
 
                 if (line.equals("NewServer")) {
 
@@ -113,15 +114,44 @@ public class InnerConnectionHandleThread extends Thread {
                         this.cp.getKVStore().removeReplica2();
                     }
                     if (this.hash.equals(next)) {
-                        this.transferRep1to2(nextNext);
+                        if (!nextNext.equals(""))
+                            this.transferRep1to2(nextNext);
                         this.cp.getKVStore().removeReplica2();
                         this.cp.getKVStore().removeReplica1();
                     }
                     if (hash.equals(current)) {
-                        this.transfer(next, "");
-                        this.transferRep12(next);
+                        if (!next.equals(""))
+                            this.transfer(next, "");
+
+                        if (!nextNext.equals(""))
+                            this.transferRep12(next);
+                        else {
+                            this.cp.getKVStore().removeReplica1();
+                            this.cp.getKVStore().removeReplica2();
+                        }
                     }
                     this.notShutDown = false;
+                } else if (line.startsWith("put") || line.startsWith("delete")) {
+                    String rep1 = inECS.readLine();
+                    String rep2 = inECS.readLine();
+                    String[] command = line.split(" ");
+                    if (this.hash.equals(rep1)) {
+                        if (command[0].equals("put"))
+                            this.cp.getKVStore().put(command[1], command[2], command[3], "replica1");
+                        else
+                            this.cp.getKVStore().put(command[1], null, command[2], "replica1");
+                    }
+                    if (this.hash.equals(rep2)) {
+                        if (command[0].equals("put"))
+                            this.cp.getKVStore().put(command[1], command[2], command[3], "replica2");
+                        else
+                            this.cp.getKVStore().put(command[1], null, command[2], "replica2");
+                    }
+                }
+                if (this.cp.getUpdates()) {
+                    outECS.write(cp.getToReps().get(0) + ":" + cp.getToReps().get(1) + ":" + cp.getToReps().get(2) + "\r\n");
+                    outECS.flush();
+                    cp.setUpdateReps(false);
                 }
                 if (this.shuttingDown) {
                     outECS.write("MayIShutDownPlease " + this.ip + ":" + this.port + " " + this.hash + "\r\n");
@@ -157,20 +187,20 @@ public class InnerConnectionHandleThread extends Thread {
         File storage = (nextServer.equals("")) ? this.cp.getKVStore().getStorage("")
                 : this.cp.getKVStore().getStorage(newServer);
 
-        try (Socket socket = new Socket(newIP, newPort)) {
-            PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
-            Scanner scanner = new Scanner(new FileInputStream(storage));
-            while (scanner.hasNextLine()) {
-                outTransfer.write("transferring " + scanner.nextLine());
+        if (storage.length() != 0) {
+            try (Socket socket = new Socket(newIP, newPort)) {
+                PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
+                Scanner scanner = new Scanner(new FileInputStream(storage));
+                while (scanner.hasNextLine()) {
+                    String transfer = "transferring " + scanner.nextLine();
+                    outTransfer.write(transfer);
+                }
+                outTransfer.write("You'reGoodToGo" + "\r\n");
                 outTransfer.flush();
+                scanner.close();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-
-            outTransfer.write("You'reGoodToGo\r\n");
-            outTransfer.flush();
-
-            scanner.close();
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -185,13 +215,11 @@ public class InnerConnectionHandleThread extends Thread {
 
             while (scanner1.hasNextLine()) {
                 outTransfer.write("replica1 " + scanner1.nextLine() + "\r\n");
-                outTransfer.flush();
             }
             while (scanner2.hasNextLine()) {
                 outTransfer.write("replica2 " + scanner1.nextLine() + "\r\n");
-                outTransfer.flush();
             }
-
+            outTransfer.flush();
             scanner1.close();
             scanner2.close();
         } catch (Exception e) {
@@ -222,8 +250,8 @@ public class InnerConnectionHandleThread extends Thread {
 
             while (scanner.hasNextLine()) {
                 outTransfer.write("replica2 " + scanner.nextLine() + "\r\n");
-                outTransfer.flush();
             }
+            outTransfer.flush();
             scanner.close();
         } catch (Exception e) {
             e.printStackTrace();
