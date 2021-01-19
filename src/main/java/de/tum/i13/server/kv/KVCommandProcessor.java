@@ -64,7 +64,7 @@ public class KVCommandProcessor implements CommandProcessor {
     }
 
     /**
-     * process method that handles the requests
+     * process method that handles the requests which came to this server
      *
      * @param command - command got from a client or another server
      * @return answer after processing
@@ -316,6 +316,7 @@ public class KVCommandProcessor implements CommandProcessor {
         return this.toReps;
     }
 
+
     public String hashMD5(String key) throws NoSuchAlgorithmException {
         MessageDigest msg = MessageDigest.getInstance("MD5");
         byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
@@ -324,7 +325,12 @@ public class KVCommandProcessor implements CommandProcessor {
         return myHash;
     }
 
-    // This method takes the TreeMap of metadata and generates a TreeMap of metadata2 which contains replicas
+
+
+    /**
+     * metadataMap2 method which takes the TreeMap of metadata and generates a TreeMap of metadata2 which contains replicas starting and ending ranges
+     * @return
+     */
     public TreeMap<String, MetadataReplica> metadataMap2() {
         // I need it to get the replicas
         TreeMap<String, MetadataReplica> metadataMap2 = new TreeMap();
