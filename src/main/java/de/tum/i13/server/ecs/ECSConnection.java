@@ -80,19 +80,25 @@ public class ECSConnection implements Runnable {
         if (lines[0].equals("MayIShutDownPlease")){
             ipport = lines[1].split(":");
             ArrayList<String> neighbours = this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
+            String nextHash = "";
+            String nextNextHash = "";
 
             String current = neighbours.get(0);
-            String nextHash = neighbours.get(1);
-            String nextNextHash = neighbours.get(2);
-
+            if(bigECS.getServerRepository().size()>1){
+                nextHash = neighbours.get(1);
+                if(bigECS.getServerRepository().size() > 2)
+                    nextNextHash = neighbours.get(2);
+            }
             reply = "YesYouMay\r\n";
             this.bigECS.notifyServers(current, nextHash, nextNextHash);
-        }
-        else if (lines[0].equals("IAmNew")) {
+        }else if (lines[0].equals("IAmNew")) {
             ipport = lines[1].split(":");
             if(!bigECS.isAdded(ipport[0], Integer.parseInt(ipport[1]))){
                 bigECS.addServer(ipport[0], Integer.parseInt(ipport[1]));
             }
+        }else if(lines[0].equals("delete") || lines[0].equals("put")){
+            String[] updates = line.split(":");
+            bigECS.updateReps(updates[0], updates[1], updates[2]);
         }
         return reply;
     }
@@ -107,16 +113,28 @@ public class ECSConnection implements Runnable {
     }
 
      public void reallocate(){
-        out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n" + bigECS.getNextHash() + "\r\n");
-        if(bigECS.getServerRepository().size()>2)
-            out.write(bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");
+        out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n");
+        if(bigECS.getServerRepository().size()>1){
+            out.write(bigECS.getNextHash() + "\r\n");
+            if(bigECS.getServerRepository().size()>2)
+                out.write(bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");
+            else
+                out.write(" \r\n \r\n");
+        }
         else
-            out.write(" \r\n \r\n");
+            out.write(" \r\n \r\n \r\n");
         out.flush();
+        logger.info(String.valueOf(bigECS.getServerRepository().size()));
      }
 
      public void notifyIfDelete(String current, String next, String nextNext){
         out.write("DeletingAServer\r\n" + current + "\r\n" + next + "\r\n" + nextNext + "\r\n");
+        out.flush();
+
+     }
+
+     public void updateReps(String command, String rep1, String rep2){
+        out.write(command + "\r\n" + rep1 + "\r\n" + rep2 + "\r\n");
         out.flush();
      }
 

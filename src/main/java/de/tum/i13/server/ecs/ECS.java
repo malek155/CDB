@@ -97,6 +97,7 @@ public class ECS {
 
             if (this.tailServer == prevServer && startIndex != 0) {
                 newMain.nextServer = headServer;
+                this.tailServer.nextServer = newMain ;
                 this.tailServer = newMain;
             }else if(startIndex == 0){
                 newMain.nextServer = serverRepository.getLast().nextServer;
@@ -197,13 +198,20 @@ public class ECS {
         Map<Integer, String> indexes = this.locate(hash);
         // we get the index of a previous neighbour of server-to-remove -> +1 to get next one
         int current = indexes.keySet().stream().findFirst().get();
-        int next = current++;
-        int nextNext = next++;
-        ArrayList<String> neighbours = new ArrayList<>();
+        int next;
+        int nextNext;
 
+        ArrayList<String> neighbours = new ArrayList<>();
         neighbours.add(hash);
-        neighbours.add(serverRepository.get(next).end);
-        neighbours.add(serverRepository.get(nextNext).end);
+
+        if(serverRepository.size() > 1){
+            next = current++;
+            neighbours.add(serverRepository.get(next).end);
+            if(serverRepository.size()>2){
+                nextNext = next++;
+                neighbours.add(serverRepository.get(nextNext).end);
+            }
+        }
 
         this.removeServer(ip, port);
         logger.info("Approving shutting down of a server, rebalancing is in the process");
@@ -272,7 +280,6 @@ public class ECS {
     }
 
     public void notifyServers(String current, String next, String nextNext){
-
         for (ECSConnection ecsConnection : connections) {
             if (next.equals("") && nextNext.equals("") && current.equals(""))
                 ecsConnection.reallocate();
@@ -280,6 +287,13 @@ public class ECS {
                 ecsConnection.notifyIfDelete(current, next, nextNext);
         }
         this.newlyAdded = false;
+    }
+
+    public void updateReps(String command, String rep1, String rep2){
+        for (ECSConnection ecsConnection : connections) {
+            if(ecsConnection.getHash().equals(rep1) || ecsConnection.getHash().equals(rep2))
+                ecsConnection.updateReps(command, rep1, rep2);
+        }
     }
 
     private void removeConnection(String ip, int port){

@@ -194,6 +194,44 @@ public class KVStoreProcessor implements KVStore {
 	}
 
 	/**
+	 * get method for replica gets the value of the given key from the given replica store if there is one
+	 *
+	 * @param key given
+	 * @param rep given from the kvCommandprocessor
+	 * @return
+	 * @throws Exception
+	 */
+	public synchronized KVMessageProcessor get(String key, int rep) throws Exception {
+		kvmessage = new KVMessageProcessor(KVMessage.StatusType.GET_ERROR, key, null);
+
+		if (cache.containsKey(key)) {
+			String value = cache.get(key);
+			kvmessage = new KVMessageProcessor(KVMessage.StatusType.GET_SUCCESS, key, value);
+		} else {
+			Scanner scanner = null;
+			if (rep == 1)
+				scanner = new Scanner(new FileInputStream(replica1));
+			else if (rep == 2) {
+				scanner = new Scanner(new FileInputStream(replica2));
+			} else {
+				throw new Exception(" wrong replica input ! it should be 1 or 2 .");
+			}
+			while (scanner.hasNextLine()) {
+				String line = scanner.nextLine();
+				keyvalue = line.split(" ");
+				if (keyvalue[0].equals(key)) {
+					kvmessage = new KVMessageProcessor(KVMessage.StatusType.GET_SUCCESS, keyvalue[0], keyvalue[1]);
+					if (!this.cache.containsKey(key))
+						this.cache.put(key, keyvalue[1]);
+					break;
+				}
+			}
+			scanner.close();
+		}
+		return kvmessage;
+	}
+
+	/**
 	 * getStorage returns a whole storage if removing, part of it by adding a new one
 	 * @param hash cutting the storage to transfer only one of the parts to another server
 	 *             if empty, we merge by removing a server and getting the whole storage
