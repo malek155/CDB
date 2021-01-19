@@ -56,7 +56,6 @@ public class KVCommandProcessorTest {
 
 	@Test
 	public void correctDelete() throws Exception {
-
 		Cache cache = mock(Cache.class);
 		KVStoreProcessor kv = mock(KVStoreProcessor.class);
 		KVCommandProcessor kvcp = new KVCommandProcessor(kv, cache, testIP, testPort);
