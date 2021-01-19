@@ -135,8 +135,8 @@ public class KVCommandProcessor implements CommandProcessor {
                     System.out.println(e.getMessage());
                 }
                 reply = response;
-            } else if(!isInTheRange(this.hashMD5(input[1]), start, end) && input[0].equals("get") ){
-                logger.info("Checking the replicas of the server for get request ") ;
+            } else if (!isInTheRange(this.hashMD5(input[1]), start, end) && input[0].equals("get")) {
+                logger.info("Checking the replicas of the server for get request ");
                 KVMessage msg;
                 String response = "";
                 try {
@@ -156,8 +156,7 @@ public class KVCommandProcessor implements CommandProcessor {
                         }
 
 
-                    }
-                    else if(isInTheRange(this.hashMD5(input[1]), metadata2.get(hash).getStartRep2(), end)){
+                    } else if (isInTheRange(this.hashMD5(input[1]), metadata2.get(hash).getStartRep2(), end)) {
                         msg = this.kvStore.get(input[1], 2);
                         if (msg.getStatus().equals(StatusType.GET_ERROR)) {
                             logger.info("Error occured by getting a value from replica 2 ");
@@ -169,16 +168,11 @@ public class KVCommandProcessor implements CommandProcessor {
                     }
 
                 } catch (Exception e) {
-                System.out.println(e.getMessage());
-            }
+                    System.out.println(e.getMessage());
+                }
 
 
-            }
-
-
-
-
-            else {
+            } else {
                 logger.info("Server is not responsible for a key");
                 reply = "server_not_responsible";
             }
@@ -210,8 +204,8 @@ public class KVCommandProcessor implements CommandProcessor {
             metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
             if (metadatanew.length == 5) {
-                metadataMap2() ;
-                logger.info("Updated metadata from ECS");
+                metadataMap2();
+                logger.info("restructuring of metadata2");
                 logger.info("Updated metadata from ECS");
             }
         } else if (input[0].equals("firstmetadata")) {
@@ -229,7 +223,8 @@ public class KVCommandProcessor implements CommandProcessor {
             metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
             if (metadatanew.length == 5) {
-                metadataMap2() ;
+                metadataMap2();
+                logger.info("restructuring of metadata2");
                 logger.info("Updated metadata from ECS");
             }
         } else if (input[0].equals("keyrange")) {
@@ -306,6 +301,12 @@ public class KVCommandProcessor implements CommandProcessor {
         return myHash;
     }
 
+    private String arithmeticHash(String hash, boolean increment) {
+        BigInteger bigHash = new BigInteger(hash, 16);
+        bigHash = (increment) ? bigHash.add(BigInteger.ONE) : bigHash.subtract(BigInteger.ONE);
+        return bigHash.toString(16);
+    }
+
 
     // This method takes the TreeMap of metadata and generates a TreeMap of metadata2 which contains replicas
     public TreeMap<String, MetadataReplica> metadataMap2() {
@@ -316,10 +317,19 @@ public class KVCommandProcessor implements CommandProcessor {
             Metadata meta1 = meta2.get(key);
             MetadataReplica mdr = new MetadataReplica(meta1.getIP(), meta1.getPort(), meta1.getStart(), meta1.getEnd(), null, null);
             // we get the hash of previous server with the start of this server from the metadata
-            // just add the -1 to meta1.getStart()
-            String a = meta2.get(meta1.getStart()).getStart();
+
+            String b = meta1.getStart();
+            BigInteger bighash = new BigInteger(b, 16);
+            bighash = bighash.subtract(BigInteger.ONE);
+            b = bighash.toString(16);
+
+            String a = meta2.get(b).getStart();
             mdr.setStartRep1(a);
-            // just add -1 to a
+            BigInteger bighash2 = new BigInteger(a, 16);
+            bighash2 = bighash2.subtract(BigInteger.ONE);
+            a = bighash2.toString(16);
+
+
             mdr.setStartRep2(meta2.get(a).getStart());
 
             metadataMap2.put(key, mdr);

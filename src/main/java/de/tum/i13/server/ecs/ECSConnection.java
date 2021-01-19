@@ -4,8 +4,13 @@ import de.tum.i13.shared.Constants;
 import de.tum.i13.shared.Metadata;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -17,10 +22,11 @@ public class ECSConnection implements Runnable {
 	private PrintWriter out;
 	private String ip;
 	private int port;
+	private String hash;
 
 	public static Logger logger = Logger.getLogger(ECSConnection.class.getName());
 
-	public ECSConnection(Socket clientSocket, ECS bigECS) throws IOException {
+	public ECSConnection(Socket clientSocket, ECS bigECS) throws IOException, NoSuchAlgorithmException {
 		this.clientSocket = clientSocket;
 		this.bigECS = bigECS;
 		in = new BufferedReader(
@@ -29,6 +35,7 @@ public class ECSConnection implements Runnable {
 				new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
 		ip = clientSocket.getInetAddress().getHostAddress();
 		port = clientSocket.getLocalPort();
+		hash = hashMD5(ip+port);
 	}
 
 	@Override
@@ -49,7 +56,7 @@ public class ECSConnection implements Runnable {
 					bigECS.movedMeta();
 				}
 				if (bigECS.isNewlyAdded() && bigECS.getServerRepository().size() > 1){
-					bigECS.notifyServers();
+					bigECS.notifyServers("", "", "");
 					logger.info("Notifying a server, that it needs to send a data to a new server");
 				}
 			}
@@ -70,10 +77,16 @@ public class ECSConnection implements Runnable {
 		String reply = "";
 		String[] ipport;
 		String[] lines = line.split(" ");
-		if (lines[0].equals("MayIShutDownPlease")) {
+		if (lines[0].equals("MayIShutDownPlease")){
 			ipport = lines[1].split(":");
-			String nextHash = this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
-			reply = "YesYouMay\r\n" + nextHash + "\r\n";
+			ArrayList<String> neighbours = this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
+
+			String current = neighbours.get(0);
+			String nextHash = neighbours.get(1);
+			String nextNextHash = neighbours.get(2);
+
+			reply = "YesYouMay\r\n";
+			this.bigECS.notifyServers(current, nextHash, nextNextHash);
 		}
 		else if (lines[0].equals("IAmNew")) {
 			ipport = lines[1].split(":");
@@ -102,8 +115,23 @@ public class ECSConnection implements Runnable {
 		out.flush();
 	}
 
+	public void notifyIfDelete(String current, String next, String nextNext){
+		out.write("DeletingAServer\r\n" + current + "\r\n" + next + "\r\n" + nextNext + "\r\n");
+		out.flush();
+	}
+
+	public String hashMD5(String key) throws NoSuchAlgorithmException {
+		MessageDigest msg = MessageDigest.getInstance("MD5");
+		byte[] digested = msg.digest(key.getBytes(StandardCharsets.ISO_8859_1));
+		String myHash = new BigInteger(1, digested).toString(16);
+
+		return myHash;
+	}
+
 	public String getIP(){return this.ip;}
 
 	public int getPort(){return port;}
+
+	public String getHash(){return hash;}
 
 }
