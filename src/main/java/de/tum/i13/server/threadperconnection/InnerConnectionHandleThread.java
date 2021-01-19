@@ -115,7 +115,7 @@ public class InnerConnectionHandleThread extends Thread {
                     }
                     if (this.hash.equals(next)) {
                         if (!nextNext.equals(""))
-                            this.transferRep1to2(nextNext);
+                            this.transferRep2to2(nextNext);
                         this.cp.getKVStore().removeReplica2();
                         this.cp.getKVStore().removeReplica1();
                     }
@@ -174,11 +174,11 @@ public class InnerConnectionHandleThread extends Thread {
 
 
     /**
-     * transfer method connects with a neighbour server to transfer all data if it is shutting down,
+     * transfer method connects with a neighbour server to transfer all storage data if it is shutting down,
      * otherwise only the part of a kvstorage to a new server
      *
      * @param newServer  server transfer to
-     * @param nextServer is our server to transfer from, a neigbour
+     * @param nextServer is our server to transfer from, a neighbour
      */
     private void transfer(String newServer, String nextServer) throws IOException {
         String newIP = cp.getMetadata().get(newServer).getIP();
@@ -204,6 +204,11 @@ public class InnerConnectionHandleThread extends Thread {
         }
     }
 
+    /**
+     * transfer2  universal method to send a two files to @server
+     *
+     * @param server hash value of a server to send files
+     */
     private void transfer2(String server, File file1, File file2) {
         String newIP = cp.getMetadata().get(server).getIP();
         int newPort = cp.getMetadata().get(server).getPort();
@@ -227,26 +232,41 @@ public class InnerConnectionHandleThread extends Thread {
         }
     }
 
+    /**
+     * transferStorageRep1 method to send a storage as a replica and replica1 as replica2 to the next neighbour
+     *
+     * @param newServer hash value of a server to send a file to (new one)
+     */
     private void transferStorageRep1(String newServer) throws IOException {
         File replica1 = this.cp.getKVStore().getStorage("");
         File replica2 = this.cp.getKVStore().getReplica1();
         this.transfer2(newServer, replica1, replica2);
     }
 
+
+    /**
+     * transferRep12 method to send both replicas of the same order to @server
+     *
+     * @param server hash value of a server to send replicas to
+     */
     private void transferRep12(String server) throws IOException {
         File replica1 = this.cp.getKVStore().getReplica1();
         File replica2 = this.cp.getKVStore().getReplica2();
         this.transfer2(server, replica1, replica2);
     }
 
-    private void transferRep1to2(String nextNextServer) {
-        File replica2 = this.cp.getKVStore().getReplica1();
-        String nextNextIP = cp.getMetadata().get(nextNextServer).getIP();
-        int nextNextPort = cp.getMetadata().get(nextNextServer).getPort();
+    /**
+     * transferOne method to send one file to @server
+     *
+     * @param server hash value of a server to send a file to
+     */
+    private void transferOne(String server, File file) {
+        String nextNextIP = cp.getMetadata().get(server).getIP();
+        int nextNextPort = cp.getMetadata().get(server).getPort();
 
         try (Socket socket = new Socket(nextNextIP, nextNextPort)) {
             PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
-            Scanner scanner = new Scanner(new FileInputStream(replica2));
+            Scanner scanner = new Scanner(new FileInputStream(file));
 
             while (scanner.hasNextLine()) {
                 outTransfer.write("replica2 " + scanner.nextLine() + "\r\n");
@@ -256,6 +276,16 @@ public class InnerConnectionHandleThread extends Thread {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void transferRep1to2(String nextNextServer) {
+        File replica2 = this.cp.getKVStore().getReplica1();
+        this.transferOne(nextNextServer, replica2);
+    }
+
+    private void transferRep2to2(String server) {
+        File replica2 = this.cp.getKVStore().getReplica2();
+        this.transferOne(server, replica2);
     }
 
     /**

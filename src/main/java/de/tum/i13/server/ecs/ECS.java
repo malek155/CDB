@@ -135,7 +135,7 @@ public class ECS {
 
     /**
      * removeServer method deletes a server from the serverRepository and
-     * deletes its data from metadataMap, updates circular relationships
+     * deletes its data from metadataMap, ecsConnections - updates circular relationships
      *
      * @param (ip,port) are credentials for the server to remove
      */
@@ -217,8 +217,6 @@ public class ECS {
         return neighbours;
     }
 
-    // find the right location of a new server
-
     /**
      * locate method locates the position, where we should add a new server or helps to locate a definite serverindex
      *
@@ -274,6 +272,9 @@ public class ECS {
         return added;
     }
 
+    /**
+     * movedMeta method invoked from ecsConnection to send all the servers updated metadata
+     */
     public void movedMeta() {
         for (ECSConnection ecsConnection : connections)
             ecsConnection.sendMeta();
@@ -281,6 +282,16 @@ public class ECS {
         logger.info("Updating metadata in servers");
     }
 
+    /**
+     * notifyServers method invoked from ecsConnection to send all servers new info about a new server to reallocate data
+     * if parameters empty
+     * to send a server-to-delete, its next and next after next neighbours a notification
+     * to reallocate their data
+     *
+     * @param current  a server-to-remove
+     * @param next     next server, handling replicas and a storage
+     * @param nextNext next after,changing only replica2
+     */
     public void notifyServers(String current, String next, String nextNext) {
         for (ECSConnection ecsConnection : connections) {
             if (next.equals("") && nextNext.equals("") && current.equals(""))
@@ -291,6 +302,13 @@ public class ECS {
         this.newlyAdded = false;
     }
 
+    /**
+     * updateReps method invoked from ecsConnection to send 2 servers with replicas of an updated storage a notification to update them too
+     *
+     * @param command put/delete to update replicas
+     * @param rep1    hash of a server having the 1 replica
+     * @param rep2    hash of a server having the 2 replica
+     */
     public void updateReps(String command, String rep1, String rep2) {
         for (ECSConnection ecsConnection : connections) {
             if (ecsConnection.getHash().equals(rep1) || ecsConnection.getHash().equals(rep2))
@@ -298,6 +316,12 @@ public class ECS {
         }
     }
 
+    /**
+     * removeConnection method removes an ECSConnection from a list, if a server removed
+     *
+     * @param ip   of a connection to remove from a list
+     * @param port of a connection to remove from a list
+     */
     private void removeConnection(String ip, int port) {
         for (ECSConnection ecsConnection : connections) {
             if (ecsConnection.getIP().equals(ip) && ecsConnection.getPort() == port)
@@ -314,14 +338,45 @@ public class ECS {
         this.moved = update;
     }
 
+    /**
+     * arithmeticHash method increments/decrements a hash value
+     *
+     * @param hash      to change
+     * @param increment true if increment, false if decrement
+     * @return String of a changed value
+     */
     private String arithmeticHash(String hash, boolean increment) {
         BigInteger bigHash = new BigInteger(hash, 16);
         bigHash = (increment) ? bigHash.add(BigInteger.ONE) : bigHash.subtract(BigInteger.ONE);
         return bigHash.toString(16);
     }
 
+    /**
+     * getMoved method tells if we have to update metadata in servers
+     *
+     * @return boolean if there was a server reallocation
+     */
     public boolean getMoved() {
         return moved;
+    }
+
+    /**
+     * isReachable method checks the availability of the server with the given ip and port
+     *
+     * @param addr          ip of the server
+     * @param openPort      port of the server
+     * @param timeOutMillis time out for waiting
+     * @return
+     */
+    private static boolean isReachable(String addr, int openPort, int timeOutMillis) {
+        try {
+            try (Socket soc = new Socket()) {
+                soc.connect(new InetSocketAddress(addr, openPort), timeOutMillis);
+            }
+            return true;
+        } catch (IOException ex) {
+            return false;
+        }
     }
 
     public Map<String, Metadata> getMetadataMap() {
@@ -348,31 +403,8 @@ public class ECS {
         return this.newlyAdded;
     }
 
-    public void setNewlyAdded(boolean newly) {
-        this.newlyAdded = newly;
-    }
-
     public LinkedList<Main> getServerRepository() {
         return this.serverRepository;
-    }
-
-    /**
-     * isReachable method checks the availability of the server with the given ip and port
-     *
-     * @param addr          ip of the server
-     * @param openPort      port of the server
-     * @param timeOutMillis time out for waiting
-     * @return
-     */
-    private static boolean isReachable(String addr, int openPort, int timeOutMillis) {
-        try {
-            try (Socket soc = new Socket()) {
-                soc.connect(new InetSocketAddress(addr, openPort), timeOutMillis);
-            }
-            return true;
-        } catch (IOException ex) {
-            return false;
-        }
     }
 
     /**
@@ -424,7 +456,6 @@ public class ECS {
                 }
 
                 // Waiting for a server to connect
-
                 Socket clientSocket = serverSocket.accept();
 
                 // When we accept a connection, we start a new Thread for this connection
