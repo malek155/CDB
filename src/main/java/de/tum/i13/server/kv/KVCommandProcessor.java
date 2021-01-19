@@ -42,7 +42,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	// volatile keyword because this variable is expected to be changed from another
 	// thread
 	private volatile boolean initiated;
-	private boolean updateReps;
+	private boolean updateReps = false;
 	private ArrayList<String> toReps;
 
 	public KVCommandProcessor() {
@@ -77,7 +77,7 @@ public class KVCommandProcessor implements CommandProcessor {
 
 		String reply = command;
 
-		if (input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")){
+		if ((input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) && input.length != 1){
 			this.start = metadata.get(hash).getStart();
 			if (isInTheRange(this.hashMD5(input[1]), start, end)) {
 				KVMessage msg;
@@ -116,10 +116,12 @@ public class KVCommandProcessor implements CommandProcessor {
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							} else{
 								response = msg.getStatus().toString() + " " + msg.getKey();
-								this.updateReps = true;
-								toReps.add(command + " " + hashMD5(input[1]));
-								toReps.add(this.metadata2.get(hash).getEndRep1());
-								toReps.add(this.metadata2.get(hash).getEndRep2());
+								if(metadata.size() > 2){
+									toReps.add(command + " " + hashMD5(input[1]));
+									toReps.add(this.metadata2.get(hash).getEndRep1());
+									toReps.add(this.metadata2.get(hash).getEndRep2());
+									this.updateReps = true;
+								}
 							}
 						} else if (input[0].equals("get")) {
 							if (input.length != 2){
@@ -183,7 +185,9 @@ public class KVCommandProcessor implements CommandProcessor {
 				logger.info("Server is not responsible for a key");
 				reply = "server_not_responsible";
 			}
-		} else if (input[0].equals("You'reGoodToGo")) {
+		}else if((input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) && input.length == 1){
+			reply = "not a suitable command";
+		}else if (input[0].equals("You'reGoodToGo")) {
 			this.initiated = true;
 			readOnly = false;
 			if (metadata != null) {
