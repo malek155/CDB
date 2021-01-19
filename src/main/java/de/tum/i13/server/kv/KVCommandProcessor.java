@@ -215,7 +215,7 @@ public class KVCommandProcessor implements CommandProcessor {
             metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
             if (metadatanew.length == 5) {
-                metadataMap2();
+                metadata2 = metadataMap2();
                 logger.info("restructuring of metadata2");
                 logger.info("Updated metadata from ECS");
             }
@@ -234,7 +234,7 @@ public class KVCommandProcessor implements CommandProcessor {
             metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
             if (metadatanew.length == 5) {
-                metadataMap2();
+                metadata2 = metadataMap2();
                 logger.info("restructuring of metadata2");
                 logger.info("Updated metadata from ECS");
             }

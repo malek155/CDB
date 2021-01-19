@@ -357,6 +357,25 @@ public class ECS {
     }
 
     /**
+     * isReachable method checks the availability of the server with the given ip and port
+     *
+     * @param addr          ip of the server
+     * @param openPort      port of the server
+     * @param timeOutMillis time out for waiting
+     * @return
+     */
+    private static boolean isReachable(String addr, int openPort, int timeOutMillis) {
+        try {
+            try (Socket soc = new Socket()) {
+                soc.connect(new InetSocketAddress(addr, openPort), timeOutMillis);
+            }
+            return true;
+        } catch (IOException ex) {
+            return false;
+        }
+    }
+
+    /**
      * main() method where our serversocket will be initialized
      *
      * @param args
@@ -389,7 +408,23 @@ public class ECS {
             serverSocket.bind(new InetSocketAddress(cfg.bootstrap.getAddress(), cfg.bootstrap.getPort()));
 
             while (true) {
+                // checking the availability of the servers
+                if (!ecs.connections.isEmpty()) {
+                    ecs.connections.stream().forEach(e -> {
+                        if (!isReachable(e.getIP(), e.getPort(), 700)) {
+                            try {
+                                logger.info(" The server in ip : " + e.getPort() + " , port :  " + e.getPort() + " is not responding");
+                                logger.warning(" The server in ip : " + e.getPort() + " , port :  " + e.getPort() + " is not responding");
+                                ecs.removeServer(e.getIP(), e.getPort());
+                            } catch (Exception exception) {
+                                exception.printStackTrace();
+                            }
+                        }
+                    });
+                }
+
                 // Waiting for a server to connect
+
                 Socket clientSocket = serverSocket.accept();
 
                 // When we accept a connection, we start a new Thread for this connection
