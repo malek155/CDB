@@ -165,7 +165,7 @@ public class ECS {
             headServer = headServer.nextServer;
             tailServer.nextServer = tailServer;
         }
-        else if(indexToRemove == serverRepository.size()-1){
+        else if(indexToRemove == serverRepository.size()){
             tailServer = serverRepository.get(indexToRemove-1);
             tailServer.nextServer = headServer;
         }
@@ -193,14 +193,21 @@ public class ECS {
      * @param hash is a hashed value of a server-to-remove
      * @return String, a hash of a receiving server
      */
-    public String shuttingDown(String ip, int port, String hash) throws Exception {
+    public ArrayList<String> shuttingDown(String ip, int port, String hash) throws Exception {
         Map<Integer, String> indexes = this.locate(hash);
-        this.removeServer(ip, port);
-        // we get the index of a previous neighbour of server-to-remove -> +2 to get next one
-        int thankUnext = indexes.keySet().stream().findFirst().get() + 2;
+        // we get the index of a previous neighbour of server-to-remove -> +1 to get next one
+        int current = indexes.keySet().stream().findFirst().get();
+        int next = current++;
+        int nextNext = next++;
+        ArrayList<String> neighbours = new ArrayList<>();
 
+        neighbours.add(hash);
+        neighbours.add(serverRepository.get(next).end);
+        neighbours.add(serverRepository.get(nextNext).end);
+
+        this.removeServer(ip, port);
         logger.info("Approving shutting down of a server, rebalancing is in the process");
-        return serverRepository.get(thankUnext).end;
+        return neighbours;
     }
 
     // find the right location of a new server
@@ -221,7 +228,7 @@ public class ECS {
         String hashToCmpString;
         BigInteger hashToCmp;
 
-        //looking for an interval for our new hashed value
+        //looking for an interval for our new hashed value || a hash to remove
         for (Map.Entry element : metadataMap.entrySet()) {
             hashToCmpString = (String) element.getKey();
             hashToCmp = new BigInteger(hashToCmpString, 16);
@@ -257,20 +264,25 @@ public class ECS {
         return added;
     }
 
-    public void movedMeta() throws IOException{
+    public void movedMeta(){
         for(ECSConnection ecsConnection : connections)
             ecsConnection.sendMeta();
         this.setMoved(false);
         logger.info("Updating metadata in servers");
     }
 
-    public void notifyServers() throws IOException {
-        for(ECSConnection ecsConnection : connections)
-            ecsConnection.reallocate();
+    public void notifyServers(String current, String next, String nextNext){
+
+        for (ECSConnection ecsConnection : connections) {
+            if (next.equals("") && nextNext.equals("") && current.equals(""))
+                ecsConnection.reallocate();
+            else if(ecsConnection.getHash().equals(next) || ecsConnection.getHash().equals(nextNext))
+                ecsConnection.notifyIfDelete(current, next, nextNext);
+        }
         this.newlyAdded = false;
     }
 
-    public void removeConnection(String ip, int port){
+    private void removeConnection(String ip, int port){
         for(ECSConnection ecsConnection : connections) {
             if (ecsConnection.getIP().equals(ip) && ecsConnection.getPort() == port)
                 connections.remove(ecsConnection);
@@ -354,10 +366,11 @@ public class ECS {
 
                 new Thread(connection).start();
             }
-        }catch(IOException ie){
+        }catch(IOException | NoSuchAlgorithmException ie){
             ie.printStackTrace();
         }
     }
+
 }
 
 

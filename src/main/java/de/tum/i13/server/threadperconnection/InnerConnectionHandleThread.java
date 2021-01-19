@@ -94,17 +94,36 @@ public class InnerConnectionHandleThread extends Thread {
                         logger.info("Transferring data to a new server");
 
                         if(!nextNextNeighbour.equals(" ")){
-                            this.transferToNextNext(nextNextNeighbour);
+                            this.transferRep1to2(nextNextNeighbour);
                             logger.info("Transferring replica of a new server to a next after next server");
                         }
                     }
                     if(prevNeighbour.equals(this.hash)){
                         logger.info("prev");
-                        this.transferFromPrev(cutter);
+                        this.transferStorageRep1(cutter);
                         logger.info("Transferred replicas to a new server");
                     }
                 }else if(line.startsWith("metadata") || line.startsWith("firstmetadata")){
                     cp.process(line);
+                }
+                else if(line.equals("DeletingAServer")){
+                    String current = inECS.readLine();
+                    String next = inECS.readLine();
+                    String nextNext = inECS.readLine();
+
+                    if(this.hash.equals(nextNext)){
+                        this.cp.getKVStore().removeReplica2();
+                    }
+                    if(this.hash.equals(next)){
+                        this.transferRep1to2(nextNext);
+                        this.cp.getKVStore().removeReplica2();
+                        this.cp.getKVStore().removeReplica1();
+                    }
+                    if(hash.equals(current)){
+                        this.transfer(next, "");
+                        this.transferRep12(next);
+                    }
+                    this.notShutDown = false;
                 }
                 if(this.shuttingDown){
                     outECS.write("MayIShutDownPlease " + this.ip + ":" + this.port + " " + this.hash + "\r\n");
@@ -113,11 +132,7 @@ public class InnerConnectionHandleThread extends Thread {
 
                     Thread.yield();
                     if(inECS.readLine().equals("YesYouMay")){
-                        nextNeighbour = inECS.readLine();
-                        this.transfer(nextNeighbour, "");
-
-                        notShutDown = false;
-                        logger.info("Shutting down in a process");
+                        logger.info("Got approval. Shutting down in a process");
                     }
                 }
             }
@@ -146,15 +161,13 @@ public class InnerConnectionHandleThread extends Thread {
         try(Socket socket = new Socket(newIP, newPort)){
             PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
             Scanner scanner = new Scanner(new FileInputStream(storage));
-
             while (scanner.hasNextLine()){
-                outTransfer.write("transferring " + scanner.nextLine() + "\r\n");
+                outTransfer.write("transferring " + scanner.nextLine());
                 outTransfer.flush();
             }
-            if(nextServer.equals("")){
-                outTransfer.write("You'reGoodToGo\r\n");
-                outTransfer.flush();
-            }
+
+            outTransfer.write("You'reGoodToGo\r\n");
+            outTransfer.flush();
 
             scanner.close();
         } catch (Exception e) {
@@ -162,17 +175,14 @@ public class InnerConnectionHandleThread extends Thread {
         }
     }
 
-    private void transferFromPrev(String newServer) throws IOException {
-        String newIP = cp.getMetadata().get(newServer).getIP();
-        int newPort = cp.getMetadata().get(newServer).getPort();
-
-        File replica1 = this.cp.getKVStore().getStorage("");
-        File replica2 = this.cp.getKVStore().getReplica1();
+    private void transfer2(String server, File file1, File file2){
+        String newIP = cp.getMetadata().get(server).getIP();
+        int newPort = cp.getMetadata().get(server).getPort();
 
         try (Socket socket = new Socket(newIP, newPort)){
             PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
-            Scanner scanner1 = new Scanner(new FileInputStream(replica1));
-            Scanner scanner2 = new Scanner(new FileInputStream(replica2));
+            Scanner scanner1 = new Scanner(new FileInputStream(file1));
+            Scanner scanner2 = new Scanner(new FileInputStream(file2));
 
             while (scanner1.hasNextLine()){
                 outTransfer.write("replica1 " + scanner1.nextLine() + "\r\n");
@@ -190,7 +200,19 @@ public class InnerConnectionHandleThread extends Thread {
         }
     }
 
-    private void transferToNextNext(String nextNextServer){
+    private void transferStorageRep1(String newServer) throws IOException {
+        File replica1 = this.cp.getKVStore().getStorage("");
+        File replica2 = this.cp.getKVStore().getReplica1();
+        this.transfer2(newServer, replica1, replica2);
+    }
+
+    private void transferRep12(String server) throws IOException {
+        File replica1 = this.cp.getKVStore().getReplica1();
+        File replica2 = this.cp.getKVStore().getReplica2();
+        this.transfer2(server, replica1, replica2);
+    }
+
+    private void transferRep1to2(String nextNextServer){
         File replica2 = this.cp.getKVStore().getReplica1();
         String nextNextIP = cp.getMetadata().get(nextNextServer).getIP();
         int nextNextPort = cp.getMetadata().get(nextNextServer).getPort();

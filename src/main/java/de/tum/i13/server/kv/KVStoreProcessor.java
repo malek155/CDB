@@ -264,6 +264,8 @@ public class KVStoreProcessor implements KVStore {
 
 	public File getReplica1(){return replica1;}
 
+	public File getReplica2(){return replica2;}
+
 	public void removeReplica1() throws IOException {
 		fwR1 = new FileWriter(replica1, false);
 	}
