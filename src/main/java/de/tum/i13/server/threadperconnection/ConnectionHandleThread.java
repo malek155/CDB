@@ -60,6 +60,7 @@ public class ConnectionHandleThread extends Thread {
 
 			String firstLine;
 			String res;
+
 			while (!clientSocket.isClosed()){
 				while ((firstLine = in.readLine()) != null) {
 					res = cp.process(firstLine) + "\r\n";

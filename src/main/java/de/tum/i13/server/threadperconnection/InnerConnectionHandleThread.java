@@ -88,7 +88,6 @@ public class InnerConnectionHandleThread extends Thread {
 					}
 					if(nextNeighbour.equals(this.hash)){
 						logger.info("next");
-						this.cp.getKVStore().removeReplica2();
 
 						// in kvstoreprocessor toReturn should be saved to the fst replica
 						this.transfer(cutter, nextNeighbour);
@@ -158,7 +157,6 @@ public class InnerConnectionHandleThread extends Thread {
 			}
 
 			scanner.close();
-			outTransfer.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -187,7 +185,6 @@ public class InnerConnectionHandleThread extends Thread {
 
 			scanner1.close();
 			scanner2.close();
-			outTransfer.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -207,7 +204,6 @@ public class InnerConnectionHandleThread extends Thread {
 				outTransfer.flush();
 			}
 			scanner.close();
-			outTransfer.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
