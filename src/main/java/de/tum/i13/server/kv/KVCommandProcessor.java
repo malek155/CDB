@@ -67,7 +67,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	 * @return answer after processing
 	 */
 	@Override
-	public String process(String command) throws Exception {
+	public String process(String command) throws Exception{
 
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
@@ -108,6 +108,7 @@ public class KVCommandProcessor implements CommandProcessor {
 							} else{
 								response = msg.getStatus().toString() + " " + msg.getKey();
 								if(metadata.size() > 2){
+									// 1: command with a hash - put/delete blabla, 2: replica1, 3:rep2
 									toReps.add(command + " " + hashMD5(input[1]));
 									toReps.add(this.metadata2.get(hash).getEndRep1());
 									toReps.add(this.metadata2.get(hash).getEndRep2());
@@ -196,6 +197,7 @@ public class KVCommandProcessor implements CommandProcessor {
 			logger.info("Updating replica1");
 			logger.info("Updating replica2");
 		} else if (input[0].equals("transferring")) {
+			// 1: key, 2: value; 3: hash, 4: kind of file
 			this.kvStore.put(input[1], input[2], input[3], "storage");
 			logger.info("Putting a new kv-pair, transferred from other servers");
 		} else if (input[0].equals("metadata")) {
@@ -203,6 +205,7 @@ public class KVCommandProcessor implements CommandProcessor {
 			hash = entry[0].split(" ")[1];
 			String[] metadatanew = entry[1].split(" ");
 
+			// hash: key; 1 entry: ip, 2 entry: port, 3 entry: start, 4: end
 			metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
 			if (metadatanew.length == 5) {
@@ -222,6 +225,7 @@ public class KVCommandProcessor implements CommandProcessor {
 			hash = entry[0].split(" ")[1];
 			String[] metadatanew = entry[1].split(" ");
 
+			// hash: key; 1 entry: ip, 2 entry: port, 3 entry: start, 4: end
 			metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
 			if (metadatanew.length == 5) {

@@ -51,7 +51,7 @@ public class InnerConnectionHandleThread extends Thread {
         String nextNeighbour;
         String nextNextNeighbour;
         String prevNeighbour;
-        String cutter;
+        String newServer;
 
         logger.info(bootstrap.getHostString() + ":" +  bootstrap.getPort());
 
@@ -73,13 +73,13 @@ public class InnerConnectionHandleThread extends Thread {
 
                 if(line.equals("NewServer")){
 
-                    cutter = inECS.readLine();  				// newly added server
+                    newServer = inECS.readLine();  				// newly added server
                     nextNeighbour = inECS.readLine();           // server we have our data at
 
                     nextNextNeighbour = inECS.readLine();
                     prevNeighbour = inECS.readLine();
-                    logger.info("cutter:" + cutter);
-                    logger.info("next:" + nextNeighbour);
+                    logger.info("new server:" + newServer);
+                    logger.info("next server:" + nextNeighbour);
                     logger.info("nextnext:" + nextNextNeighbour);
                     logger.info("prev:" + prevNeighbour);
 
@@ -91,7 +91,7 @@ public class InnerConnectionHandleThread extends Thread {
                         logger.info("next");
 
                         // in kvstoreprocessor toReturn should be saved to the fst replica
-                        this.transfer(cutter, nextNeighbour);
+                        this.transfer(newServer, nextNeighbour);
                         logger.info("Transferring data to a new server");
 
                         if(!nextNextNeighbour.equals(" ")){
@@ -101,7 +101,7 @@ public class InnerConnectionHandleThread extends Thread {
                     }
                     if(prevNeighbour.equals(this.hash)){
                         logger.info("prev");
-                        this.transferStorageRep1(cutter);
+                        this.transferStorageRep1(newServer);
                         logger.info("Transferred replicas to a new server");
                     }
                 }else if(line.startsWith("metadata") || line.startsWith("firstmetadata")){
@@ -150,6 +150,8 @@ public class InnerConnectionHandleThread extends Thread {
                     }
                 }
                 if(this.cp.getUpdates()){
+                    // to ecs
+                    // 1: command with a hash - put/delete blabla, 2: replica1, 3:rep2
                     outECS.write(cp.getToReps().get(0) + ":" + cp.getToReps().get(1) + ":" + cp.getToReps().get(2) + "\r\n");
                     outECS.flush();
                     cp.setUpdateReps(false);
