@@ -8,6 +8,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
 
@@ -23,6 +24,16 @@ public class Main {
 
 	public Main(){}
 
+	public static void notifyClients(ArrayList<ConnectionHandleThread> clients){
+		for(ConnectionHandleThread connection : clients){
+			connection.notifyClient();
+		}
+	}
+
+	public static void removeSub(String sub){
+		
+	}
+
 	/**
 	 * main() method where our serversocket will be initialized
 	 *
@@ -30,6 +41,7 @@ public class Main {
 	 * @throws IOException
 	 */
 	public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
+		ArrayList<ConnectionHandleThread> clientConnections = new ArrayList<>();
 
 		Config cfg = parseCommandlineArgs(args); // Do not change this
 		KVStoreProcessor kvStore = new KVStoreProcessor(cfg.dataDir);
@@ -77,7 +89,22 @@ public class Main {
 
 			// When we accept a connection, we start a new Thread for this connection
 			ConnectionHandleThread clientThread = new ConnectionHandleThread(logic, clientSocket);
+
+			// removing of a server in connection???? do it later
+			clientConnections.add(clientThread);
 			new Thread(clientThread).start();
+
+			if(logic.getUpdateSubs()){
+				Main.notifyClients(clientConnections);
+				logic.setUpdateSubs(false);
+			}
+			if(logic.getRemovedSubs()){
+//				should change it :/ didn't finish
+//				String subs = logic.getRemoveSubs();
+//				Main.removeSub(subs);
+//				logic.setRemovedSubs(false);
+//				logic.setRemoveSubs("");
+			}
 		}
 	}
 

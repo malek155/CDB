@@ -28,7 +28,7 @@ public class ConnectionHandleThread extends Thread {
 	private boolean closing;
 
 	public ConnectionHandleThread(KVCommandProcessor commandProcessor,
-								  Socket clientSocket) throws NoSuchAlgorithmException {
+								  Socket clientSocket){
 		this.cp = commandProcessor;
 		this.clientSocket = clientSocket;
 		this.shuttingDown = false;
@@ -93,4 +93,10 @@ public class ConnectionHandleThread extends Thread {
 		}
 	}
 
+	public void notifyClient(){
+		if(out !=  null){
+			out.write("");
+			out.flush();
+		}
+	}
 }

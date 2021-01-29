@@ -57,6 +57,13 @@ public class KVStoreProcessor implements KVStore {
 
 	// We have to put the both methods as synchronized because many threads will
 	// access them
+	public synchronized KVMessageProcessor publish(String key, String value, String hash, String kind) throws Exception {
+		KVMessage kvMessage = this.put(key, value, hash, kind);
+		if(kvMessage.getStatus().equals(KVMessage.StatusType.PUT_SUCCESS) || kvMessage.getStatus().equals(KVMessage.StatusType.DELETE_SUCCESS))
+			return new KVMessageProcessor(KVMessage.StatusType.PUBLICATION_SUCCESS, key, value);
+		else
+			return new KVMessageProcessor(KVMessage.StatusType.PUBLICATION_ERROR, key, value);
+	}
 
 	/**
 	 * put method adds a key value pair to the cache (local file).

@@ -12,7 +12,9 @@ public interface KVMessage {
         PUT_ERROR, 		/* Put - request not successful */
         DELETE, 		/* Delete - request */
         DELETE_SUCCESS, /* Delete - request successful */
-        DELETE_ERROR 	/* Delete - request successful */
+        DELETE_ERROR, 	/* Delete - request successful */
+        PUBLICATION_SUCCESS,
+        PUBLICATION_ERROR
     }
 
     /**

@@ -31,7 +31,6 @@ public class KVCommandProcessor implements CommandProcessor {
 	private TreeMap<String, MetadataReplica> metadata2;
 	// start and end (for now I suppose that I am able to get them from the main)
 	private String start;
-	private String replicaStart;
 	private String end;
 	private String hash;
 	// static boolean variable for read only
@@ -41,7 +40,13 @@ public class KVCommandProcessor implements CommandProcessor {
 	// thread
 	private volatile boolean initiated;
 	private boolean updateReps = false;
-	private ArrayList<String> toReps;
+	private ArrayList<String> toReps = new ArrayList<>();
+	private boolean updateSubs = false;
+	private ArrayList<String> toSubs = new ArrayList<>();
+	private String removeSubs = "";
+	private boolean removedSubs = false;
+	private HashMap<String, String> subscriptions = new HashMap<>();
+
 
 	public KVCommandProcessor() {
 	}
@@ -68,15 +73,18 @@ public class KVCommandProcessor implements CommandProcessor {
 	 */
 	@Override
 	public String process(String command) throws Exception{
-
 		logger.info("received command: " + command.trim());
 		String[] input = command.split(" ");
 
 		String reply = command;
 
-		if ((input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) && input.length != 1){
+		if ((input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")
+				|| input[0].equals("publish") || input[0].equals("subscribe") || input[0].equals("unsubscribe")) && input.length != 1){
+
 			this.start = metadata.get(hash).getStart();
-			if (isInTheRange(this.hashMD5(input[1]), start, end)) {
+
+			if (!(input[0].equals("subscribe") || input[0].equals("unsubscribe") && isInTheRange(this.hashMD5(input[1]), start, end))
+					|| (input[0].equals("subscribe") || input[0].equals("unsubscribe")) && isInTheRange(this.hashMD5(input[2]), start, end)){
 				KVMessage msg;
 				String response = "";
 
@@ -85,11 +93,11 @@ public class KVCommandProcessor implements CommandProcessor {
 						logger.info("Server is under initialization");
 						response = "server_stopped";
 					} else {
-						if (input[0].equals("put") && readOnly) {
+						if (readOnly && (input[0].equals("put") || input[0].equals("delete") || input[0].equals("publish"))){
 							logger.info("Server is under rebalancing, only getting keys is available");
 							response = "server_write_lock";
 						}
-						if ((input[0].equals("put") || input[0].equals("delete")) && !readOnly) {
+						if (!readOnly && (input[0].equals("put") || input[0].equals("delete") || input[0].equals("publish"))){
 							if (input.length != 3 && input[0].equals("put")){
 								logger.warning("not a suitable command for putting keys-values!");
 								response = "not a suitable command for putting keys-values!";
@@ -98,17 +106,41 @@ public class KVCommandProcessor implements CommandProcessor {
 								logger.warning("not a suitable command for deleting keys-values!");
 								response = "not a suitable command for deleting keys-values!";
 								throw new IOException("Delete Request needs only a key !");
+							}else if (input.length != 3 && input[0].equals("publish")){
+								logger.warning("not a suitable command for publishing keys-values!");
+								response = "not a suitable command for publishing keys-values!";
+								throw new IOException("Publish Request needs a key and value!");
 							}
-							msg = input[0].equals("put") ? this.kvStore.put(input[1], input[2], hashMD5(input[1]), "storage")
-									: this.kvStore.put(input[1], "null", hashMD5(input[1]), "storage");
+							if(input[0].equals("put"))
+								msg = this.kvStore.put(input[1], input[2], hashMD5(input[1]), "storage");
+							else if(input[0].equals("publish"))
+								msg = this.kvStore.publish(input[1], input[2], hashMD5(input[1]), "storage");
+							else
+								msg = this.kvStore.put(input[1], "null", hashMD5(input[1]), "storage");
+
 							logger.info("status:" + msg.getStatus().toString());
-							if (msg.getStatus().equals(StatusType.PUT_ERROR) || msg.getStatus().equals(StatusType.DELETE_ERROR)) {
-								logger.info("Error occured by putting/deleting a value ");
-								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
-							} else{
-								response = msg.getStatus().toString() + " " + msg.getKey();
+							if (msg.getStatus().equals(StatusType.PUT_ERROR) || msg.getStatus().equals(StatusType.DELETE_ERROR) || msg.getStatus().equals(StatusType.PUBLICATION_ERROR)) {
+								logger.info("Error occurred by putting/deleting/publishing a value ");
+								String value;
+								if(!input[0].equals("put")) // if delete
+									value = "Error occurred. Try again later.";
+								else
+									value = msg.getValue();
+								response = msg.getStatus().toString() + " " + msg.getKey() + " " + value;
+							}else{
+								String value;
+								if(input[0].equals("publish"))
+									value = msg.getValue();
+								else
+									value = "";
+								response = msg.getStatus().toString() + " " + msg.getKey() + " " + value;
+								// value not empty if success
+								if(!value.equals("")) {
+									this.toSubs.add(msg.getKey() + " " + value);
+									this.updateSubs = true;
+								}
 								if(metadata.size() > 2){
-									// 1: command with a hash - put/delete blabla, 2: replica1, 3:rep2
+									// 1: command with a hash - put/delete/publish <...> , 2: replica1, 3:rep2
 									toReps.add(command + " " + hashMD5(input[1]));
 									toReps.add(this.metadata2.get(hash).getEndRep1());
 									toReps.add(this.metadata2.get(hash).getEndRep2());
@@ -123,50 +155,81 @@ public class KVCommandProcessor implements CommandProcessor {
 							}
 							msg = this.kvStore.get(input[1]);
 							if (msg.getStatus().equals(StatusType.GET_ERROR)) {
-								logger.info("Error occured by getting a value ");
-								response = msg.getStatus().toString() + " " + msg.getKey();
+								logger.info("Error occurred by getting a value ");
+								response = msg.getStatus().toString() + " " + msg.getKey() + " Key not found." ;
 							} else {
 								logger.info("Got a value");
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							}
-						}
+						}else if(input[0].equals("subscribe")) // 1: sid, 2: key
+							this.subscriptions.put(input[1], input[2]);
+						else if(input[0].equals("unsubscribe")) // 1: sid, 2: key
+							this.unsubscribe(input[1], input[2]);
 					}
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
 				}
 				reply = response;
-			} else if (input[0].equals("get")){
-				logger.info("Checking the replicas of the server for get request ");
+			} else if (input[0].equals("get") || input[0].equals("subscribe") || input[0].equals("unsubscribe")){
+				logger.info("Checking the replicas of the server for get/subscribing/unsubscribing request ");
 				KVMessage msg;
 				String response = "";
 				try {
-					if (input.length != 2) {
-						response = "not a suitable command for getting values!";
-						logger.warning("not a suitable command for getting values!");
-						throw new Exception("Get Request needs only a key !");
+					if (input.length != 2 && input[0].equals("get")){
+							response = "not a suitable command for getting values!";
+							logger.warning("not a suitable command for getting values!");
+							throw new Exception("Get Request needs only a key !");
+					}else if (input.length != 3 && (input[0].equals("subscribe") || input[0].equals("unsubscribe"))){
+						response = "not a suitable command for un/subscribing!";
+						logger.warning("not a suitable command for un/subscribing!");
+						throw new Exception("Un/Subscribe Request needs a key and an ID!");
 					}
-					if (isInTheRange(this.hashMD5(input[1]), metadata2.get(hash).getStartRep1(), end)) {
-						msg = this.kvStore.get(input[1], 1);
-						if (msg.getStatus().equals(StatusType.GET_ERROR)) {
-							logger.info("Error occured by getting a value from replica 1 ");
-							response = msg.getStatus().toString() + " " + msg.getKey();
-						} else {
-							logger.info("Got a value from replica 1");
-							response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
+					if (input[0].equals("get") && isInTheRange(this.hashMD5(input[1]), metadata2.get(hash).getStartRep1(), end)){
+						if ("get".equals(input[0])) {
+							msg = this.kvStore.get(input[1], 1);
+							if (msg.getStatus().equals(StatusType.GET_ERROR)) {
+								logger.info("Error occured by getting a value from replica 1 ");
+								response = msg.getStatus().toString() + " " + msg.getKey() + " Key not found.";
+							} else {
+								logger.info("Got a value from replica 1");
+								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
+							}
+							//							case "subscribe":
+//								// 1: sid, 2: key
+//								this.subscriptions.put(input[1], input[2]);
+//								response = "subscribe_success " + input[1] + " " + input[2];
+//								break;
+//							case "unsubscribe":
+//								// 1: sid, 2: key
+//								this.unsubscribe(input[1], input[2]);
+//								response = "unsubscribe_success " + input[1];
+//								break;
 						}
-
-
-					} else if (isInTheRange(this.hashMD5(input[1]), metadata2.get(hash).getStartRep2(), end)) {
-						msg = this.kvStore.get(input[1], 2);
-						if (msg.getStatus().equals(StatusType.GET_ERROR)) {
-							logger.info("Error occured by getting a value from replica 2 ");
-							response = msg.getStatus().toString() + " " + msg.getKey();
-						} else {
-							logger.info("Got a value from replica 2");
-							response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
+					}else if (input[0].equals("get") && isInTheRange(this.hashMD5(input[1]), metadata2.get(hash).getStartRep2(), end)
+							|| (input[0].equals("subscribe") || input[0].equals("unsubscribe")) && isInTheRange(this.hashMD5(input[2]), metadata2.get(hash).getStartRep2(), end)){
+						switch (input[0]) {
+							case "get":
+								msg = this.kvStore.get(input[1], 2);
+								if (msg.getStatus().equals(StatusType.GET_ERROR)) {
+									logger.info("Error occured by getting a value from replica 2 ");
+									response = msg.getStatus().toString() + " " + msg.getKey() + " Key not found.";
+								} else {
+									logger.info("Got a value from replica 2");
+									response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
+								}
+								break;
+							case "subscribe":
+								this.subscriptions.put(input[1], input[2]);
+								response = "subscribe_success " + input[1] + " " + input[2];
+								break;
+							case "unsubscribe":
+								this.removedSubs = true;
+								this.removeSubs = input[1] + " " + input[2];
+								this.unsubscribe(input[1], input[2]);
+								response = "unsubscribe_success " + input[1];
+								break;
 						}
 					}
-
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
 				}
@@ -175,9 +238,21 @@ public class KVCommandProcessor implements CommandProcessor {
 
 			} else {
 				logger.info("Server is not responsible for a key");
-				reply = "server_not_responsible";
+				if(this.initiated){
+					String meta = "keyrange_success " + metadata.keySet().stream()
+							.map(key -> metadata.get(key).getStart() + ","
+									+ key + ","
+									+ metadata.get(key).getIP() + ":"
+									+ metadata.get(key).getPort())
+							.collect(Collectors.joining(";"));
+
+					reply = "server_not_responsible\r\n" + meta;
+				}
+				else
+					reply = "server_stopped";
 			}
-		}else if((input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")) && input.length == 1){
+		}else if((input[0].equals("put") || input[0].equals("get") || input[0].equals("delete") || input[0].equals("publish")
+				|| input[0].equals("subscribe") || input[0].equals("unsubscribe")) && input.length == 1){
 			reply = "not a suitable command";
 		}else if (input[0].equals("You'reGoodToGo")) {
 			this.initiated = true;
@@ -298,6 +373,15 @@ public class KVCommandProcessor implements CommandProcessor {
 		return result;
 	}
 
+	private void unsubscribe(String sid, String key){
+		for (Map.Entry element : subscriptions.entrySet()) {
+			if(element.getKey().equals(sid) && element.getValue().equals(key)){
+				subscriptions.remove(sid, key);
+				break;
+			}
+		}
+	}
+
 	public KVStoreProcessor getKVStore() {
 		return this.kvStore;
 	}
@@ -314,6 +398,10 @@ public class KVCommandProcessor implements CommandProcessor {
 		return this.updateReps;
 	}
 
+	public boolean getUpdateSubs(){
+		return this.updateSubs;
+	}
+
 	/**
 	 * setUpdateReps methode mostly sets updateReps false after updating replicas
 	 *
@@ -323,12 +411,44 @@ public class KVCommandProcessor implements CommandProcessor {
 		updateReps = updating;
 	}
 
+	public void setUpdateSubs(boolean updating){
+		updateSubs = updating;
+	}
+
 	/**
 	 * getToReps a methode to check, if we have to update replicas
 	 * @return a list of command (put/delete), hash of a key, hash of a replica1, hash of a replica2
 	 */
 	public ArrayList<String> getToReps(){
 		return this.toReps;
+	}
+
+	public Map<String, String> getSubs(){
+		return this.subscriptions;
+	}
+
+	public ArrayList<String> getToSubs(){
+		return this.toSubs;
+	}
+
+	public void setRemoveSubs(String str){
+		this.removeSubs = str;
+	}
+
+	public void setRemovedSubs(boolean bool){
+		this.removedSubs = bool;
+	}
+
+	public boolean getRemovedSubs(){
+		return this.removedSubs;
+	}
+
+	public String getRemoveSubs(){
+		return this.removeSubs;
+	}
+
+	public void clearToReps(){
+		this.toReps = new ArrayList<>();
 	}
 
 	public String hashMD5(String key) throws NoSuchAlgorithmException {
@@ -343,7 +463,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	 * metadataMap2 takes the TreeMap of metadata and generates a TreeMap of metadata2 which contains replicas
 	 * @return metadata of a main range, ranges of replicas
 	 */
-	private TreeMap<String, MetadataReplica> metadataMap2() {
+	private TreeMap<String, MetadataReplica> metadataMap2(){
 		// I need it to get the replicas
 		TreeMap<String, MetadataReplica> metadataMap2 = new TreeMap();
 		TreeMap<String, Metadata> meta2 = this.metadata;
