@@ -5,7 +5,6 @@ import de.tum.i13.shared.Metadata;
 
 import java.io.*;
 import java.math.BigInteger;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -17,7 +16,7 @@ import java.util.stream.Collectors;
 
 public class ECSConnection implements Runnable {
     private Socket clientSocket;
-    private ECS bigECS; // is watching you
+    private ECS bigECS;
     private BufferedReader in;
     private PrintWriter out;
     private String ip;
@@ -33,7 +32,7 @@ public class ECSConnection implements Runnable {
                 new InputStreamReader(clientSocket.getInputStream(), Constants.TELNET_ENCODING));
         out = new PrintWriter(
                 new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
-        ip = clientSocket.getInetAddress().getHostAddress();
+        ip = clientSocket.getInetAddress().getLocalHost().getHostAddress();
         port = clientSocket.getLocalPort();
         hash = hashMD5(ip + port);
     }
@@ -51,13 +50,6 @@ public class ECSConnection implements Runnable {
                 if (!message.equals("")) {
                     out.write(message);
                     out.flush();
-                }
-                if (bigECS.getMoved()) {
-                    bigECS.movedMeta();
-                }
-                if (bigECS.isNewlyAdded() && bigECS.getServerRepository().size() > 1) {
-                    bigECS.notifyServers("", "", "");
-                    logger.info("Notifying a server, that it needs to send a data to a new server");
                 }
             }
             logger.info("Closing the ECS connection");
@@ -83,18 +75,8 @@ public class ECSConnection implements Runnable {
         String[] lines = line.split(" ");
         if (lines[0].equals("MayIShutDownPlease")) {
             ipport = lines[1].split(":");
-            ArrayList<String> neighbours = this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
-            String nextHash = "";
-            String nextNextHash = "";
-
-            String current = neighbours.get(0);
-            if (bigECS.getServerRepository().size() > 1) {
-                nextHash = neighbours.get(1);
-                if (bigECS.getServerRepository().size() > 2)
-                    nextNextHash = neighbours.get(2);
-            }
+            this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
             reply = "YesYouMay\r\n";
-            this.bigECS.notifyServers(current, nextHash, nextNextHash);
         } else if (lines[0].equals("IAmNew")) {
             ipport = lines[1].split(":");
             if (!bigECS.isAdded(ipport[0], Integer.parseInt(ipport[1]))) {
@@ -132,8 +114,8 @@ public class ECSConnection implements Runnable {
                 out.write(" \r\n \r\n");
         } else
             out.write(" \r\n \r\n \r\n");
+
         out.flush();
-        logger.info(String.valueOf(bigECS.getServerRepository().size()));
     }
 
     /**
@@ -142,7 +124,6 @@ public class ECSConnection implements Runnable {
     public void notifyIfDelete(String current, String next, String nextNext) {
         out.write("DeletingAServer\r\n" + current + "\r\n" + next + "\r\n" + nextNext + "\r\n");
         out.flush();
-
     }
 
     /**

@@ -1,7 +1,6 @@
 package de.tum.i13.server.kv;
 
 import de.tum.i13.server.kv.KVMessage.StatusType;
-import de.tum.i13.server.threadperconnection.InnerConnectionHandleThread;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Metadata;
 import de.tum.i13.shared.MetadataReplica;
@@ -26,7 +25,6 @@ public class KVCommandProcessor implements CommandProcessor {
     // class because it is responsible to interact with the KVStore and handle those
     // commands
     private KVStoreProcessor kvStore;
-    private static Cache cache;
 
     // static instance of metadata
     private TreeMap<String, Metadata> metadata;
@@ -54,7 +52,6 @@ public class KVCommandProcessor implements CommandProcessor {
     public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache, String ip,
                               int port) throws NoSuchAlgorithmException {
         this.kvStore = kvStore;
-        KVCommandProcessor.cache = (cache.getClass().equals(LFUCache.class)) ? (LFUCache) cache : (FIFOLRUCache) cache;
         kvStore.setCache(cache);
         this.hash = this.hashMD5(ip + port);
         this.end = this.hash;
@@ -64,7 +61,7 @@ public class KVCommandProcessor implements CommandProcessor {
     }
 
     /**
-     * process method that handles the requests which came to this server
+     * process method that handles the requests
      *
      * @param command - command got from a client or another server
      * @return answer after processing
@@ -84,12 +81,6 @@ public class KVCommandProcessor implements CommandProcessor {
                 String response = "";
 
                 try {
-                    // the return value will be a KVMessageProcessor here and the methods can only
-                    // be put or get or delete
-                    // I will change it as a return
-
-                    // put request
-                    // adding new read only functionality
                     if (!initiated) {
                         logger.info("Server is under initialization");
                         response = "server_stopped";
@@ -117,6 +108,7 @@ public class KVCommandProcessor implements CommandProcessor {
                             } else {
                                 response = msg.getStatus().toString() + " " + msg.getKey();
                                 if (metadata.size() > 2) {
+                                    // 1: command with a hash - put/delete blabla, 2: replica1, 3:rep2
                                     toReps.add(command + " " + hashMD5(input[1]));
                                     toReps.add(this.metadata2.get(hash).getEndRep1());
                                     toReps.add(this.metadata2.get(hash).getEndRep2());
@@ -205,6 +197,7 @@ public class KVCommandProcessor implements CommandProcessor {
             logger.info("Updating replica1");
             logger.info("Updating replica2");
         } else if (input[0].equals("transferring")) {
+            // 1: key, 2: value; 3: hash, 4: kind of file
             this.kvStore.put(input[1], input[2], input[3], "storage");
             logger.info("Putting a new kv-pair, transferred from other servers");
         } else if (input[0].equals("metadata")) {
@@ -212,6 +205,7 @@ public class KVCommandProcessor implements CommandProcessor {
             hash = entry[0].split(" ")[1];
             String[] metadatanew = entry[1].split(" ");
 
+            // hash: key; 1 entry: ip, 2 entry: port, 3 entry: start, 4: end
             metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
             if (metadatanew.length == 5) {
@@ -231,6 +225,7 @@ public class KVCommandProcessor implements CommandProcessor {
             hash = entry[0].split(" ")[1];
             String[] metadatanew = entry[1].split(" ");
 
+            // hash: key; 1 entry: ip, 2 entry: port, 3 entry: start, 4: end
             metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
             if (metadatanew.length == 5) {
@@ -239,23 +234,28 @@ public class KVCommandProcessor implements CommandProcessor {
                 logger.info("Updated metadata from ECS");
             }
         } else if (input[0].equals("keyrange")) {
-            reply = "keyrange_success " + metadata.keySet().stream()
-                    .map(key -> metadata.get(key).getStart() + ","
-                            + key + ","
-                            + metadata.get(key).getIP() + ":"
-                            + metadata.get(key).getPort())
-                    .collect(Collectors.joining(";"));
-            logger.info("Updating metadata on the client side, sending");
-            logger.info(metadata.toString());
+            if (this.initiated) {
+                reply = "keyrange_success " + metadata.keySet().stream()
+                        .map(key -> metadata.get(key).getStart() + ","
+                                + key + ","
+                                + metadata.get(key).getIP() + ":"
+                                + metadata.get(key).getPort())
+                        .collect(Collectors.joining(";"));
+                logger.info("Updating metadata on the client side, sending");
+            } else
+                reply = "server_stopped";
         } else if (input[0].equals("keyrange_read")) {
-            reply = "keyrange_read_success " + metadata2.keySet().stream()
-                    .map(key -> metadata2.get(key).getStartRep2() + "," +
-                            key + "," + metadata2.get(key).getIP() + ":"
-                            + metadata2.get(key).getPort())
-                    .collect(Collectors.joining(";"));
+            if (this.initiated) {
+                reply = "keyrange_read_success " + metadata2.keySet().stream()
+                        .map(key -> metadata2.get(key).getStartRep2() + "," +
+                                key + "," + metadata2.get(key).getIP() + ":"
+                                + metadata2.get(key).getPort())
+                        .collect(Collectors.joining(";"));
 
-            logger.info("Updating keyranges for a client to read");
-            logger.info(metadata2.toString());
+                logger.info("Updating keyranges for a client to read");
+                logger.info(metadata2.toString());
+            } else
+                reply = "server_stopped";
         } else {
             logger.info(String.valueOf(initiated));
             reply = "error: wrong command, please try again!";
@@ -304,18 +304,32 @@ public class KVCommandProcessor implements CommandProcessor {
         return metadata;
     }
 
+    /**
+     * getUpdates a methode to check, if we have to update replicas
+     *
+     * @return true, if replicas need tobe updated
+     */
     public boolean getUpdates() {
         return this.updateReps;
     }
 
+    /**
+     * setUpdateReps methode mostly sets updateReps false after updating replicas
+     *
+     * @param updating: false if updated replicas after putting/deleting keyvalues in a main storage
+     */
     public void setUpdateReps(boolean updating) {
         updateReps = updating;
     }
 
+    /**
+     * getToReps a methode to check, if we have to update replicas
+     *
+     * @return a list of command (put/delete), hash of a key, hash of a replica1, hash of a replica2
+     */
     public ArrayList<String> getToReps() {
         return this.toReps;
     }
-
 
     public String hashMD5(String key) throws NoSuchAlgorithmException {
         MessageDigest msg = MessageDigest.getInstance("MD5");
@@ -325,13 +339,12 @@ public class KVCommandProcessor implements CommandProcessor {
         return myHash;
     }
 
-
-
     /**
-     * metadataMap2 method which takes the TreeMap of metadata and generates a TreeMap of metadata2 which contains replicas starting and ending ranges
-     * @return
+     * metadataMap2 takes the TreeMap of metadata and generates a TreeMap of metadata2 which contains replicas
+     *
+     * @return metadata of a main range, ranges of replicas
      */
-    public TreeMap<String, MetadataReplica> metadataMap2() {
+    private TreeMap<String, MetadataReplica> metadataMap2() {
         // I need it to get the replicas
         TreeMap<String, MetadataReplica> metadataMap2 = new TreeMap();
         TreeMap<String, Metadata> meta2 = this.metadata;

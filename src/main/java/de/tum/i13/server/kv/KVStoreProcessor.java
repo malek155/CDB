@@ -56,17 +56,12 @@ public class KVStoreProcessor implements KVStore {
 
     // We have to put the both methods as synchronized because many threads will
     // access them
-    // put method adds a key value pair to the cache (local file).
 
     /**
-     * put method adds a key value pair to the cache (local file), if the given kind is storage , otherwise puts it in the given replica
+     * put method adds a key value pair to the cache (local file).
      *
-     * @param key   the key that identifies the given value.
-     * @param value the value that is indexed by the given key.
-     * @param hash  the hash value of the key
-     * @param kind  the file where to store , it can be the local repository or replica1 or replica2
-     * @return
-     * @throws Exception
+     * @param key, value to be inserted .
+     * @return kvMessage for the status of the operation
      */
     @Override
     public synchronized KVMessageProcessor put(String key, String value, String hash, String kind) throws Exception {
@@ -306,20 +301,10 @@ public class KVStoreProcessor implements KVStore {
         return replica2;
     }
 
-    /**
-     * removing of replica 1
-     *
-     * @throws IOException
-     */
     public void removeReplica1() throws IOException {
         fwR1 = new FileWriter(replica1, false);
     }
 
-    /**
-     * removing of replica 2
-     *
-     * @throws IOException
-     */
     public void removeReplica2() throws IOException {
         fwR2 = new FileWriter(replica2, false);
     }

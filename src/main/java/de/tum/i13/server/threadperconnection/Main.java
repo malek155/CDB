@@ -16,70 +16,71 @@ import static de.tum.i13.shared.Config.parseCommandlineArgs;
  */
 public class Main {
 
-	public Main nextServer;
-	private static Cache cache;
-	public String start;
-	public String end;
+    public Main nextServer;
+    private static Cache cache;
+    public String start;
+    public String end;
 
-	public Main(){}
+    public Main() {
+    }
 
-	/**
-	 * main() method where our serversocket will be initialized
-	 *
-	 * @param args
-	 * @throws IOException
-	 */
-	public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
+    /**
+     * main() method where our serversocket will be initialized
+     *
+     * @param args
+     * @throws IOException
+     */
+    public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
 
-		Config cfg = parseCommandlineArgs(args); // Do not change this
-		KVStoreProcessor kvStore = new KVStoreProcessor(cfg.dataDir);
+        Config cfg = parseCommandlineArgs(args); // Do not change this
+        KVStoreProcessor kvStore = new KVStoreProcessor(cfg.dataDir);
 
-		if (cfg.cache.equals("FIFO")) {
-			cache = new FIFOLRUCache(cfg.cacheSize, false);
-		} else if (cfg.cache.equals("LRU")) {
-			cache = new FIFOLRUCache(cfg.cacheSize, true);
-		} else if (cfg.cache.equals("LFU")) {
-			cache = new LFUCache(cfg.cacheSize);
-		} else System.out.println("Please check your input for a cache strategy and try again.");
+        if (cfg.cache.equals("FIFO")) {
+            cache = new FIFOLRUCache(cfg.cacheSize, false);
+        } else if (cfg.cache.equals("LRU")) {
+            cache = new FIFOLRUCache(cfg.cacheSize, true);
+        } else if (cfg.cache.equals("LFU")) {
+            cache = new LFUCache(cfg.cacheSize);
+        } else System.out.println("Please check your input for a cache strategy and try again.");
 
-		kvStore.setCache(cache);
+        kvStore.setCache(cache);
 
-		// now we can open a listening serversocket
-		final ServerSocket serverSocket = new ServerSocket();
+        // now we can open a listening serversocket
+        final ServerSocket serverSocket = new ServerSocket();
 
-		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache, cfg.listenaddr, cfg.port);
-		InnerConnectionHandleThread innerThread = new InnerConnectionHandleThread(logic, cfg.bootstrap, cfg.listenaddr, cfg.port);
+        KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache, cfg.listenaddr, cfg.port);
+        InnerConnectionHandleThread innerThread = new InnerConnectionHandleThread(logic, cfg.bootstrap, cfg.listenaddr, cfg.port);
 
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() {
-				System.out.println("Closing thread per connection kv server");
-				try {
-					innerThread.setShuttingDown(true);
-					while(!innerThread.getShutDown()){
-						Thread.sleep(2000);
-					}
-					serverSocket.close();
-				} catch (IOException | InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-		});
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                System.out.println("Closing thread per connection kv server");
+                try {
+                    innerThread.setShuttingDown(true);
+                    while (!innerThread.getShutDown()) {
+                        Thread.sleep(2000);
+                    }
+                    serverSocket.close();
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
-		// binding to the server
-		serverSocket.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
+        // binding to the server
+        serverSocket.bind(new InetSocketAddress(cfg.listenaddr, cfg.port));
 
-		new Thread(innerThread).start();
+        new Thread(innerThread).start();
 
-		while(true){
-			// Waiting for client to connect
-			Socket clientSocket = serverSocket.accept();
+        while (true) {
+            // Waiting for client to connect
+            Socket clientSocket = serverSocket.accept();
 
-			// When we accept a connection, we start a new Thread for this connection
-			ConnectionHandleThread clientThread = new ConnectionHandleThread(logic, clientSocket);
-			new Thread(clientThread).start();
-		}
-	}
+            // When we accept a connection, we start a new Thread for this connection
+            ConnectionHandleThread clientThread = new ConnectionHandleThread(logic, clientSocket);
+            new Thread(clientThread).start();
+        }
+    }
 
 
 }
