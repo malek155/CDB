@@ -1,6 +1,7 @@
 package de.tum.i13.server.kv;
 
 import de.tum.i13.server.kv.KVMessage.StatusType;
+import de.tum.i13.server.threadperconnection.ConnectionHandleThread;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Metadata;
 import de.tum.i13.shared.MetadataReplica;
@@ -26,7 +27,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	// commands
 	private KVStoreProcessor kvStore;
 
-	// static instance of metadata
+	// instance of metadata
 	private TreeMap<String, Metadata> metadata;
 	private TreeMap<String, MetadataReplica> metadata2;
 	// start and end (for now I suppose that I am able to get them from the main)
@@ -43,9 +44,10 @@ public class KVCommandProcessor implements CommandProcessor {
 	private ArrayList<String> toReps = new ArrayList<>();
 	private boolean updateSubs = false;
 	private ArrayList<String> toSubs = new ArrayList<>();
-	private String removeSubs = "";
-	private boolean removedSubs = false;
-	private HashMap<String, String> subscriptions = new HashMap<>();
+	private boolean updateSids = false;
+	private ArrayList<String> subscriptions = new ArrayList<String>();
+	private String ip;
+	private int port;
 
 
 	public KVCommandProcessor() {
@@ -63,6 +65,8 @@ public class KVCommandProcessor implements CommandProcessor {
 		this.initiated = false;
 		this.readOnly = true;
 		logger.info("New thread for server started, initializing");
+		this.ip = ip;
+		this.port = port;
 	}
 
 	/**
@@ -161,9 +165,9 @@ public class KVCommandProcessor implements CommandProcessor {
 								logger.info("Got a value");
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							}
-						}else if(input[0].equals("subscribe")) // 1: sid, 2: key
-							this.subscriptions.put(input[1], input[2]);
-						else if(input[0].equals("unsubscribe")) // 1: sid, 2: key
+						}else if(input[0].equals("subscribe")) // sid, key, ip, port
+							this.subscriptions.add(command.substring(10));
+						else if(input[0].equals("unsubscribe")) // sid, key, ip, port
 							this.unsubscribe(input[1], input[2]);
 					}
 				} catch (Exception e) {
@@ -219,12 +223,12 @@ public class KVCommandProcessor implements CommandProcessor {
 								}
 								break;
 							case "subscribe":
-								this.subscriptions.put(input[1], input[2]);
+								this.subscriptions.add(command.substring(10));
+								this.updateSids = true;
 								response = "subscribe_success " + input[1] + " " + input[2];
 								break;
 							case "unsubscribe":
-								this.removedSubs = true;
-								this.removeSubs = input[1] + " " + input[2];
+								this.updateSids = true;
 								this.unsubscribe(input[1], input[2]);
 								response = "unsubscribe_success " + input[1];
 								break;
@@ -374,11 +378,14 @@ public class KVCommandProcessor implements CommandProcessor {
 	}
 
 	private void unsubscribe(String sid, String key){
-		for (Map.Entry element : subscriptions.entrySet()) {
-			if(element.getKey().equals(sid) && element.getValue().equals(key)){
-				subscriptions.remove(sid, key);
+		int count = 0;
+		for(String sub : subscriptions){
+			String[] subs = sub.split(" ");
+			if(subs[0].equals(sid) && subs[1].equals(key)){
+				subscriptions.remove(count);
 				break;
 			}
+			count++;
 		}
 	}
 
@@ -423,7 +430,7 @@ public class KVCommandProcessor implements CommandProcessor {
 		return this.toReps;
 	}
 
-	public Map<String, String> getSubs(){
+	public ArrayList<String> getSubs(){
 		return this.subscriptions;
 	}
 
@@ -431,20 +438,16 @@ public class KVCommandProcessor implements CommandProcessor {
 		return this.toSubs;
 	}
 
-	public void setRemoveSubs(String str){
-		this.removeSubs = str;
+	public ArrayList<String> getSubscriptions(){
+		return this.subscriptions;
 	}
 
-	public void setRemovedSubs(boolean bool){
-		this.removedSubs = bool;
+	public void setUpdateSids(boolean bool){
+		this.updateSids = bool;
 	}
 
-	public boolean getRemovedSubs(){
-		return this.removedSubs;
-	}
-
-	public String getRemoveSubs(){
-		return this.removeSubs;
+	public boolean getUpdateSids(){
+		return this.updateSids;
 	}
 
 	public void clearToReps(){

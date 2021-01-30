@@ -30,10 +30,6 @@ public class Main {
 		}
 	}
 
-	public static void removeSub(String sub){
-		
-	}
-
 	/**
 	 * main() method where our serversocket will be initialized
 	 *
@@ -98,12 +94,8 @@ public class Main {
 				Main.notifyClients(clientConnections);
 				logic.setUpdateSubs(false);
 			}
-			if(logic.getRemovedSubs()){
-//				should change it :/ didn't finish
-//				String subs = logic.getRemoveSubs();
-//				Main.removeSub(subs);
-//				logic.setRemovedSubs(false);
-//				logic.setRemoveSubs("");
+			if(logic.getUpdateSids()){
+
 			}
 		}
 	}

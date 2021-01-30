@@ -63,7 +63,11 @@ public class ConnectionHandleThread extends Thread {
 
 			while (!clientSocket.isClosed()){
 				while ((firstLine = in.readLine()) != null) {
-					res = cp.process(firstLine) + "\r\n";
+					if(firstLine.startsWith("subscribe") || firstLine.startsWith("unsubscribe")){
+						res = cp.process(firstLine + " " + clientSocket.getInetAddress().getHostAddress() + " " + clientSocket.getPort()) + "\r\n";
+					}
+					else
+						res = cp.process(firstLine) + "\r\n";
 
 					logger.info(res);
 					out.write(res);
