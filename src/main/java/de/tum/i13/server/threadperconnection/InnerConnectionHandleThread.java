@@ -158,6 +158,12 @@ public class InnerConnectionHandleThread extends Thread {
                     cp.setUpdateReps(false);
                     cp.clearToReps();
                 }
+                /*
+                 *
+                 * published key value -> to ecsconnection
+                 *
+                 *
+                 * */
                 if(this.cp.getPublished()){
                     outECS.write("published " + cp.getToSubscribers() + "\r\n");
                     outECS.flush();

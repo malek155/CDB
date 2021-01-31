@@ -26,13 +26,23 @@ public class Main {
 
 	public Main(){}
 
-	public void notifyClients(){
+	/*
+	 *
+	 *
+	 * go through two loops
+	 * if ip port from subs are equal to added in main methode connections
+	 * 		notify them -> they are subscribers!
+	 * line = key value -> connectionhandlethread
+	 *
+	 * */
+	public void notifyClients(String line){
+		// do smth with line
 		for(String subscriber : updatedSubs){
 			String[] subs = subscriber.split(" ");
 			for(ConnectionHandleThread connection : clientConnections){
 				if(subs[2].equals(connection.getClientSocket().getInetAddress().getHostAddress())
 				 && Integer.parseInt(subs[3]) == connection.getClientSocket().getPort())
-					connection.notifyClient();
+					connection.notifyClient(line);
 			}
 		}
 	}

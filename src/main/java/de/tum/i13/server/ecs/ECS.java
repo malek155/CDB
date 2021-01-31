@@ -137,9 +137,16 @@ public class ECS {
         logger.info("Added a new server, listening on " + ip + ":" + port);
     }
 
+    /*
+     *
+     * go through all servers in a rep
+     * method invokation in Main
+     *
+     *
+     * */
     public void publishNotification(String line){
         for (Main main: serverRepository){
-            main.notifyClients();
+            main.notifyClients(line);
         }
     }
 

@@ -135,10 +135,17 @@ public class KVCommandProcessor implements CommandProcessor {
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + value;
 							}else{
 								String value;
+								/*
+								 *  delete please these comments after checking everything
+								 *
+								 * published is checked in innerconnectionhandlethread to know what publication we should send to ecs
+								 * toSubscribers -> key value
+								 *
+								 * */
 								if(input[0].equals("publish")){
 									value = msg.getValue();
-									this.published = true;
 									this.toSubscribers = msg.getKey() + " " + value;
+									this.published = true;
 								}	// value not empty if success
 								else
 									value = "";
@@ -165,6 +172,12 @@ public class KVCommandProcessor implements CommandProcessor {
 								logger.info("Got a value");
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							}
+							/*
+							*
+							* updateMainSubscriberIds is checked in Main to update the analogue local variable
+							*
+							*
+							* */
 						}else if(input[0].equals("subscribe")) { // sid, key, ip, port
 							this.subscriptions.add(command.substring(10));
 							this.updateMainSids = true;
