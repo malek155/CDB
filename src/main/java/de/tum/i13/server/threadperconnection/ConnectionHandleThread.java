@@ -27,7 +27,7 @@ public class ConnectionHandleThread extends Thread {
     private boolean closing;
 
     public ConnectionHandleThread(KVCommandProcessor commandProcessor,
-                                  Socket clientSocket) throws NoSuchAlgorithmException {
+                                  Socket clientSocket) {
         this.cp = commandProcessor;
         this.clientSocket = clientSocket;
         this.shuttingDown = false;
@@ -62,7 +62,10 @@ public class ConnectionHandleThread extends Thread {
 
             while (!clientSocket.isClosed()) {
                 while ((firstLine = in.readLine()) != null) {
-                    res = cp.process(firstLine) + "\r\n";
+                    if (firstLine.startsWith("subscribe") || firstLine.startsWith("unsubscribe")) {
+                        res = cp.process(firstLine + " " + clientSocket.getInetAddress().getHostAddress() + " " + clientSocket.getPort()) + "\r\n";
+                    } else
+                        res = cp.process(firstLine) + "\r\n";
 
                     logger.info(res);
                     out.write(res);
@@ -92,4 +95,10 @@ public class ConnectionHandleThread extends Thread {
         }
     }
 
+    public void notifyClient() {
+        if (out != null) {
+            out.write("");
+            out.flush();
+        }
+    }
 }

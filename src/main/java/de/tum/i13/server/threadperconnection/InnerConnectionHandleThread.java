@@ -131,18 +131,18 @@ public class InnerConnectionHandleThread extends Thread {
                         }
                     }
                     this.notShutDown = false;
-                } else if (line.startsWith("put") || line.startsWith("delete")) {
+                } else if (line.startsWith("put") || line.startsWith("delete") || line.startsWith("publish")) {
                     String rep1 = inECS.readLine();
                     String rep2 = inECS.readLine();
                     String[] command = line.split(" ");
                     if (this.hash.equals(rep1)) {
-                        if (command[0].equals("put"))
+                        if (command[0].equals("put") || command[0].equals("publish"))
                             this.cp.getKVStore().put(command[1], command[2], command[3], "replica1");
                         else
                             this.cp.getKVStore().put(command[1], null, command[2], "replica1");
                     }
                     if (this.hash.equals(rep2)) {
-                        if (command[0].equals("put"))
+                        if (command[0].equals("put") || command[0].equals("publish"))
                             this.cp.getKVStore().put(command[1], command[2], command[3], "replica2");
                         else
                             this.cp.getKVStore().put(command[1], null, command[2], "replica2");
@@ -150,10 +150,11 @@ public class InnerConnectionHandleThread extends Thread {
                 }
                 if (this.cp.getUpdates()) {
                     // to ecs
-                    // 1: command with a hash - put/delete blabla, 2: replica1, 3:rep2
+                    // 1: command with a hash - put/delete/publish blabla, 2: replica1, 3:rep2
                     outECS.write(cp.getToReps().get(0) + ":" + cp.getToReps().get(1) + ":" + cp.getToReps().get(2) + "\r\n");
                     outECS.flush();
                     cp.setUpdateReps(false);
+                    cp.clearToReps();
                 }
                 if (this.shuttingDown) {
                     outECS.write("MayIShutDownPlease " + this.ip + ":" + this.port + " " + this.hash + "\r\n");

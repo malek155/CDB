@@ -23,7 +23,6 @@ public class ECS {
     private String nextHash;
     private String prevHash;
     private String nextNextHash;
-    private boolean newlyAdded;
     public ArrayList<ECSConnection> connections = new ArrayList<>();
 
     //Servers repository, also a circular structure? meh we'll see
@@ -406,10 +405,6 @@ public class ECS {
 
     public String getNextNextHash() {
         return nextNextHash;
-    }
-
-    public boolean isNewlyAdded() {
-        return this.newlyAdded;
     }
 
     public LinkedList<Main> getServerRepository() {
