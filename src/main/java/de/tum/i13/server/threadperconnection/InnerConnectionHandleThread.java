@@ -9,6 +9,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Logger;
 
@@ -156,6 +157,12 @@ public class InnerConnectionHandleThread extends Thread {
                     outECS.flush();
                     cp.setUpdateReps(false);
                     cp.clearToReps();
+                }
+                if(this.cp.getPublished()){
+                    outECS.write("published " + cp.getToSubscribers() + "\r\n");
+                    outECS.flush();
+                    cp.setPublished(false);
+                    cp.clearToSubscribers();
                 }
                 if(this.shuttingDown){
                     outECS.write("MayIShutDownPlease " + this.ip + ":" + this.port + " " + this.hash + "\r\n");

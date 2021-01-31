@@ -103,4 +103,8 @@ public class ConnectionHandleThread extends Thread {
 			out.flush();
 		}
 	}
+
+	public Socket getClientSocket(){
+		return this.clientSocket;
+	}
 }

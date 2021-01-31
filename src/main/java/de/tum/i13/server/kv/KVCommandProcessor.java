@@ -1,7 +1,6 @@
 package de.tum.i13.server.kv;
 
 import de.tum.i13.server.kv.KVMessage.StatusType;
-import de.tum.i13.server.threadperconnection.ConnectionHandleThread;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Metadata;
 import de.tum.i13.shared.MetadataReplica;
@@ -40,12 +39,15 @@ public class KVCommandProcessor implements CommandProcessor {
 	// volatile keyword because this variable is expected to be changed from another
 	// thread
 	private volatile boolean initiated;
+	// boolean for knowing when to update replicas of a storage
 	private boolean updateReps = false;
+	// toReps for info for replicas
 	private ArrayList<String> toReps = new ArrayList<>();
-	private boolean updateSubs = false;
-	private ArrayList<String> toSubs = new ArrayList<>();
-	private boolean updateSids = false;
-	private ArrayList<String> subscriptions = new ArrayList<String>();
+
+	private boolean published = false;
+	private String toSubscribers = "";
+	private boolean updateMainSids = false;
+	private ArrayList<String> subscriptions = new ArrayList<>();
 	private String ip;
 	private int port;
 
@@ -133,16 +135,14 @@ public class KVCommandProcessor implements CommandProcessor {
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + value;
 							}else{
 								String value;
-								if(input[0].equals("publish"))
+								if(input[0].equals("publish")){
 									value = msg.getValue();
+									this.published = true;
+									this.toSubscribers = msg.getKey() + " " + value;
+								}	// value not empty if success
 								else
 									value = "";
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + value;
-								// value not empty if success
-								if(!value.equals("")) {
-									this.toSubs.add(msg.getKey() + " " + value);
-									this.updateSubs = true;
-								}
 								if(metadata.size() > 2){
 									// 1: command with a hash - put/delete/publish <...> , 2: replica1, 3:rep2
 									toReps.add(command + " " + hashMD5(input[1]));
@@ -165,10 +165,14 @@ public class KVCommandProcessor implements CommandProcessor {
 								logger.info("Got a value");
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							}
-						}else if(input[0].equals("subscribe")) // sid, key, ip, port
+						}else if(input[0].equals("subscribe")) { // sid, key, ip, port
 							this.subscriptions.add(command.substring(10));
-						else if(input[0].equals("unsubscribe")) // sid, key, ip, port
+							this.updateMainSids = true;
+						}
+						else if(input[0].equals("unsubscribe")) {// sid, key, ip, port
 							this.unsubscribe(input[1], input[2]);
+							this.updateMainSids = true;
+						}
 					}
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
@@ -198,16 +202,6 @@ public class KVCommandProcessor implements CommandProcessor {
 								logger.info("Got a value from replica 1");
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							}
-							//							case "subscribe":
-//								// 1: sid, 2: key
-//								this.subscriptions.put(input[1], input[2]);
-//								response = "subscribe_success " + input[1] + " " + input[2];
-//								break;
-//							case "unsubscribe":
-//								// 1: sid, 2: key
-//								this.unsubscribe(input[1], input[2]);
-//								response = "unsubscribe_success " + input[1];
-//								break;
 						}
 					}else if (input[0].equals("get") && isInTheRange(this.hashMD5(input[1]), metadata2.get(hash).getStartRep2(), end)
 							|| (input[0].equals("subscribe") || input[0].equals("unsubscribe")) && isInTheRange(this.hashMD5(input[2]), metadata2.get(hash).getStartRep2(), end)){
@@ -224,12 +218,12 @@ public class KVCommandProcessor implements CommandProcessor {
 								break;
 							case "subscribe":
 								this.subscriptions.add(command.substring(10));
-								this.updateSids = true;
+								this.updateMainSids = true;
 								response = "subscribe_success " + input[1] + " " + input[2];
 								break;
 							case "unsubscribe":
-								this.updateSids = true;
 								this.unsubscribe(input[1], input[2]);
+								this.updateMainSids = true;
 								response = "unsubscribe_success " + input[1];
 								break;
 						}
@@ -405,8 +399,8 @@ public class KVCommandProcessor implements CommandProcessor {
 		return this.updateReps;
 	}
 
-	public boolean getUpdateSubs(){
-		return this.updateSubs;
+	public boolean getPublished(){
+		return this.published;
 	}
 
 	/**
@@ -418,8 +412,8 @@ public class KVCommandProcessor implements CommandProcessor {
 		updateReps = updating;
 	}
 
-	public void setUpdateSubs(boolean updating){
-		updateSubs = updating;
+	public void setPublished(boolean published){
+		this.published = published;
 	}
 
 	/**
@@ -430,24 +424,24 @@ public class KVCommandProcessor implements CommandProcessor {
 		return this.toReps;
 	}
 
-	public ArrayList<String> getSubs(){
-		return this.subscriptions;
+	public String getToSubscribers(){
+		return this.toSubscribers;
 	}
 
-	public ArrayList<String> getToSubs(){
-		return this.toSubs;
+	public void clearToSubscribers(){
+		this.toSubscribers = "";
 	}
 
 	public ArrayList<String> getSubscriptions(){
 		return this.subscriptions;
 	}
 
-	public void setUpdateSids(boolean bool){
-		this.updateSids = bool;
+	public void setUpdateMainSids(boolean bool){
+		this.updateMainSids = bool;
 	}
 
-	public boolean getUpdateSids(){
-		return this.updateSids;
+	public boolean getUpdateMainSids(){
+		return this.updateMainSids;
 	}
 
 	public void clearToReps(){

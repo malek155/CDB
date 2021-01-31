@@ -84,6 +84,8 @@ public class ECSConnection implements Runnable {
         }else if(lines[0].equals("delete") || lines[0].equals("put")){
             String[] updates = line.split(":");
             bigECS.updateReps(updates[0], updates[1], updates[2]);
+        }else if(lines[0].equals("published")){
+            bigECS.publishNotification(line);
         }
         return reply;
     }

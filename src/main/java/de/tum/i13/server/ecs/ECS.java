@@ -137,6 +137,12 @@ public class ECS {
         logger.info("Added a new server, listening on " + ip + ":" + port);
     }
 
+    public void publishNotification(String line){
+        for (Main main: serverRepository){
+            main.notifyClients();
+        }
+    }
+
     /**
      * removeServer method deletes a server from the serverRepository and
      * deletes its data from metadataMap, ecsConnections - updates circular relationships
