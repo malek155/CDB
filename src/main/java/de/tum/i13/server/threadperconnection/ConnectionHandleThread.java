@@ -95,10 +95,21 @@ public class ConnectionHandleThread extends Thread {
         }
     }
 
-    public void notifyClient() {
+    /*
+     *
+     * the end
+     *
+     *
+     * */
+
+    public void notifyClient(String line) {
         if (out != null) {
             out.write("");
             out.flush();
         }
+    }
+
+    public Socket getClientSocket() {
+        return this.clientSocket;
     }
 }

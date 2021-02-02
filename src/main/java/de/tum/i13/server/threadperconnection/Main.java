@@ -21,13 +21,30 @@ public class Main {
     private static Cache cache;
     public String start;
     public String end;
+    public static ArrayList<ConnectionHandleThread> clientConnections = new ArrayList<>();
+    public static ArrayList<String> updatedSubs;
 
     public Main() {
     }
 
-    public static void notifyClients(ArrayList<ConnectionHandleThread> clients) {
-        for (ConnectionHandleThread connection : clients) {
-            connection.notifyClient();
+    /*
+     *
+     *
+     * go through two loops
+     * if ip port from subs are equal to added in main methode connections
+     * 		notify them -> they are subscribers!
+     * line = key value -> connectionhandlethread
+     *
+     * */
+    public void notifyClients(String line) {
+        // do smth with line
+        for (String subscriber : updatedSubs) {
+            String[] subs = subscriber.split(" ");
+            for (ConnectionHandleThread connection : clientConnections) {
+                if (subs[2].equals(connection.getClientSocket().getInetAddress().getHostAddress())
+                        && Integer.parseInt(subs[3]) == connection.getClientSocket().getPort())
+                    connection.notifyClient(line);
+            }
         }
     }
 
@@ -38,7 +55,7 @@ public class Main {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
-        ArrayList<ConnectionHandleThread> clientConnections = new ArrayList<>();
+
 
         Config cfg = parseCommandlineArgs(args); // Do not change this
         KVStoreProcessor kvStore = new KVStoreProcessor(cfg.dataDir);
@@ -91,13 +108,11 @@ public class Main {
             clientConnections.add(clientThread);
             new Thread(clientThread).start();
 
-            if (logic.getUpdateSubs()) {
-                Main.notifyClients(clientConnections);
-                logic.setUpdateSubs(false);
+            if (logic.getUpdateMainSids()) {
+                Main.updatedSubs = logic.getSubscriptions();
+                logic.setUpdateMainSids(false);
             }
-            if (logic.getUpdateSids()) {
 
-            }
         }
     }
 
