@@ -76,7 +76,7 @@ public class ECSConnection implements Runnable {
             ipport = lines[1].split(":");
             this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
             reply = "YesYouMay\r\n";
-        }else if (lines[0].equals("IAmNew")) {
+        }else if (lines[0].equals("IAmNew")){
             ipport = lines[1].split(":");
             if(!bigECS.isAdded(ipport[0], Integer.parseInt(ipport[1]))){
                 bigECS.addServer(ipport[0], Integer.parseInt(ipport[1]));
@@ -85,12 +85,6 @@ public class ECSConnection implements Runnable {
             String[] updates = line.split(":");
             bigECS.updateReps(updates[0], updates[1], updates[2]);
         }else if(lines[0].equals("published")){
-            /*
-             *
-             * key value -> ecs
-             *
-             *
-             * */
             bigECS.publishNotification(lines[1] + " " + lines[2]);
         }
         return reply;

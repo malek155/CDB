@@ -478,29 +478,40 @@ public class KVCommandProcessor implements CommandProcessor {
 		TreeMap<String, MetadataReplica> metadataMap2 = new TreeMap();
 		TreeMap<String, Metadata> meta2 = this.metadata;
 		this.metadata.keySet().forEach(key -> {
-			Metadata meta1 = meta2.get(key);
+			Metadata meta1 = metadata.get(key);
 			MetadataReplica mdr = new MetadataReplica(meta1.getIP(), meta1.getPort(), meta1.getStart(), meta1.getEnd(), null, null);
 			// we get the hash of previous server with the start of this server from the metadata
 
-			String b = meta1.getStart();
-			BigInteger bighash = new BigInteger(b, 16);
+//			String b = meta1.getStart();
+//			BigInteger bighash = new BigInteger(b, 16);
+//			bighash = bighash.subtract(BigInteger.ONE);
+//			b = bighash.toString(16);
+
+//			String a = metadata.get(b).getStart();
+//			String end1 = metadata.get(b).getEnd();
+//			mdr.setEndRep1(end1);
+//			mdr.setStartRep1(a);
+//			BigInteger bighash2 = new BigInteger(a, 16);
+//			bighash2 = bighash2.subtract(BigInteger.ONE);
+//			a = bighash2.toString(16);
+
+			String start1 = meta1.getStart();
+			BigInteger bighash = new BigInteger(start1, 16);
 			bighash = bighash.subtract(BigInteger.ONE);
-			b = bighash.toString(16);
+			String lastHash = bighash.toString(16);
 
-			String a = meta2.get(b).getStart();
-			String end1 = meta2.get(b).getEnd();
-			mdr.setEndRep1(end1);
-			mdr.setStartRep1(a);
-			BigInteger bighash2 = new BigInteger(a, 16);
+			String start2 = metadata.get(lastHash).getStart();
+			mdr.setEndRep1(lastHash);
+			mdr.setStartRep1(start2);
+
+			BigInteger bighash2 = new BigInteger(start2, 16);
 			bighash2 = bighash2.subtract(BigInteger.ONE);
-			a = bighash2.toString(16);
+			String lastLastHash = bighash2.toString(16);
 
-
-			mdr.setStartRep2(meta2.get(a).getStart());
-			mdr.setEndRep2(meta2.get(a).getEnd());
+			mdr.setEndRep2(lastLastHash);
+			mdr.setStartRep2(metadata.get(lastLastHash).getStart());
 
 			metadataMap2.put(key, mdr);
-
 		});
 
 		return metadataMap2;

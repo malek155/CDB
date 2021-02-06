@@ -65,6 +65,7 @@ public class ECS {
         Main prevServer = null;
 
         String hash = this.hashMD5(ip+port);
+        newServer = hash;
 
         //getting an index and a hashvalue of a predecessor to be -> startrange
         if (headServer == null) {     // means we have no servers in rep yet
@@ -96,10 +97,18 @@ public class ECS {
 
             if (this.tailServer == prevServer && startIndex != 0){
                 newMain.nextServer = headServer;
-                this.tailServer.nextServer = newMain ;
+                this.tailServer.nextServer = newMain;
                 this.tailServer = newMain;
-            }else if(startIndex == 0){
+            }else if(startIndex==0 &&  indexes.get(startIndex).equals("")){
+                headServer.nextServer = newMain;
+                headServer.start = arithmeticHash(hash, true);
+                newMain.nextServer = headServer;
+                newMain.start = arithmeticHash(headServer.end, true);
+                tailServer = newMain;
+            }
+            else if(startIndex == 0){
                 newMain.nextServer = serverRepository.getLast().nextServer;
+                logger.info(newMain.nextServer.end);
                 this.headServer = newMain;
                 this.tailServer.nextServer = newMain;
             }else{
@@ -129,7 +138,8 @@ public class ECS {
             logger.info("Notifying a server, that it needs to send a data to a new server");
         }
 
-        newServer = hash;
+//        newServer = hash;
+        logger.info(hash);
         nextHash = newMain.nextServer.end;
         nextNextHash = newMain.nextServer.nextServer.end;
         if(prevServer != null) prevHash = prevServer.end;
@@ -266,12 +276,12 @@ public class ECS {
                 returnIndexes.put(count, startRange);
                 break;
             }
-            count++;
             startRange = arithmeticHash(hashToCmpString, true);
             if(hashToCmpString.equals(metadataMap.lastKey())){
                 returnIndexes.put(count, startRange);
                 break;
             }
+            count++;
         }
         return returnIndexes;
     }

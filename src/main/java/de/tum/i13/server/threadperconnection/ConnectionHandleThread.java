@@ -3,11 +3,13 @@ package de.tum.i13.server.threadperconnection;
 import de.tum.i13.server.kv.KVCommandProcessor;
 import de.tum.i13.shared.Constants;
 import de.tum.i13.shared.Metadata;
+import org.apache.kafka.clients.producer.KafkaProducer;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
@@ -105,6 +107,7 @@ public class ConnectionHandleThread extends Thread {
 	 * */
 
 	public void notifyClient(String line){
+
 		if(out !=  null){
 			out.write("");
 			out.flush();
