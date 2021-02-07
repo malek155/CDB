@@ -27,7 +27,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	private KVStoreProcessor kvStore;
 
 	// instance of metadata
-	private TreeMap<String, Metadata> metadata;
+	private static TreeMap<String, Metadata> metadata;
 	private TreeMap<String, MetadataReplica> metadata2;
 	// start and end (for now I suppose that I am able to get them from the main)
 	private String start;
@@ -47,7 +47,7 @@ public class KVCommandProcessor implements CommandProcessor {
 	private boolean published = false;
 	private String toSubscribers = "";
 	private boolean updateMainSids = false;
-	private ArrayList<String> subscriptions = new ArrayList<>();
+	private static TreeMap<String, ArrayList<Subscriber>> subscriptions = new TreeMap<>();
 	private String ip;
 	private int port;
 
@@ -84,10 +84,12 @@ public class KVCommandProcessor implements CommandProcessor {
 
 		String reply = command;
 
+
 		if ((input[0].equals("put") || input[0].equals("get") || input[0].equals("delete")
-				|| input[0].equals("publish") || input[0].equals("subscribe") || input[0].equals("unsubscribe")) && input.length != 1){
+				|| input[0].equals("publish") || input[0].equals("subscribe") || input[0].equals("unsubscribe")) && input.length != 1 && initiated){
 
 			this.start = metadata.get(hash).getStart();
+
 
 			if (!(input[0].equals("subscribe") || input[0].equals("unsubscribe") && isInTheRange(this.hashMD5(input[1]), start, end))
 					|| (input[0].equals("subscribe") || input[0].equals("unsubscribe")) && isInTheRange(this.hashMD5(input[2]), start, end)){
@@ -95,10 +97,7 @@ public class KVCommandProcessor implements CommandProcessor {
 				String response = "";
 
 				try {
-					if (!initiated) {
-						logger.info("Server is under initialization");
-						response = "server_stopped";
-					} else {
+
 						if (readOnly && (input[0].equals("put") || input[0].equals("delete") || input[0].equals("publish"))){
 							logger.info("Server is under rebalancing, only getting keys is available");
 							response = "server_write_lock";
@@ -135,13 +134,6 @@ public class KVCommandProcessor implements CommandProcessor {
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + value;
 							}else{
 								String value;
-								/*
-								 *  delete please these comments after checking everything
-								 *
-								 * published is checked in innerconnectionhandlethread to know what publication we should send to ecs
-								 * toSubscribers -> key value
-								 *
-								 * */
 								if(input[0].equals("publish")){
 									value = msg.getValue();
 									this.toSubscribers = msg.getKey() + " " + value;
@@ -167,26 +159,22 @@ public class KVCommandProcessor implements CommandProcessor {
 							msg = this.kvStore.get(input[1]);
 							if (msg.getStatus().equals(StatusType.GET_ERROR)) {
 								logger.info("Error occurred by getting a value ");
-								response = msg.getStatus().toString() + " " + msg.getKey() + " Key not found." ;
+								response = msg.getStatus().toString() + " " + msg.getKey() + ": Key not found." ;
 							} else {
 								logger.info("Got a value");
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							}
-							/*
-							*
-							* updateMainSubscriberIds is checked in Main to update the analogue local variable
-							*
-							*
-							* */
-						}else if(input[0].equals("subscribe")) { // sid, key, ip, port
-							this.subscriptions.add(command.substring(10));
+						}else if(input[0].equals("subscribe")) { // subscribe sid, key, ip, port
+							this.subscribe(input);
+//							this.subscriptions.put(input[1], )
+//							this.subscriptions.add(command.substring(10));
 							this.updateMainSids = true;
 						}
 						else if(input[0].equals("unsubscribe")) {// sid, key, ip, port
 							this.unsubscribe(input[1], input[2]);
 							this.updateMainSids = true;
 						}
-					}
+
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
 				}
@@ -210,7 +198,7 @@ public class KVCommandProcessor implements CommandProcessor {
 							msg = this.kvStore.get(input[1], 1);
 							if (msg.getStatus().equals(StatusType.GET_ERROR)) {
 								logger.info("Error occured by getting a value from replica 1 ");
-								response = msg.getStatus().toString() + " " + msg.getKey() + " Key not found.";
+								response = msg.getStatus().toString() + " " + msg.getKey() + ": Key not found.";
 							} else {
 								logger.info("Got a value from replica 1");
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
@@ -223,14 +211,14 @@ public class KVCommandProcessor implements CommandProcessor {
 								msg = this.kvStore.get(input[1], 2);
 								if (msg.getStatus().equals(StatusType.GET_ERROR)) {
 									logger.info("Error occured by getting a value from replica 2 ");
-									response = msg.getStatus().toString() + " " + msg.getKey() + " Key not found.";
+									response = msg.getStatus().toString() + " " + msg.getKey() + ": Key not found.";
 								} else {
 									logger.info("Got a value from replica 2");
 									response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 								}
 								break;
 							case "subscribe":
-								this.subscriptions.add(command.substring(10));
+								this.subscribe(input);
 								this.updateMainSids = true;
 								response = "subscribe_success " + input[1] + " " + input[2];
 								break;
@@ -263,7 +251,7 @@ public class KVCommandProcessor implements CommandProcessor {
 					reply = "server_stopped";
 			}
 		}else if((input[0].equals("put") || input[0].equals("get") || input[0].equals("delete") || input[0].equals("publish")
-				|| input[0].equals("subscribe") || input[0].equals("unsubscribe")) && input.length == 1){
+				|| input[0].equals("subscribe") || input[0].equals("unsubscribe")) && input.length == 1 && initiated){
 			reply = "not a suitable command";
 		}else if (input[0].equals("You'reGoodToGo")) {
 			this.initiated = true;
@@ -385,14 +373,24 @@ public class KVCommandProcessor implements CommandProcessor {
 	}
 
 	private void unsubscribe(String sid, String key){
-		int count = 0;
-		for(String sub : subscriptions){
-			String[] subs = sub.split(" ");
-			if(subs[0].equals(sid) && subs[1].equals(key)){
-				subscriptions.remove(count);
-				break;
+		if (subscriptions.containsKey(key)){
+			ArrayList<Subscriber> list = subscriptions.get(key);
+			for(Subscriber sub : list){
+				if(sub.getSid().equals(sid)){
+					list.remove(sub);
+					break;
+				}
 			}
-			count++;
+		}
+	}
+
+	public void subscribe(String[] input){
+		if(subscriptions.containsKey(input[2])){ //contains key
+			this.subscriptions.get(input[2]).add(new Subscriber(input[1], input[3], Integer.parseInt(input[4])));
+		}else{
+			ArrayList<Subscriber> subscriberList = new ArrayList<>();
+			subscriberList.add(new Subscriber(input[1], input[3], Integer.parseInt(input[4])));
+			this.subscriptions.put(input[2], subscriberList);
 		}
 	}
 
@@ -445,7 +443,7 @@ public class KVCommandProcessor implements CommandProcessor {
 		this.toSubscribers = "";
 	}
 
-	public ArrayList<String> getSubscriptions(){
+	public TreeMap<String, ArrayList<Subscriber>> getSubscriptions(){
 		return this.subscriptions;
 	}
 
@@ -481,19 +479,6 @@ public class KVCommandProcessor implements CommandProcessor {
 			Metadata meta1 = metadata.get(key);
 			MetadataReplica mdr = new MetadataReplica(meta1.getIP(), meta1.getPort(), meta1.getStart(), meta1.getEnd(), null, null);
 			// we get the hash of previous server with the start of this server from the metadata
-
-//			String b = meta1.getStart();
-//			BigInteger bighash = new BigInteger(b, 16);
-//			bighash = bighash.subtract(BigInteger.ONE);
-//			b = bighash.toString(16);
-
-//			String a = metadata.get(b).getStart();
-//			String end1 = metadata.get(b).getEnd();
-//			mdr.setEndRep1(end1);
-//			mdr.setStartRep1(a);
-//			BigInteger bighash2 = new BigInteger(a, 16);
-//			bighash2 = bighash2.subtract(BigInteger.ONE);
-//			a = bighash2.toString(16);
 
 			String start1 = meta1.getStart();
 			BigInteger bighash = new BigInteger(start1, 16);

@@ -8,8 +8,6 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.security.NoSuchAlgorithmException;
-import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
@@ -28,13 +26,15 @@ public class ConnectionHandleThread extends Thread {
 	private InetSocketAddress remote = null;
 	private boolean shuttingDown;
 	private boolean closing;
+	private int seconds;
 
 	public ConnectionHandleThread(KVCommandProcessor commandProcessor,
-								  Socket clientSocket){
+								  Socket clientSocket, int seconds){
 		this.cp = commandProcessor;
 		this.clientSocket = clientSocket;
 		this.shuttingDown = false;
 		this.closing = false;
+		this.seconds = seconds;
 	}
 
 	public static Logger logger = Logger.getLogger(ConnectionHandleThread.class.getName());
@@ -64,7 +64,7 @@ public class ConnectionHandleThread extends Thread {
 			String res;
 
 			while (!clientSocket.isClosed()){
-				while ((firstLine = in.readLine()) != null) {
+				while ((firstLine = in.readLine()) != null){
 					if(firstLine.startsWith("subscribe") || firstLine.startsWith("unsubscribe")){
 						res = cp.process(firstLine + " " + clientSocket.getInetAddress().getHostAddress() + " " + clientSocket.getPort()) + "\r\n";
 					}
@@ -78,6 +78,7 @@ public class ConnectionHandleThread extends Thread {
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
+			System.out.println(ex.getMessage());
 			// handle the exception and add finally block to close everything
 		}
 
@@ -99,18 +100,13 @@ public class ConnectionHandleThread extends Thread {
 		}
 	}
 
-	/*
-	 *
-	 * the end
-	 *
-	 *
-	 * */
-
-	public void notifyClient(String line){
-
-		if(out !=  null){
-			out.write("");
+	public void notifyClient(String key, String value) throws IOException, InterruptedException {
+		if(out !=  null && in != null){
+			int count = 0;
+			String messageToSend = "notify " + key + " " + value + "\r\n";
+			out.write(messageToSend);
 			out.flush();
+// to be continued
 		}
 	}
 

@@ -39,6 +39,9 @@ public class Config {
 	@CommandLine.Option(names = "-ll", description = "Sets loglevel", defaultValue = "ALL")
 	public String loglevel;
 
+	@CommandLine.Option(names = "-r", description = "Sets retention time in seconds for notifications", defaultValue = "45")
+	public int seconds;
+
 	@CommandLine.Option(names = "-c", description = "Sets cache size", defaultValue = "100")
 	public int cacheSize;
 

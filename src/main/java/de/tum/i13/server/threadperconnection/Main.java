@@ -9,6 +9,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
 
@@ -22,27 +24,23 @@ public class Main {
 	public String start;
 	public String end;
 	public static ArrayList<ConnectionHandleThread> clientConnections = new ArrayList<>();
-	public static ArrayList<String> updatedSubs;
+	public static TreeMap<String, ArrayList<Subscriber>> updatedSubs; // key(topic) -> sid keyip port
 
 	public Main(){}
 
-	/*
-	 *
-	 *
-	 * go through two loops
-	 * if ip port from subs are equal to added in main methode connections
-	 * 		notify them -> they are subscribers!
-	 * line = key value -> connectionhandlethread
-	 *
-	 * */
-	public void notifyClients(String line){
+	public void notifyClients(String line){ // key value
 		// do smth with line
-		for(String subscriber : updatedSubs){
-			String[] subs = subscriber.split(" ");
-			for(ConnectionHandleThread connection : clientConnections){
-				if(subs[2].equals(connection.getClientSocket().getInetAddress().getHostAddress())
-				 && Integer.parseInt(subs[3]) == connection.getClientSocket().getPort())
-					connection.notifyClient(line);
+		String[] keyvalue = line.split(" ");
+		if(updatedSubs.containsKey(keyvalue[0])){
+			ArrayList<Subscriber> subscribers = updatedSubs.get(keyvalue[0]);
+			for(Subscriber subscriber : subscribers){
+				for(ConnectionHandleThread connection : clientConnections){
+					if(subscriber.getIp().equals(connection.getClientSocket().getInetAddress().getHostAddress())
+							&& subscriber.getPort() == connection.getClientSocket().getPort()){
+						connection.notifyClient(keyvalue[0], keyvalue[1]);
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -101,13 +99,13 @@ public class Main {
 			Socket clientSocket = serverSocket.accept();
 
 			// When we accept a connection, we start a new Thread for this connection
-			ConnectionHandleThread clientThread = new ConnectionHandleThread(logic, clientSocket);
+			ConnectionHandleThread clientThread = new ConnectionHandleThread(logic, clientSocket, cfg.seconds);
 
 			// removing of a server in connection???? do it later
 			clientConnections.add(clientThread);
 			new Thread(clientThread).start();
 
-			if(logic.getUpdateMainSids()) {
+			if(logic.getUpdateMainSids()){
 				Main.updatedSubs = logic.getSubscriptions();
 				logic.setUpdateMainSids(false);
 			}
