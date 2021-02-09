@@ -19,8 +19,6 @@ public class BrokerConnection implements Runnable {
         this.ip = ip;
         this.port = port;
         Socket socket = new Socket(this.ip, this.port);
-        in = new BufferedReader(
-                new InputStreamReader(socket.getInputStream(), Constants.TELNET_ENCODING));
         out = new PrintWriter(
                 new OutputStreamWriter(socket.getOutputStream(), Constants.TELNET_ENCODING));
     }
@@ -32,13 +30,6 @@ public class BrokerConnection implements Runnable {
         } catch (Exception ex) {
             ex.printStackTrace();
             System.out.println(ex.getMessage());
-        }
-        try {
-            logger.info("Closing connection");
-            in.close();
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 

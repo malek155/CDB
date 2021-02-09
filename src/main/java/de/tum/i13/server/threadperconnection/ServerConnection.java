@@ -54,28 +54,35 @@ public class ServerConnection implements Runnable {
     }
 
     public void transfer2(File file1, File file2) throws FileNotFoundException {
-        Scanner scanner1 = new Scanner(new FileInputStream(file1));
-        Scanner scanner2 = new Scanner(new FileInputStream(file2));
+        if(file1.length() != 0){
+            Scanner scanner1 = new Scanner(new FileInputStream(file1));
 
-        while (scanner1.hasNextLine()){
-            out.write("replica1 " + scanner1.nextLine() + "\r\n");
+            while (scanner1.hasNextLine()){
+                out.write("replica1 " + scanner1.nextLine() + "\r\n");
+            }
+            scanner1.close();
         }
-        while (scanner2.hasNextLine()){
-            out.write("replica2 " + scanner1.nextLine() + "\r\n");
+
+        if(file2.length() != 0) {
+            Scanner scanner2 = new Scanner(new FileInputStream(file2));
+            while (scanner2.hasNextLine()) {
+                out.write("replica2 " + scanner2.nextLine() + "\r\n");
+            }
+            out.flush();
+            scanner2.close();
         }
-        out.flush();
-        scanner1.close();
-        scanner2.close();
     }
 
     public void transferOne(File file) throws FileNotFoundException {
-        Scanner scanner = new Scanner(new FileInputStream(file));
+        if(file.length() != 0) {
+            Scanner scanner = new Scanner(new FileInputStream(file));
 
-        while (scanner.hasNextLine()){
-            out.write("replica2 " + scanner.nextLine() + "\r\n");
+            while (scanner.hasNextLine()) {
+                out.write("replica2 " + scanner.nextLine() + "\r\n");
+            }
+            out.flush();
+            scanner.close();
         }
-        out.flush();
-        scanner.close();
     }
 
 

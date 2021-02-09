@@ -88,9 +88,9 @@ public class KVCommandProcessor implements CommandProcessor {
 				|| input[0].equals("publish") || input[0].equals("subscribe") || input[0].equals("unsubscribe")) && input.length != 1 && initiated){
 
 			this.start = metadata.get(hash).getStart();
+			logger.info("nice: " + start + " " + end + " " + hash);
 
-
-			if (!(input[0].equals("subscribe") || input[0].equals("unsubscribe") && isInTheRange(this.hashMD5(input[1]), start, end))
+			if ((!(input[0].equals("subscribe") || input[0].equals("unsubscribe")) && isInTheRange(this.hashMD5(input[1]), start, end))
 					|| (input[0].equals("subscribe") || input[0].equals("unsubscribe")) && isInTheRange(this.hashMD5(input[2]), start, end)){
 				KVMessage msg;
 				String response = "";
@@ -230,7 +230,7 @@ public class KVCommandProcessor implements CommandProcessor {
 			} else {
 				logger.info("Server is not responsible for a key");
 				if(this.initiated){
-					String meta = "keyrange_success " + metadata.keySet().stream()
+					String meta = metadata.keySet().stream()
 							.map(key -> metadata.get(key).getStart() + ","
 									+ key + ","
 									+ metadata.get(key).getIP() + ":"
@@ -268,11 +268,11 @@ public class KVCommandProcessor implements CommandProcessor {
 			logger.info("Putting a new kv-pair, transferred from other servers");
 		} else if (input[0].equals("metadata")) {
 			String[] entry = command.split("=");
-			hash = entry[0].split(" ")[1];
+			String hashLokal = entry[0].split(" ")[1];
 			String[] metadatanew = entry[1].split(" ");
 
 			// hash: key; 1 entry: ip, 2 entry: port, 3 entry: start, 4: end
-			metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
+			metadata.put(hashLokal, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
 			if (metadatanew.length == 5) {
 				metadata2 = metadataMap2();
@@ -288,11 +288,11 @@ public class KVCommandProcessor implements CommandProcessor {
 				metadata.clear();
 			}
 			String[] entry = command.split("=");
-			hash = entry[0].split(" ")[1];
+			String hashLocal = entry[0].split(" ")[1];
 			String[] metadatanew = entry[1].split(" ");
 
 			// hash: key; 1 entry: ip, 2 entry: port, 3 entry: start, 4: end
-			metadata.put(hash, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
+			metadata.put(hashLocal, new Metadata(metadatanew[0], Integer.parseInt(metadatanew[1]), metadatanew[2], metadatanew[3]));
 
 			if (metadatanew.length == 5) {
 				metadata2 = metadataMap2();
@@ -353,13 +353,14 @@ public class KVCommandProcessor implements CommandProcessor {
 		BigInteger intEnd = new BigInteger(end, 16);
 
 		// where the start < end
-		if (intStart.compareTo(intEnd) == -1) {
+		if (intStart.compareTo(intEnd) < 0) {
 			if (intKey.compareTo(intStart) >= 0 && intKey.compareTo(intEnd) <= 0)
 				result = true;
 		} else {
 			if (intKey.compareTo(intStart) >= 0 || intKey.compareTo(intEnd) <= 0)
 				result = true;
 		}
+		logger.info(result + " " + start + " " + end);
 
 		return result;
 	}

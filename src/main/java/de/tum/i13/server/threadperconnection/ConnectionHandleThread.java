@@ -2,8 +2,6 @@ package de.tum.i13.server.threadperconnection;
 
 import de.tum.i13.server.kv.KVCommandProcessor;
 import de.tum.i13.shared.Constants;
-import de.tum.i13.shared.Metadata;
-import org.apache.kafka.clients.producer.KafkaProducer;
 
 import java.io.*;
 import java.net.InetSocketAddress;

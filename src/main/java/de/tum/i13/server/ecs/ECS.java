@@ -139,7 +139,6 @@ public class ECS {
             logger.info("Notifying a server, that it needs to send a data to a new server");
         }
 
-//        newServer = hash;
         logger.info(hash);
         nextHash = newMain.nextServer.end;
         nextNextHash = newMain.nextServer.nextServer.end;
