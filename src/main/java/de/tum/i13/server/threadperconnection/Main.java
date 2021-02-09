@@ -9,7 +9,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.TreeMap;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
@@ -23,27 +22,27 @@ public class Main {
 	private static Cache cache;
 	public String start;
 	public String end;
-	public static ArrayList<ConnectionHandleThread> clientConnections = new ArrayList<>();
-	public static TreeMap<String, ArrayList<Subscriber>> updatedSubs; // key(topic) -> sid keyip port
+	private static ArrayList<ConnectionHandleThread> clientConnections = new ArrayList<>();
+//	private static TreeMap<String, ArrayList<Subscriber>> updatedSubs; // key(topic) -> sid keyip port
 
 	public Main(){}
 
-	public void notifyClients(String line){ // key value
-		// do smth with line
-		String[] keyvalue = line.split(" ");
-		if(updatedSubs.containsKey(keyvalue[0])){
-			ArrayList<Subscriber> subscribers = updatedSubs.get(keyvalue[0]);
-			for(Subscriber subscriber : subscribers){
-				for(ConnectionHandleThread connection : clientConnections){
-					if(subscriber.getIp().equals(connection.getClientSocket().getInetAddress().getHostAddress())
-							&& subscriber.getPort() == connection.getClientSocket().getPort()){
-						connection.notifyClient(keyvalue[0], keyvalue[1]);
-						break;
-					}
-				}
-			}
-		}
-	}
+//	public void notifyClients(String line) throws IOException, InterruptedException { // key value
+//		// do smth with line
+//		String[] keyvalue = line.split(" ");
+//		if(updatedSubs.containsKey(keyvalue[0])){
+//			ArrayList<Subscriber> subscribers = updatedSubs.get(keyvalue[0]);
+//			for(Subscriber subscriber : subscribers){
+//				for(ConnectionHandleThread connection : clientConnections){
+//					if(subscriber.getIp().equals(connection.getClientSocket().getInetAddress().getHostAddress())
+//							&& subscriber.getPort() == connection.getClientSocket().getPort()){
+//						connection.notifyClient(keyvalue[0], keyvalue[1]);
+//						break;
+//					}
+//				}
+//			}
+//		}
+//	}
 
 	/**
 	 * main() method where our serversocket will be initialized
@@ -105,10 +104,10 @@ public class Main {
 			clientConnections.add(clientThread);
 			new Thread(clientThread).start();
 
-			if(logic.getUpdateMainSids()){
-				Main.updatedSubs = logic.getSubscriptions();
-				logic.setUpdateMainSids(false);
-			}
+//			if(logic.getUpdateMainSids()){
+//				Main.updatedSubs = logic.getSubscriptions();
+//				logic.setUpdateMainSids(false);
+//			}
 
 		}
 	}

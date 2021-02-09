@@ -47,9 +47,10 @@ public class KVCommandProcessor implements CommandProcessor {
 	private boolean published = false;
 	private String toSubscribers = "";
 	private boolean updateMainSids = false;
-	private static TreeMap<String, ArrayList<Subscriber>> subscriptions = new TreeMap<>();
+
 	private String ip;
 	private int port;
+	private static Broker broker;
 
 
 	public KVCommandProcessor() {
@@ -69,6 +70,8 @@ public class KVCommandProcessor implements CommandProcessor {
 		logger.info("New thread for server started, initializing");
 		this.ip = ip;
 		this.port = port;
+		if(broker == null)
+			broker = new Broker();
 	}
 
 	/**
@@ -136,6 +139,11 @@ public class KVCommandProcessor implements CommandProcessor {
 								String value;
 								if(input[0].equals("publish")){
 									value = msg.getValue();
+
+
+
+
+
 									this.toSubscribers = msg.getKey() + " " + value;
 									this.published = true;
 								}	// value not empty if success
@@ -165,13 +173,11 @@ public class KVCommandProcessor implements CommandProcessor {
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							}
 						}else if(input[0].equals("subscribe")) { // subscribe sid, key, ip, port
-							this.subscribe(input);
-//							this.subscriptions.put(input[1], )
-//							this.subscriptions.add(command.substring(10));
+							broker.subscribe(input);
 							this.updateMainSids = true;
 						}
 						else if(input[0].equals("unsubscribe")) {// sid, key, ip, port
-							this.unsubscribe(input[1], input[2]);
+							broker.unsubscribe(input[1], input[2]);
 							this.updateMainSids = true;
 						}
 
@@ -218,12 +224,12 @@ public class KVCommandProcessor implements CommandProcessor {
 								}
 								break;
 							case "subscribe":
-								this.subscribe(input);
+								broker.subscribe(input);
 								this.updateMainSids = true;
 								response = "subscribe_success " + input[1] + " " + input[2];
 								break;
 							case "unsubscribe":
-								this.unsubscribe(input[1], input[2]);
+								broker.unsubscribe(input[1], input[2]);
 								this.updateMainSids = true;
 								response = "unsubscribe_success " + input[1];
 								break;
@@ -370,28 +376,6 @@ public class KVCommandProcessor implements CommandProcessor {
 		}
 
 		return result;
-	}
-
-	private void unsubscribe(String sid, String key){
-		if (subscriptions.containsKey(key)){
-			ArrayList<Subscriber> list = subscriptions.get(key);
-			for(Subscriber sub : list){
-				if(sub.getSid().equals(sid)){
-					list.remove(sub);
-					break;
-				}
-			}
-		}
-	}
-
-	public void subscribe(String[] input){
-		if(subscriptions.containsKey(input[2])){ //contains key
-			this.subscriptions.get(input[2]).add(new Subscriber(input[1], input[3], Integer.parseInt(input[4])));
-		}else{
-			ArrayList<Subscriber> subscriberList = new ArrayList<>();
-			subscriberList.add(new Subscriber(input[1], input[3], Integer.parseInt(input[4])));
-			this.subscriptions.put(input[2], subscriberList);
-		}
 	}
 
 	public KVStoreProcessor getKVStore() {

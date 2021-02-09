@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.logging.Logger;
 
 //import Maven dependency
+import de.tum.i13.server.kv.Broker;
 import de.tum.i13.server.threadperconnection.Main;
 import de.tum.i13.shared.Config;
 import de.tum.i13.shared.Metadata;
@@ -147,7 +148,7 @@ public class ECS {
         logger.info("Added a new server, listening on " + ip + ":" + port);
     }
 
-    public void publishNotification(String line){
+    public void publishNotification(String line) throws IOException, InterruptedException {
         for (Main main: serverRepository){
             main.notifyClients(line);       // key value
         }
