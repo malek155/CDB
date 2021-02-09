@@ -33,16 +33,16 @@ public class ECSConnection implements Runnable {
                 new OutputStreamWriter(clientSocket.getOutputStream(), Constants.TELNET_ENCODING));
         ip = clientSocket.getInetAddress().getLocalHost().getHostAddress();
         port = clientSocket.getLocalPort();
-        hash = hashMD5(ip + port);
+        hash = hashMD5(ip+port);
     }
 
     @Override
-    public void run() {
+    public void run(){
         try {
             logger.info("Started the ECS connection");
 
             String line;
-            while (!clientSocket.isClosed()) {
+            while (!clientSocket.isClosed()){
                 line = in.readLine();
                 String message = this.process(line);
                 Thread.yield();
@@ -72,26 +72,18 @@ public class ECSConnection implements Runnable {
         String reply = "";
         String[] ipport;
         String[] lines = line.split(" ");
-        if (lines[0].equals("MayIShutDownPlease")) {
+        if (lines[0].equals("MayIShutDownPlease")){
             ipport = lines[1].split(":");
             this.bigECS.shuttingDown(ipport[0], Integer.parseInt(ipport[1]), lines[2]);
             reply = "YesYouMay\r\n";
-        } else if (lines[0].equals("IAmNew")) {
+        }else if (lines[0].equals("IAmNew")){
             ipport = lines[1].split(":");
-            if (!bigECS.isAdded(ipport[0], Integer.parseInt(ipport[1]))) {
+            if(!bigECS.isAdded(ipport[0], Integer.parseInt(ipport[1]))){
                 bigECS.addServer(ipport[0], Integer.parseInt(ipport[1]));
             }
-        } else if (lines[0].equals("delete") || lines[0].equals("put")) {
+        }else if(lines[0].equals("delete") || lines[0].equals("put")){
             String[] updates = line.split(":");
             bigECS.updateReps(updates[0], updates[1], updates[2]);
-        } else if (lines[0].equals("published")) {
-            /*
-             *
-             * key value -> ecs
-             *
-             *
-             * */
-            bigECS.publishNotification(lines[1] + " " + lines[2]);
         }
         return reply;
     }
@@ -99,27 +91,28 @@ public class ECSConnection implements Runnable {
     /**
      * sendMeta is a method to send updated metadata  to one server. Invoked from ECS
      */
-    public void sendMeta() {
+    public void sendMeta(){
         Map<String, Metadata> map = bigECS.getMetadataMap();
         String metadata = map.keySet().stream()
                 .map(key -> "metadata " + key + "=" + map.get(key).toString())
                 .collect(Collectors.joining("\r\n"));
-        out.write("first" + metadata + " last" + "\r\n");
+        out.write("first"+ metadata + " last" + "\r\n");
         out.flush();
     }
 
     /**
      * reallocate is a method to send a notification to a server about a newly added server to reallocate data. Invoked from ECS
      */
-    public void reallocate() {
+    public void reallocate(){
         out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n");
-        if (bigECS.getServerRepository().size() > 1) {
+        if(bigECS.getServerRepository().size()>1){
             out.write(bigECS.getNextHash() + "\r\n");
-            if (bigECS.getServerRepository().size() > 2)
+            if(bigECS.getServerRepository().size()>2)
                 out.write(bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");
             else
                 out.write(" \r\n \r\n");
-        } else
+        }
+        else
             out.write(" \r\n \r\n \r\n");
 
         out.flush();
@@ -128,7 +121,7 @@ public class ECSConnection implements Runnable {
     /**
      * notifyIfDelete is a method to send a notification to a server about a server-to-remove to reallocate data. Invoked from ECS
      */
-    public void notifyIfDelete(String current, String next, String nextNext) {
+    public void notifyIfDelete(String current, String next, String nextNext){
         out.write("DeletingAServer\r\n" + current + "\r\n" + next + "\r\n" + nextNext + "\r\n");
         out.flush();
     }
@@ -136,7 +129,7 @@ public class ECSConnection implements Runnable {
     /**
      * updateReps is a method to send a notification to a server, that has replicas to update. Invoked from ECS
      */
-    public void updateReps(String command, String rep1, String rep2) {
+    public void updateReps(String command, String rep1, String rep2){
         out.write(command + "\r\n" + rep1 + "\r\n" + rep2 + "\r\n");
         out.flush();
     }
@@ -149,16 +142,10 @@ public class ECSConnection implements Runnable {
         return myHash;
     }
 
-    public String getIP() {
-        return this.ip;
-    }
+    public String getIP(){return this.ip;}
 
-    public int getPort() {
-        return port;
-    }
+    public int getPort(){return port;}
 
-    public String getHash() {
-        return hash;
-    }
+    public String getHash(){return hash;}
 
 }

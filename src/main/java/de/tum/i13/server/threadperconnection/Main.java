@@ -9,6 +9,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.TreeMap;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
 
@@ -21,31 +22,10 @@ public class Main {
     private static Cache cache;
     public String start;
     public String end;
-    public static ArrayList<ConnectionHandleThread> clientConnections = new ArrayList<>();
-    public static ArrayList<String> updatedSubs;
+    private static ArrayList<ConnectionHandleThread> clientConnections = new ArrayList<>();
+//	private static TreeMap<String, ArrayList<Subscriber>> updatedSubs; // key(topic) -> sid keyip port
 
     public Main() {
-    }
-
-    /*
-     *
-     *
-     * go through two loops
-     * if ip port from subs are equal to added in main methode connections
-     * 		notify them -> they are subscribers!
-     * line = key value -> connectionhandlethread
-     *
-     * */
-    public void notifyClients(String line) {
-        // do smth with line
-        for (String subscriber : updatedSubs) {
-            String[] subs = subscriber.split(" ");
-            for (ConnectionHandleThread connection : clientConnections) {
-                if (subs[2].equals(connection.getClientSocket().getInetAddress().getHostAddress())
-                        && Integer.parseInt(subs[3]) == connection.getClientSocket().getPort())
-                    connection.notifyClient(line);
-            }
-        }
     }
 
     /**
@@ -102,16 +82,11 @@ public class Main {
             Socket clientSocket = serverSocket.accept();
 
             // When we accept a connection, we start a new Thread for this connection
-            ConnectionHandleThread clientThread = new ConnectionHandleThread(logic, clientSocket);
+            ConnectionHandleThread clientThread = new ConnectionHandleThread(logic, clientSocket, cfg.seconds);
 
             // removing of a server in connection???? do it later
             clientConnections.add(clientThread);
             new Thread(clientThread).start();
-
-            if (logic.getUpdateMainSids()) {
-                Main.updatedSubs = logic.getSubscriptions();
-                logic.setUpdateMainSids(false);
-            }
 
         }
     }
