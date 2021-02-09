@@ -27,23 +27,6 @@ public class Main {
 
 	public Main(){}
 
-//	public void notifyClients(String line) throws IOException, InterruptedException { // key value
-//		// do smth with line
-//		String[] keyvalue = line.split(" ");
-//		if(updatedSubs.containsKey(keyvalue[0])){
-//			ArrayList<Subscriber> subscribers = updatedSubs.get(keyvalue[0]);
-//			for(Subscriber subscriber : subscribers){
-//				for(ConnectionHandleThread connection : clientConnections){
-//					if(subscriber.getIp().equals(connection.getClientSocket().getInetAddress().getHostAddress())
-//							&& subscriber.getPort() == connection.getClientSocket().getPort()){
-//						connection.notifyClient(keyvalue[0], keyvalue[1]);
-//						break;
-//					}
-//				}
-//			}
-//		}
-//	}
-
 	/**
 	 * main() method where our serversocket will be initialized
 	 *
@@ -103,11 +86,6 @@ public class Main {
 			// removing of a server in connection???? do it later
 			clientConnections.add(clientThread);
 			new Thread(clientThread).start();
-
-//			if(logic.getUpdateMainSids()){
-//				Main.updatedSubs = logic.getSubscriptions();
-//				logic.setUpdateMainSids(false);
-//			}
 
 		}
 	}

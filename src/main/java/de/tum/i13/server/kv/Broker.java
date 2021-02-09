@@ -13,6 +13,7 @@ public class Broker{
         private BufferedReader in = null;
         private PrintWriter out = null;
         private static TreeMap<String, ArrayList<Subscriber>> subscriptions = new TreeMap<>();
+        private static ArrayList<BrokerConnection> clientConnections = new ArrayList<>();
 
         public Broker(){
 
@@ -32,35 +33,40 @@ public class Broker{
             }
         }
 
-        public void subscribe(String[] input){
+        public void subscribe(String[] input){  // subscribe id key port ip
             if(subscriptions.containsKey(input[2])){ //contains key
-                this.subscriptions.get(input[2]).add(new Subscriber(input[1], input[3], Integer.parseInt(input[4])));
+                subscriptions.get(input[2]).add(new Subscriber(input[1], input[4], Integer.parseInt(input[3])));
             }else{
                 ArrayList<Subscriber> subscriberList = new ArrayList<>();
                 subscriberList.add(new Subscriber(input[1], input[3], Integer.parseInt(input[4])));
-                this.subscriptions.put(input[2], subscriberList);
+                subscriptions.put(input[2], subscriberList);
             }
         }
 
 
-        public void notify(String topic){
-            try (Socket socket = new Socket(ip, port)){
-                in = new BufferedReader(
-                        new InputStreamReader(socket.getInputStream(), Constants.TELNET_ENCODING));
-                out = new PrintWriter(
-                        new OutputStreamWriter(socket.getOutputStream(), Constants.TELNET_ENCODING));
-
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                System.out.println(ex.getMessage());
-            }
-            try {
-                logger.info("Closing connection");
-                in.close();
-                out.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+        public void notify(String key, String value) throws IOException {
+            boolean isInList;
+            if(subscriptions.containsKey(key)){
+                ArrayList<Subscriber> subscribers = subscriptions.get(key);
+                for(Subscriber subscriber : subscribers){
+                    isInList = false;
+                    for(BrokerConnection connection : clientConnections){
+                        if(subscriber.getIp().equals(connection.getIp())
+                                && subscriber.getPort() == connection.getPort()){
+                            connection.notifyOne("notify " + key + " " + value);
+                            isInList = true;
+                            break;
+                        }
+                    }
+                    if(!isInList){
+                        BrokerConnection newConnection = new BrokerConnection(subscriber.getIp(), subscriber.getPort());
+                        new Thread(newConnection).start();
+                        clientConnections.add(newConnection);
+                        newConnection.notifyOne("notify " + key + " " + value);
+                    }
+                }
             }
         }
-    }
+
+}
 

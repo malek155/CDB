@@ -9,8 +9,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 
 /**
@@ -29,11 +28,12 @@ public class InnerConnectionHandleThread extends Thread {
     private final int port;
     private boolean shuttingDown;
     private boolean notShutDown;
+    private TreeMap<String, ServerConnection> serverConnections = new TreeMap<>();
 
     public InnerConnectionHandleThread(KVCommandProcessor commandProcessor,
                                        InetSocketAddress bootstrap,
                                        String ip,
-                                       int port) throws NoSuchAlgorithmException {
+                                       int port) throws NoSuchAlgorithmException{
         this.cp = commandProcessor;
         this.bootstrap = bootstrap;
         this.hash = hashMD5(ip + port);
@@ -158,12 +158,6 @@ public class InnerConnectionHandleThread extends Thread {
                     cp.setUpdateReps(false);
                     cp.clearToReps();
                 }
-                if(this.cp.getPublished()){
-                    outECS.write("published " + cp.getToSubscribers() + "\r\n");
-                    outECS.flush();
-                    cp.setPublished(false);
-                    cp.clearToSubscribers();
-                }
                 if(this.shuttingDown){
                     outECS.write("MayIShutDownPlease " + this.ip + ":" + this.port + " " + this.hash + "\r\n");
                     outECS.flush();
@@ -183,34 +177,26 @@ public class InnerConnectionHandleThread extends Thread {
         }
     }
 
-
     /**
      * transfer method connects with a neighbour server to transfer all storage data if it is shutting down,
      * 	otherwise only the part of a kvstorage to a new server
      * @param newServer server transfer to
      * @param nextServer is our server to transfer from, a neighbour
      */
-    private void transfer(String newServer, String nextServer) throws IOException {
+    private void transfer(String newServer, String nextServer) throws IOException{
         String newIP = cp.getMetadata().get(newServer).getIP();
         int newPort = cp.getMetadata().get(newServer).getPort();
 
         File storage = (nextServer.equals("")) ? this.cp.getKVStore().getStorage("")
                 : this.cp.getKVStore().getStorage(newServer);
 
-        if(storage.length() != 0){
-            try(Socket socket = new Socket(newIP, newPort)){
-                PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
-                Scanner scanner = new Scanner(new FileInputStream(storage));
-                while (scanner.hasNextLine()){
-                    String transfer = "transferring " + scanner.nextLine();
-                    outTransfer.write(transfer);
-                }
-                outTransfer.write("You'reGoodToGo" + "\r\n");
-                outTransfer.flush();
-                scanner.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        if(this.serverConnections != null && this.serverConnections.containsKey(newIP+newPort))
+            this.serverConnections.get(newIP+newPort).transfer(storage);
+        else{
+            ServerConnection newConnection = new ServerConnection(newIP, newPort);
+            new Thread(newConnection).start();
+            newConnection.transfer(storage);
+            this.serverConnections.put(newIP+newPort, newConnection);
         }
     }
 
@@ -218,26 +204,17 @@ public class InnerConnectionHandleThread extends Thread {
      * transfer2  universal method to send a two files to @server
      * @param server hash value of a server to send files
      */
-    private void transfer2(String server, File file1, File file2){
+    private void transfer2(String server, File file1, File file2) throws IOException {
         String newIP = cp.getMetadata().get(server).getIP();
         int newPort = cp.getMetadata().get(server).getPort();
 
-        try (Socket socket = new Socket(newIP, newPort)){
-            PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
-            Scanner scanner1 = new Scanner(new FileInputStream(file1));
-            Scanner scanner2 = new Scanner(new FileInputStream(file2));
-
-            while (scanner1.hasNextLine()){
-                outTransfer.write("replica1 " + scanner1.nextLine() + "\r\n");
-            }
-            while (scanner2.hasNextLine()){
-                outTransfer.write("replica2 " + scanner1.nextLine() + "\r\n");
-            }
-            outTransfer.flush();
-            scanner1.close();
-            scanner2.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+        if(this.serverConnections != null && this.serverConnections.containsKey(newIP+newPort))
+            this.serverConnections.get(newIP+newPort).transfer2(file1, file2);
+        else{
+            ServerConnection newConnection = new ServerConnection(newIP, newPort);
+            new Thread(newConnection).start();
+            newConnection.transfer2(file1, file2);
+            this.serverConnections.put(newIP+newPort, newConnection);
         }
     }
 
@@ -266,30 +243,26 @@ public class InnerConnectionHandleThread extends Thread {
      * transferOne method to send one file to @server
      * @param server hash value of a server to send a file to
      */
-    private void transferOne(String server, File file){
+    private void transferOne(String server, File file) throws IOException {
         String nextNextIP = cp.getMetadata().get(server).getIP();
         int nextNextPort = cp.getMetadata().get(server).getPort();
 
-        try (Socket socket = new Socket(nextNextIP, nextNextPort)){
-            PrintWriter outTransfer = new PrintWriter(socket.getOutputStream());
-            Scanner scanner = new Scanner(new FileInputStream(file));
-
-            while (scanner.hasNextLine()){
-                outTransfer.write("replica2 " + scanner.nextLine() + "\r\n");
-            }
-            outTransfer.flush();
-            scanner.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+        if(this.serverConnections != null && this.serverConnections.containsKey(nextNextIP+nextNextPort))
+            this.serverConnections.get(nextNextIP+nextNextPort).transferOne(file);
+        else{
+            ServerConnection newConnection = new ServerConnection(nextNextIP, nextNextPort);
+            new Thread(newConnection).start();
+            newConnection.transferOne(file);
+            this.serverConnections.put(nextNextIP+nextNextPort, newConnection);
         }
     }
 
-    private void transferRep1to2(String nextNextServer){
+    private void transferRep1to2(String nextNextServer) throws IOException {
         File replica2 = this.cp.getKVStore().getReplica1();
         this.transferOne(nextNextServer, replica2);
     }
 
-    private void transferRep2to2(String server){
+    private void transferRep2to2(String server) throws IOException {
         File replica2 = this.cp.getKVStore().getReplica2();
         this.transferOne(server, replica2);
     }

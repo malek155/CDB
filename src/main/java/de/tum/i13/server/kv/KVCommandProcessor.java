@@ -44,10 +44,6 @@ public class KVCommandProcessor implements CommandProcessor {
 	// toReps for info for replicas
 	private ArrayList<String> toReps = new ArrayList<>();
 
-	private boolean published = false;
-	private String toSubscribers = "";
-	private boolean updateMainSids = false;
-
 	private String ip;
 	private int port;
 	private static Broker broker;
@@ -139,13 +135,7 @@ public class KVCommandProcessor implements CommandProcessor {
 								String value;
 								if(input[0].equals("publish")){
 									value = msg.getValue();
-
-
-
-
-
-									this.toSubscribers = msg.getKey() + " " + value;
-									this.published = true;
+									this.broker.notify(msg.getKey(), value);
 								}	// value not empty if success
 								else
 									value = "";
@@ -172,13 +162,11 @@ public class KVCommandProcessor implements CommandProcessor {
 								logger.info("Got a value");
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							}
-						}else if(input[0].equals("subscribe")) { // subscribe sid, key, ip, port
+						}else if(input[0].equals("subscribe")) { // subscribe sid, key, port, ip
 							broker.subscribe(input);
-							this.updateMainSids = true;
 						}
 						else if(input[0].equals("unsubscribe")) {// sid, key, ip, port
 							broker.unsubscribe(input[1], input[2]);
-							this.updateMainSids = true;
 						}
 
 				} catch (Exception e) {
@@ -225,12 +213,10 @@ public class KVCommandProcessor implements CommandProcessor {
 								break;
 							case "subscribe":
 								broker.subscribe(input);
-								this.updateMainSids = true;
 								response = "subscribe_success " + input[1] + " " + input[2];
 								break;
 							case "unsubscribe":
 								broker.unsubscribe(input[1], input[2]);
-								this.updateMainSids = true;
 								response = "unsubscribe_success " + input[1];
 								break;
 						}
@@ -394,10 +380,6 @@ public class KVCommandProcessor implements CommandProcessor {
 		return this.updateReps;
 	}
 
-	public boolean getPublished(){
-		return this.published;
-	}
-
 	/**
 	 * setUpdateReps methode mostly sets updateReps false after updating replicas
 	 *
@@ -407,36 +389,12 @@ public class KVCommandProcessor implements CommandProcessor {
 		updateReps = updating;
 	}
 
-	public void setPublished(boolean published){
-		this.published = published;
-	}
-
 	/**
 	 * getToReps a methode to check, if we have to update replicas
 	 * @return a list of command (put/delete), hash of a key, hash of a replica1, hash of a replica2
 	 */
 	public ArrayList<String> getToReps(){
 		return this.toReps;
-	}
-
-	public String getToSubscribers(){
-		return this.toSubscribers;
-	}
-
-	public void clearToSubscribers(){
-		this.toSubscribers = "";
-	}
-
-	public TreeMap<String, ArrayList<Subscriber>> getSubscriptions(){
-		return this.subscriptions;
-	}
-
-	public void setUpdateMainSids(boolean bool){
-		this.updateMainSids = bool;
-	}
-
-	public boolean getUpdateMainSids(){
-		return this.updateMainSids;
 	}
 
 	public void clearToReps(){
