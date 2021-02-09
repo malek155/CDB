@@ -187,8 +187,9 @@ public class InnerConnectionHandleThread extends Thread {
         String newIP = cp.getMetadata().get(newServer).getIP();
         int newPort = cp.getMetadata().get(newServer).getPort();
 
-        File storage = (nextServer.equals("")) ? this.cp.getKVStore().getStorage("")
-                : this.cp.getKVStore().getStorage(newServer);
+        File storage = (nextServer.equals("")) ? this.cp.getKVStore().getStorage("", "")
+                : this.cp.getKVStore().getStorage(newServer, this.hash);
+
 
         if (this.serverConnections != null && this.serverConnections.containsKey(newIP + newPort))
             this.serverConnections.get(newIP + newPort).transfer(storage);
@@ -198,6 +199,7 @@ public class InnerConnectionHandleThread extends Thread {
             newConnection.transfer(storage);
             this.serverConnections.put(newIP + newPort, newConnection);
         }
+
     }
 
     /**
@@ -225,9 +227,11 @@ public class InnerConnectionHandleThread extends Thread {
      * @param newServer hash value of a server to send a file to (new one)
      */
     private void transferStorageRep1(String newServer) throws IOException {
-        File replica1 = this.cp.getKVStore().getStorage("");
+        File replica1 = this.cp.getKVStore().getStorage("", "");
         File replica2 = this.cp.getKVStore().getReplica1();
+
         this.transfer2(newServer, replica1, replica2);
+
     }
 
 

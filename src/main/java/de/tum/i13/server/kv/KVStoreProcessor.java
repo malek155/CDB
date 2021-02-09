@@ -236,18 +236,19 @@ public class KVStoreProcessor implements KVStore {
     /**
      * getStorage returns a whole storage if removing, part of it by adding a new one
      *
-     * @param hash cutting the storage to transfer only one of the parts to another server
-     *             if empty, we merge by removing a server and getting the whole storage
+     * @param hashToAdd cutting the storage to transfer only one of the parts to another server
+     *                  if empty, we merge by removing a server and getting the whole storage
      * @return File of a data to transfer
      * @throws IOException
      */
-    public File getStorage(String hash) throws IOException {
+    public File getStorage(String hashToAdd, String neighbour) throws IOException {
         File toReturn;
         File toStay;
-        if (hash.equals("")) {
+        if (hashToAdd.equals("")) {
             return storage;
         } else {
-            BigInteger hashEdge = new BigInteger(hash, 16);
+            BigInteger hashEdge = new BigInteger(hashToAdd, 16);
+            BigInteger hashNeighbour = new BigInteger(neighbour, 16);
             BigInteger hashToCompare;
 
             //creating tmp paths
@@ -263,7 +264,7 @@ public class KVStoreProcessor implements KVStore {
                     String line = scanner.nextLine();
                     keyvalue = line.split(" ");
                     hashToCompare = new BigInteger(keyvalue[2], 16);
-                    if (hashEdge.compareTo(hashToCompare) > 0) {
+                    if (hashEdge.compareTo(hashToCompare) < 0 && hashNeighbour.compareTo(hashToCompare) >= 0) {
                         fwToStay.write(line + "\r\n");
                     } else {
                         fwToReturn.write(line + "\r\n");
