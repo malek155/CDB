@@ -24,6 +24,7 @@ public class ECS {
     private String nextHash;
     private String prevHash;
     private String nextNextHash;
+    private String nextNextNextHash;
     public ArrayList<ECSConnection> connections = new ArrayList<>();
 
     //Servers repository, also a circular structure? meh we'll see
@@ -133,16 +134,16 @@ public class ECS {
         // for updating metadata
         this.movedMeta();
 
+        nextHash = newMain.nextServer.end;
+        nextNextHash = newMain.nextServer.nextServer.end;
+        nextNextNextHash = newMain.nextServer.nextServer.nextServer.end;
+        if (prevServer != null) this.prevHash = prevServer.end;
+
         //for ecs connection, boolean if a new server was added
         if (this.serverRepository.size() > 1) {
             this.notifyServers("", "", "");
             logger.info("Notifying a server, that it needs to send a data to a new server");
         }
-
-        logger.info(hash);
-        nextHash = newMain.nextServer.end;
-        nextNextHash = newMain.nextServer.nextServer.end;
-        if (prevServer != null) prevHash = prevServer.end;
 
         logger.info("Added a new server, listening on " + ip + ":" + port);
     }
@@ -412,6 +413,10 @@ public class ECS {
         return prevHash;
     }
 
+    public String getNextNextNextHash() {
+        return nextNextNextHash;
+    }
+
     public String getNextNextHash() {
         return nextNextHash;
     }
@@ -487,4 +492,3 @@ public class ECS {
     }
 
 }
-
