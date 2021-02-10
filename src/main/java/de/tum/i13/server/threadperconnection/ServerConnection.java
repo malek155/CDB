@@ -54,6 +54,8 @@ public class ServerConnection implements Runnable {
     }
 
     public void transfer2(File file1, File file2, boolean wait) throws FileNotFoundException, InterruptedException {
+        if(wait)
+            Thread.sleep(4000);
         if(file1.length() != 0){
             Scanner scanner1 = new Scanner(new FileInputStream(file1));
 
@@ -74,18 +76,19 @@ public class ServerConnection implements Runnable {
         }
     }
 
-    public void transferOne(File file) throws FileNotFoundException {
+    public void transferOne(File file, String fileName, boolean wait) throws FileNotFoundException, InterruptedException {
+        if(wait)
+            Thread.sleep(3000);
         if(file.length() != 0) {
             Scanner scanner = new Scanner(new FileInputStream(file));
 
             while (scanner.hasNextLine()) {
-                out.write("replica2 " + scanner.nextLine() + "\r\n");
+                out.write(fileName + " " + scanner.nextLine() + "\r\n");
             }
             out.flush();
             scanner.close();
         }
     }
-
 
 }
 
