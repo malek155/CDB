@@ -255,8 +255,10 @@ public class KVStoreProcessor implements KVStore {
             toStay = new File(path + "/rebalancing1.txt");
             toReturn = new File(path + "/rebalancing2.txt");
 
-            FileWriter fwToReturn = new FileWriter(toReturn, true);
-            FileWriter fwToStay = new FileWriter(toStay, true);
+            FileWriter fwToReturn = new FileWriter(toReturn, false);
+            FileWriter fwToStay = new FileWriter(toStay, false);
+            fwToReturn = new FileWriter(toReturn, true);
+            fwToStay = new FileWriter(toStay, true);
 
             try {
                 scanner = new Scanner(new FileInputStream(storage));
@@ -294,8 +296,8 @@ public class KVStoreProcessor implements KVStore {
             fwR1.close();
             fw.close();
 
-            toStay.deleteOnExit();
-            toReturn.deleteOnExit();
+//			toStay.deleteOnExit();
+//			toReturn.deleteOnExit();
 
             return toReturn;
         }
