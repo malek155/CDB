@@ -133,16 +133,15 @@ public class ECS {
         // for updating metadata
         this.movedMeta();
 
+        nextHash = newMain.nextServer.end;
+        nextNextHash = newMain.nextServer.nextServer.end;
+        if(prevServer != null) this.prevHash = prevServer.end;
+
         //for ecs connection, boolean if a new server was added
         if (this.serverRepository.size() > 1){
             this.notifyServers("", "", "");
             logger.info("Notifying a server, that it needs to send a data to a new server");
         }
-
-        logger.info(hash);
-        nextHash = newMain.nextServer.end;
-        nextNextHash = newMain.nextServer.nextServer.end;
-        if(prevServer != null) prevHash = prevServer.end;
 
         logger.info("Added a new server, listening on " + ip + ":" + port);
     }

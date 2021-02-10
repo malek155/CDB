@@ -53,13 +53,14 @@ public class ServerConnection implements Runnable {
         }
     }
 
-    public void transfer2(File file1, File file2) throws FileNotFoundException {
+    public void transfer2(File file1, File file2, boolean wait) throws FileNotFoundException, InterruptedException {
         if(file1.length() != 0){
             Scanner scanner1 = new Scanner(new FileInputStream(file1));
 
             while (scanner1.hasNextLine()){
                 out.write("replica1 " + scanner1.nextLine() + "\r\n");
             }
+            out.flush();
             scanner1.close();
         }
 

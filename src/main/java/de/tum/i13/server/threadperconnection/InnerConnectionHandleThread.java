@@ -203,16 +203,16 @@ public class InnerConnectionHandleThread extends Thread {
      * transfer2  universal method to send a two files to @server
      * @param server hash value of a server to send files
      */
-    private void transfer2(String server, File file1, File file2) throws IOException {
+    private void transfer2(String server, File file1, File file2, boolean wait) throws IOException, InterruptedException {
         String newIP = cp.getMetadata().get(server).getIP();
         int newPort = cp.getMetadata().get(server).getPort();
 
         if(this.serverConnections != null && this.serverConnections.containsKey(newIP+newPort))
-            this.serverConnections.get(newIP+newPort).transfer2(file1, file2);
+            this.serverConnections.get(newIP+newPort).transfer2(file1, file2, wait);
         else{
             ServerConnection newConnection = new ServerConnection(newIP, newPort);
             new Thread(newConnection).start();
-            newConnection.transfer2(file1, file2);
+            newConnection.transfer2(file1, file2, wait);
             this.serverConnections.put(newIP+newPort, newConnection);
         }
     }
@@ -221,11 +221,11 @@ public class InnerConnectionHandleThread extends Thread {
      * transferStorageRep1 method to send a storage as a replica and replica1 as replica2 to the next neighbour
      * @param newServer hash value of a server to send a file to (new one)
      */
-    private void transferStorageRep1(String newServer) throws IOException {
+    private void transferStorageRep1(String newServer) throws IOException, InterruptedException {
         File replica1 = this.cp.getKVStore().getStorage("", "");
         File replica2 = this.cp.getKVStore().getReplica1();
 
-        this.transfer2(newServer, replica1, replica2);
+        this.transfer2(newServer, replica1, replica2, true);
 
     }
 
@@ -234,10 +234,10 @@ public class InnerConnectionHandleThread extends Thread {
      * transferRep12 method to send both replicas of the same order to @server
      * @param server hash value of a server to send replicas to
      */
-    private void transferRep12(String server) throws IOException {
+    private void transferRep12(String server) throws IOException, InterruptedException {
         File replica1 = this.cp.getKVStore().getReplica1();
         File replica2 = this.cp.getKVStore().getReplica2();
-        this.transfer2(server, replica1, replica2);
+        this.transfer2(server, replica1, replica2, false);
     }
 
     /**
