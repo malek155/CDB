@@ -260,7 +260,6 @@ public class KVCommandProcessor implements CommandProcessor {
 			logger.info("Updating replica1");
 		} else if (input[0].equals("replica2")) {
 			kvStore.put(input[1], input[2], input[3], "replica2");
-			logger.info("Updating replica1");
 			logger.info("Updating replica2");
 		} else if (input[0].equals("transferring")) {
 			// 1: key, 2: value; 3: hash, 4: kind of file

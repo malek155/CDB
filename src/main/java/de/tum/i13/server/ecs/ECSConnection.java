@@ -107,8 +107,13 @@ public class ECSConnection implements Runnable {
         out.write("NewServer\r\n" + bigECS.getNewServer() + "\r\n");
         if(bigECS.getServerRepository().size()>1){
             out.write(bigECS.getNextHash() + "\r\n");
-            if(bigECS.getServerRepository().size()>2)
+            if(bigECS.getServerRepository().size()>2){
                 out.write(bigECS.getNextNextHash() + "\r\n" + bigECS.getPrevHash() + "\r\n");
+                if(bigECS.getServerRepository().size()>3)
+                    out.write( bigECS.getPrevHash() + "\r\n");
+                else
+                    out.write(" \r\n");
+            }
             else
                 out.write(" \r\n \r\n");
         }
