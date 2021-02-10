@@ -135,7 +135,7 @@ public class KVCommandProcessor implements CommandProcessor {
 								String value;
 								if(input[0].equals("publish")){
 									value = msg.getValue();
-									this.broker.notify(msg.getKey(), value);
+									broker.notify(msg.getKey(), value);
 								}	// value not empty if success
 								else
 									value = "";
@@ -256,10 +256,18 @@ public class KVCommandProcessor implements CommandProcessor {
 			this.readOnly = false;
 		} else if (input[0].equals("replica1")) {
 			// 1 = key, 2 = value, 3 = hash
-			kvStore.put(input[1], input[2], input[3], "replica1");
+//			if(input[1].equals("first")){
+//				kvStore.removeReplica1();
+//				kvStore.put(input[2], input[3], input[4], "replica1");
+//			}else
+				kvStore.put(input[1], input[2], input[3], "replica1");
 			logger.info("Updating replica1");
 		} else if (input[0].equals("replica2")) {
-			kvStore.put(input[1], input[2], input[3], "replica2");
+//			if(input[1].equals("first")){
+//				kvStore.removeReplica2();
+//				kvStore.put(input[2], input[3], input[4], "replica2");
+//			}else
+				kvStore.put(input[1], input[2], input[3], "replica2");
 			logger.info("Updating replica2");
 		} else if (input[0].equals("transferring")) {
 			// 1: key, 2: value; 3: hash, 4: kind of file

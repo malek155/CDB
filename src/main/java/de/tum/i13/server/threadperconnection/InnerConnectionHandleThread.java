@@ -88,6 +88,10 @@ public class InnerConnectionHandleThread extends Thread {
 
 
                     if(nextNextNeighbour.equals(this.hash)){
+                        this.cp.getKVStore().removeReplica1();
+                        this.cp.getKVStore().removeReplica2();
+                    }
+                    if(nextNextNextNeighbour.equals(this.hash)){
                         this.cp.getKVStore().removeReplica2();
                     }
                     if(nextNeighbour.equals(this.hash)){
@@ -101,14 +105,15 @@ public class InnerConnectionHandleThread extends Thread {
                         }
 
                         if(!nextNextNeighbour.equals(" ")){
-                            this.transferRep1to2(nextNextNeighbour);
+                            this.transferStorageRep1(nextNextNeighbour);
+//                            this.transferRep1to2(nextNextNeighbour);
                             logger.info("Transferring replica of a new server to a next after next server");
                         }
-                        if(nextNextNeighbour.equals(this.hash)) {
-                            if (!nextNextNextNeighbour.equals(" "))
-                                this.transferRep1to2(nextNextNextNeighbour);
-                        }
                     }
+                    if(nextNextNeighbour.equals(this.hash)) {
+                        this.transferRep1to2(nextNextNextNeighbour);
+                    }
+
                     if(prevNeighbour.equals(this.hash)){
                         logger.info("prev");
                         this.transferStorageRep1(newServer);
@@ -272,7 +277,7 @@ public class InnerConnectionHandleThread extends Thread {
 
     private void transferRep1to2(String nextNextServer) throws IOException, InterruptedException {
         File replica2 = this.cp.getKVStore().getReplica1();
-        this.transferOne(nextNextServer, replica2, "replica2", false);
+        this.transferOne(nextNextServer, replica2, "replica2", true);
     }
 
     private void transferRep2to2(String server) throws IOException, InterruptedException {

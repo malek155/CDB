@@ -59,6 +59,9 @@ public class ServerConnection implements Runnable {
         if(file1.length() != 0){
             Scanner scanner1 = new Scanner(new FileInputStream(file1));
 
+//            if(scanner1.hasNextLine()){
+//                out.write("replica1 first " + scanner1.nextLine() + "\r\n");
+//            }
             while (scanner1.hasNextLine()){
                 out.write("replica1 " + scanner1.nextLine() + "\r\n");
             }
@@ -68,6 +71,9 @@ public class ServerConnection implements Runnable {
 
         if(file2.length() != 0) {
             Scanner scanner2 = new Scanner(new FileInputStream(file2));
+//            if(scanner2.hasNextLine()){
+//                out.write("replica2 first " + scanner2.nextLine() + "\r\n");
+//            }
             while (scanner2.hasNextLine()) {
                 out.write("replica2 " + scanner2.nextLine() + "\r\n");
             }
@@ -81,6 +87,10 @@ public class ServerConnection implements Runnable {
             Thread.sleep(3000);
         if(file.length() != 0) {
             Scanner scanner = new Scanner(new FileInputStream(file));
+
+//            if(scanner.hasNextLine()){
+//                out.write("fileName first " + scanner.nextLine() + "\r\n");
+//            }
 
             while (scanner.hasNextLine()) {
                 out.write(fileName + " " + scanner.nextLine() + "\r\n");
