@@ -12,11 +12,13 @@ public class Broker{
     private int retention;
     private File StorPub;
     private Scanner scanner;
+    private Path path;
     private FileWriter fw;
     private static TreeMap<String, ArrayList<Subscriber>> subscriptions = new TreeMap<>();
     private static ArrayList<BrokerConnection> clientConnections = new ArrayList<>();
 
     public Broker(Path path, int retention) {
+        this.path = path;
         StorPub = new File(path + "/storpub.txt");
         this.retention = retention;
         try {
