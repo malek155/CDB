@@ -63,8 +63,8 @@ public class ConnectionHandleThread extends Thread {
 
 			while (!clientSocket.isClosed()){
 				while ((firstLine = in.readLine()) != null){
-					if(firstLine.startsWith("subscribe") || firstLine.startsWith("unsubscribe")){
-						res = cp.process(firstLine + " " + clientSocket.getInetAddress().getHostAddress() + "\r\n");
+					if(firstLine.startsWith("subscribe")){
+						res = cp.process(firstLine + " " + clientSocket.getInetAddress().getCanonicalHostName())  + "\r\n";
 					}
 					else
 						res = cp.process(firstLine) + "\r\n";

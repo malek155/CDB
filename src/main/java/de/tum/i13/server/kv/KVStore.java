@@ -1,5 +1,7 @@
 package de.tum.i13.server.kv;
 
+import de.tum.i13.server.cache.Cache;
+
 public interface KVStore {
 
     /**

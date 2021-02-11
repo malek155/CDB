@@ -1,17 +1,16 @@
 package de.tum.i13.server.kv;
 
+import de.tum.i13.server.cache.Cache;
+import de.tum.i13.server.cache.FIFOLRUCache;
+import de.tum.i13.server.cache.LFUCache;
 import de.tum.i13.server.threadperconnection.ConnectionHandleThread;
 
 import java.io.*;
 import java.math.BigInteger;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Scanner;
-import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

@@ -1,7 +1,6 @@
 package de.tum.i13.client;
 
 import java.io.BufferedReader;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
@@ -13,7 +12,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.*;
-
 import java.util.stream.Stream;
 
 import de.tum.i13.server.kv.KVCommandProcessor;
@@ -23,7 +21,6 @@ import de.tum.i13.shared.Metadata;
  * Milestone1Main class that handles the client interaction
  *
  * @author gr9
- *
  */
 public class Milestone1Main {
 	// the logger
@@ -73,7 +70,7 @@ public class Milestone1Main {
 
 		ActiveConnection activeConnection = null;
 
-		for (;;) {
+		for (; ; ) {
 			System.out.print("EchoClient> ");
 			String line = reader.readLine();
 			String[] command = line.split(" ");
@@ -90,6 +87,11 @@ public class Milestone1Main {
 				case "put":
 				case "get":
 				case "delete":
+				case "publish":
+				case "subscribe":
+				case "unsubscribe":
+				case "keyrange":
+				case "keyrange_read":
 					logger.info("a put/get/delete request  ");
 					// number of retry
 					int count = 0;
@@ -97,6 +99,7 @@ public class Milestone1Main {
 					while (count <= 5) {
 						// we check whether the metadata is empty
 						if (!metadataMap.isEmpty()) {
+							logger.info("metadata is not empty");
 							Metadata meta = null;
 							try {
 								// getting the server which is responsible of this key
@@ -104,7 +107,7 @@ public class Milestone1Main {
 							} catch (NoSuchAlgorithmException e) {
 								e.printStackTrace();
 							}
-							String[] a = { null, meta.getIP(), "" + meta.getPort() };
+							String[] a = {null, meta.getIP(), "" + meta.getPort()};
 							// building a new connection to this server
 							activeConnection = buildconnection(a);
 
@@ -113,6 +116,25 @@ public class Milestone1Main {
 						String result = sendrequest(activeConnection, command, line);
 						// if we get a server_write lock or server_stopped notification from the server
 						// we wait for some time and we retry
+						if (result.equals("not a suitable command for putting keys-values!") || result.equals("Error! Not connected!")) {
+							logger.info(result);
+							break;
+						} else if (result.substring(0, 9).equals("GET_ERROR") ||
+								result.substring(0, 9).equals("PUT_ERROR") ||
+								result.substring(0, 10).equals("PUT_UPDATE") ||
+								result.substring(0, 11).equals("PUT_SUCCESS") ||
+								result.substring(0, 11).equals("GET_SUCCESS") ||
+								result.substring(0, 12).equals("DELETE_ERROR") ||
+								result.substring(0, 14).equals("DELETE_SUCCESS") ||
+								result.substring(0, 16).equals("keyrange_success") ||
+								result.substring(0, 17).equals("PUBLICATION_ERROR") ||
+								result.substring(0, 17).equals("SUBSCRIBE_SUCCESS") ||
+								result.substring(0, 19).equals("PUBLICATION_SUCCESS") ||
+								result.substring(0, 19).equals("UNSUBSCRIBE_SUCCESS") ||
+								result.substring(0, 21).equals("keyrange_read_success")) {
+							logger.info(result);
+							break;
+						}
 						if (result.equals("server_write_lock") || result.equals("server_stopped")) {
 							logger.info("the server is in write lock , or the server is stopped ");
 							count++;
@@ -159,7 +181,7 @@ public class Milestone1Main {
 								logger.warning("Error in getting the right server from the received metadata");
 								e.printStackTrace();
 							}
-							String[] a = { null, meta.getIP(), "" + meta.getPort() };
+							String[] a = {null, meta.getIP(), "" + meta.getPort()};
 							// building a new connection to this server
 
 							activeConnection = buildconnection(a);
@@ -216,14 +238,13 @@ public class Milestone1Main {
 			return result;
 		}
 		int firstSpace = line.indexOf(" ");
-		if (firstSpace == -1 || firstSpace + 1 >= line.length()) {
+		if ((firstSpace == -1 && (line.length() >= 8 && !line.substring(0, 8).equals("keyrange"))) || firstSpace + 1 >= line.length()) {
 			printEchoLine("Error! Nothing to send!");
 			result = "Error! Nothing to send!";
 
 			return result;
 		}
-
-		activeConnection.write(line + " " + hashMD5(command[1]));
+		activeConnection.write(line);
 		// Pause the current thread for a short time so that we wait for the response of
 		// the server
 		Thread.yield();
@@ -295,7 +316,6 @@ public class Milestone1Main {
 	}
 
 	/**
-	 *
 	 * @param command
 	 * @return
 	 */
@@ -323,7 +343,7 @@ public class Milestone1Main {
 	 * @param metadataMap the actual Metadata of the client
 	 * @param hash        the hashvalue of the key
 	 * @return Metadata object that contains informations about the server which is
-	 *         responsible of this key
+	 * responsible of this key
 	 */
 	private static Metadata getServer(Map<String, Metadata> metadataMap, String hash) {
 		Metadata result = null;

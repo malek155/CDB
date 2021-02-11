@@ -1,5 +1,7 @@
 package de.tum.i13.server.kv;
 
+import de.tum.i13.server.pubsub.Broker;
+import de.tum.i13.server.cache.Cache;
 import de.tum.i13.server.kv.KVMessage.StatusType;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Metadata;
@@ -88,7 +90,6 @@ public class KVCommandProcessor implements CommandProcessor {
 				|| input[0].equals("publish") || input[0].equals("subscribe") || input[0].equals("unsubscribe")) && input.length != 1 && initiated){
 
 			this.start = metadata.get(hash).getStart();
-			logger.info("nice: " + start + " " + end + " " + hash);
 
 			if ((!(input[0].equals("subscribe") || input[0].equals("unsubscribe")) && isInTheRange(this.hashMD5(input[1]), start, end))
 					|| (input[0].equals("subscribe") || input[0].equals("unsubscribe")) && isInTheRange(this.hashMD5(input[2]), start, end)){
@@ -163,10 +164,18 @@ public class KVCommandProcessor implements CommandProcessor {
 								response = msg.getStatus().toString() + " " + msg.getKey() + " " + msg.getValue();
 							}
 						}else if(input[0].equals("subscribe")) { // subscribe sid, key, port, ip
-							broker.subscribe(input);
+							if(input.length == 5){
+								broker.subscribe(input);
+								response = "subscribe_success " + input[1] + " " + input[2];
+							}else
+								response = "Not a suitable command for subscribing!";
 						}
-						else if(input[0].equals("unsubscribe")) {// sid, key, ip, port
-							broker.unsubscribe(input[1], input[2]);
+						else if(input[0].equals("unsubscribe")) {// sid, key
+							if(input.length == 3){
+								broker.unsubscribe(input[1], input[2]);
+								response = "unsubscribe_success " + input[1];
+							}else
+								response = "Not a suitable command for unsubscribing!";
 						}
 
 				} catch (Exception e) {
@@ -182,7 +191,7 @@ public class KVCommandProcessor implements CommandProcessor {
 							response = "not a suitable command for getting values!";
 							logger.warning("not a suitable command for getting values!");
 							throw new Exception("Get Request needs only a key !");
-					}else if (input.length != 3 && (input[0].equals("subscribe") || input[0].equals("unsubscribe"))){
+					}else if (input.length != 5 && input[0].equals("subscribe") || input.length != 3 && input[0].equals("unsubscribe")){
 						response = "not a suitable command for un/subscribing!";
 						logger.warning("not a suitable command for un/subscribing!");
 						throw new Exception("Un/Subscribe Request needs a key and an ID!");
@@ -367,7 +376,6 @@ public class KVCommandProcessor implements CommandProcessor {
 			if (intKey.compareTo(intStart) >= 0 || intKey.compareTo(intEnd) <= 0)
 				result = true;
 		}
-		logger.info(result + " " + start + " " + end);
 
 		return result;
 	}

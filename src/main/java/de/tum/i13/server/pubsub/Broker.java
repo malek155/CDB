@@ -1,9 +1,6 @@
-package de.tum.i13.server.kv;
-
-import de.tum.i13.shared.Constants;
+package de.tum.i13.server.pubsub;
 
 import java.io.*;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.logging.Logger;
@@ -12,14 +9,15 @@ public class Broker{
 
         private BufferedReader in = null;
         private PrintWriter out = null;
-        private static TreeMap<String, ArrayList<Subscriber>> subscriptions = new TreeMap<>();
+        private static TreeMap<String, ArrayList<Subscriber>> subscriptions;
         private static ArrayList<BrokerConnection> clientConnections = new ArrayList<>();
 
         public Broker(){
-
+            if(subscriptions == null)
+                subscriptions = new TreeMap<>();
         }
 
-        public static Logger logger = Logger.getLogger(de.tum.i13.server.kv.Broker.class.getName());
+        public static Logger logger = Logger.getLogger(Broker.class.getName());
 
         public void unsubscribe(String sid, String key){
             if (subscriptions.containsKey(key)){
@@ -36,10 +34,12 @@ public class Broker{
         public void subscribe(String[] input){  // subscribe id key port ip
             if(subscriptions.containsKey(input[2])){ //contains key
                 subscriptions.get(input[2]).add(new Subscriber(input[1], input[4], Integer.parseInt(input[3])));
+                logger.info("existing");
             }else{
                 ArrayList<Subscriber> subscriberList = new ArrayList<>();
-                subscriberList.add(new Subscriber(input[1], input[3], Integer.parseInt(input[4])));
+                subscriberList.add(new Subscriber(input[1], input[4], Integer.parseInt(input[3])));
                 subscriptions.put(input[2], subscriberList);
+                logger.info("new sid");
             }
         }
 

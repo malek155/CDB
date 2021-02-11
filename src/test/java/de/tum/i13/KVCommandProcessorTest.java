@@ -1,9 +1,8 @@
 package de.tum.i13;
 
 import de.tum.i13.server.ecs.ECS;
-import de.tum.i13.server.kv.Cache;
+import de.tum.i13.server.cache.Cache;
 import de.tum.i13.server.kv.KVCommandProcessor;
-import de.tum.i13.server.kv.KVStore;
 import de.tum.i13.server.kv.KVStoreProcessor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

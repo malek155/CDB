@@ -1,9 +1,8 @@
 package de.tum.i13.server.echo;
 
-import de.tum.i13.server.kv.Cache;
+import de.tum.i13.server.cache.Cache;
 import de.tum.i13.server.kv.KVCommandProcessor;
 import de.tum.i13.server.kv.KVStore;
-import de.tum.i13.server.kv.KVStoreProcessor;
 
 import de.tum.i13.shared.CommandProcessor;
 

@@ -1,5 +1,8 @@
 package de.tum.i13.server.threadperconnection;
 
+import de.tum.i13.server.cache.Cache;
+import de.tum.i13.server.cache.FIFOLRUCache;
+import de.tum.i13.server.cache.LFUCache;
 import de.tum.i13.server.kv.*;
 import de.tum.i13.shared.Config;
 
@@ -9,7 +12,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.TreeMap;
 
 import static de.tum.i13.shared.Config.parseCommandlineArgs;
 

@@ -2,7 +2,7 @@ package de.tum.i13.server.nio;
 
 import de.tum.i13.server.echo.EchoLogic;
 import de.tum.i13.server.kv.KVStoreProcessor;
-import de.tum.i13.server.kv.LFUCache;
+import de.tum.i13.server.cache.LFUCache;
 import de.tum.i13.shared.CommandProcessor;
 import de.tum.i13.shared.Config;
 

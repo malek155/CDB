@@ -1,4 +1,4 @@
-package de.tum.i13.server.kv;
+package de.tum.i13.server.pubsub;
 
 import de.tum.i13.shared.Constants;
 

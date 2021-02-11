@@ -10,7 +10,6 @@ import java.util.*;
 import java.util.logging.Logger;
 
 //import Maven dependency
-import de.tum.i13.server.kv.Broker;
 import de.tum.i13.server.threadperconnection.Main;
 import de.tum.i13.shared.Config;
 import de.tum.i13.shared.Metadata;

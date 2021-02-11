@@ -1,17 +1,11 @@
 package de.tum.i13.shared;
 
-import de.tum.i13.server.kv.Cache;
-import de.tum.i13.server.kv.FIFOLRUCache;
-import de.tum.i13.server.kv.LFUCache;
-import org.w3c.dom.ls.LSOutput;
 import picocli.CommandLine;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.logging.Level;
 
 public class Config {
 
@@ -24,7 +18,7 @@ public class Config {
 	@CommandLine.Option(names = "-a", description = "which address the server should listen to", defaultValue = "127.0.0.1")
 	public String listenaddr;
 
-	@CommandLine.Option(names = "-b", description = "bootstrap broker where clients and other brokers connect first to retrieve configuration, port and ip, e.g., 192.168.1.1:5153", defaultValue = "127.0.0.2:5153")
+	@CommandLine.Option(names = "-b", description = "bootstrap pubsub where clients and other brokers connect first to retrieve configuration, port and ip, e.g., 192.168.1.1:5153", defaultValue = "127.0.0.2:5153")
 	public InetSocketAddress bootstrap;
 
 	@CommandLine.Option(names = "-d", description = "Directory for files", defaultValue = "data/")
