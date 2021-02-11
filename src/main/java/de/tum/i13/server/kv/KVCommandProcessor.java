@@ -46,6 +46,7 @@ public class KVCommandProcessor implements CommandProcessor {
 
     private String ip;
     private int port;
+    private int retention;
     private static Broker broker;
 
 
@@ -55,6 +56,22 @@ public class KVCommandProcessor implements CommandProcessor {
     public static Logger logger = Logger.getLogger(KVCommandProcessor.class.getName());
 
     // new constructor having the metadata instance and start end of the range
+    public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache, String ip,
+                              int port, int retention) throws NoSuchAlgorithmException {
+        this.kvStore = kvStore;
+        kvStore.setCache(cache);
+        this.hash = this.hashMD5(ip + port);
+        this.end = this.hash;
+        this.initiated = false;
+        this.readOnly = true;
+        logger.info("New thread for server started, initializing");
+        this.ip = ip;
+        this.port = port;
+        this.retention = retention;
+        if (broker == null)
+            broker = new Broker(kvStore.getPath(), retention);
+    }
+
     public KVCommandProcessor(KVStoreProcessor kvStore, Cache cache, String ip,
                               int port) throws NoSuchAlgorithmException {
         this.kvStore = kvStore;
@@ -66,8 +83,9 @@ public class KVCommandProcessor implements CommandProcessor {
         logger.info("New thread for server started, initializing");
         this.ip = ip;
         this.port = port;
+        this.retention = 40;
         if (broker == null)
-            broker = new Broker();
+            broker = new Broker(kvStore.getPath(),retention);
     }
 
     /**

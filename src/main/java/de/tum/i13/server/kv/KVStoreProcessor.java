@@ -34,7 +34,7 @@ public class KVStoreProcessor implements KVStore {
     private FileWriter fw;
     private FileWriter fwR1;
     private FileWriter fwR2;
-
+    public Path getPath() { return this.path ;}
     public void setPath(Path path) {
         this.path = path;
     }
