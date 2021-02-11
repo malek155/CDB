@@ -68,8 +68,6 @@ public class ConnectionHandleThread extends Thread {
 					}
 					else
 						res = cp.process(firstLine) + "\r\n";
-
-					logger.info(res);
 					out.write(res);
 					out.flush();
 				}
@@ -77,13 +75,9 @@ public class ConnectionHandleThread extends Thread {
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			System.out.println(ex.getMessage());
-			// handle the exception and add finally block to close everything
 		}
 
-		// We display the disconnection notification
-		// we maybe have to add sysout in the connectionClosed method in echoLogic
 		cp.connectionClosed(remote.getAddress());
-		// I will close anything here
 
 		try {
 			shuttingDown = true;
@@ -95,16 +89,6 @@ public class ConnectionHandleThread extends Thread {
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
-	}
-
-	public void notifyClient(String key, String value) throws IOException, InterruptedException {
-		if(out !=  null && in != null){
-			int count = 0;
-			String messageToSend = "notify " + key + " " + value + "\r\n";
-			out.write(messageToSend);
-			out.flush();
-// to be continued
 		}
 	}
 

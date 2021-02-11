@@ -7,13 +7,9 @@ import java.net.Socket;
 import java.util.logging.Logger;
 
 public class BrokerConnection implements Runnable {
-    private BufferedReader in;
     private PrintWriter out;
     private String ip;
     private int port;
-    private String hash;
-
-    public static Logger logger = Logger.getLogger(de.tum.i13.server.ecs.ECSConnection.class.getName());
 
     public BrokerConnection(String ip, int port) throws IOException {
         this.ip = ip;
@@ -33,6 +29,10 @@ public class BrokerConnection implements Runnable {
         }
     }
 
+    /**
+     * method notifyOne is invoked from Broker and is used for notifying one single client
+     * @param notification a publication notification
+     */
     public void notifyOne(String notification){
         if(out != null){
             out.write(notification + "\r\n");
@@ -47,5 +47,6 @@ public class BrokerConnection implements Runnable {
     public int getPort(){
         return this.port;
     }
+
 
     }

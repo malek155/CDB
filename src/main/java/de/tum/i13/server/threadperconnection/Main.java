@@ -25,7 +25,6 @@ public class Main {
 	public String start;
 	public String end;
 	private static ArrayList<ConnectionHandleThread> clientConnections = new ArrayList<>();
-//	private static TreeMap<String, ArrayList<Subscriber>> updatedSubs; // key(topic) -> sid keyip port
 
 	public Main(){}
 

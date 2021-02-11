@@ -22,6 +22,10 @@ public class ServerConnection implements Runnable {
                 new OutputStreamWriter(socket.getOutputStream(), Constants.TELNET_ENCODING));
     }
 
+    /**
+     * run method to invoke another connection thread to another server indicating an inner connection
+     * for transferring storages and replicas
+     */
     @Override
     public void run(){
         try{
@@ -40,12 +44,17 @@ public class ServerConnection implements Runnable {
         return this.port;
     }
 
+    /**
+     * transfer2 method to send 2 files to a corresponding server
+     * @param storage file that should be transferred, normally after adding or deleting of a server
+     */
     public void transfer(File storage) throws FileNotFoundException {
         if(storage.length() != 0){
             Scanner scanner = new Scanner(new FileInputStream(storage));
             while (scanner.hasNextLine()){
-                String transfer = "transferring " + scanner.nextLine();
-                out.write(transfer+"\r\n");
+                String line = scanner.nextLine();
+                if(!line.trim().equals(""))
+                    out.write("transferring " + line +"\r\n");
             }
             out.write("You'reGoodToGo" + "\r\n");
             out.flush();
@@ -53,17 +62,21 @@ public class ServerConnection implements Runnable {
         }
     }
 
-    public void transfer2(File file1, File file2, boolean wait) throws FileNotFoundException, InterruptedException {
-        if(wait)
-            Thread.sleep(4000);
+    /**
+     * transfer2 method to send 2 files to a corresponding server
+     * @param file1,file2 files that should be transferred
+     * @param ms how much a thread should wait
+     */
+    public void transfer2(File file1, File file2, int ms) throws FileNotFoundException, InterruptedException {
+
+        Thread.sleep(ms);
         if(file1.length() != 0){
             Scanner scanner1 = new Scanner(new FileInputStream(file1));
 
-//            if(scanner1.hasNextLine()){
-//                out.write("replica1 first " + scanner1.nextLine() + "\r\n");
-//            }
             while (scanner1.hasNextLine()){
-                out.write("replica1 " + scanner1.nextLine() + "\r\n");
+                String line = scanner1.nextLine();
+                if(!line.trim().equals(""))
+                    out.write("replica1 " + line + "\r\n");
             }
             out.flush();
             scanner1.close();
@@ -71,29 +84,32 @@ public class ServerConnection implements Runnable {
 
         if(file2.length() != 0) {
             Scanner scanner2 = new Scanner(new FileInputStream(file2));
-//            if(scanner2.hasNextLine()){
-//                out.write("replica2 first " + scanner2.nextLine() + "\r\n");
-//            }
             while (scanner2.hasNextLine()) {
-                out.write("replica2 " + scanner2.nextLine() + "\r\n");
+                String line = scanner2.nextLine();
+                if(!line.trim().equals(""))
+                    out.write("replica2 " + line + "\r\n");
             }
             out.flush();
             scanner2.close();
         }
     }
 
-    public void transferOne(File file, String fileName, boolean wait) throws FileNotFoundException, InterruptedException {
-        if(wait)
-            Thread.sleep(3000);
+    /**
+     * transferOne method to send one file to a corresponding server
+     * @param file that should be transferred
+     * @param fileName can be sent as replica1/replica2/storage
+     * @param ms how much a thread should wait
+     */
+    public void transferOne(File file, String fileName, int ms) throws FileNotFoundException, InterruptedException {
+
+        Thread.sleep(ms);
         if(file.length() != 0) {
             Scanner scanner = new Scanner(new FileInputStream(file));
 
-//            if(scanner.hasNextLine()){
-//                out.write("fileName first " + scanner.nextLine() + "\r\n");
-//            }
-
             while (scanner.hasNextLine()) {
-                out.write(fileName + " " + scanner.nextLine() + "\r\n");
+                String line = scanner.nextLine();
+                if(!line.trim().equals(""))
+                    out.write(fileName + " " +line + "\r\n");
             }
             out.flush();
             scanner.close();

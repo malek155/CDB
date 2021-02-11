@@ -106,10 +106,8 @@ public class ECS {
                 newMain.nextServer = headServer;
                 newMain.start = arithmeticHash(headServer.end, true);
                 tailServer = newMain;
-            }
-            else if(startIndex == 0){
+            }else if(startIndex == 0){
                 newMain.nextServer = serverRepository.getLast().nextServer;
-                logger.info(newMain.nextServer.end);
                 this.headServer = newMain;
                 this.tailServer.nextServer = newMain;
             }else{
@@ -265,6 +263,7 @@ public class ECS {
             }
             startRange = arithmeticHash(hashToCmpString, true);
             if(hashToCmpString.equals(metadataMap.lastKey())){
+                count++;
                 returnIndexes.put(count, startRange);
                 break;
             }

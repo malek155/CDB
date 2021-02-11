@@ -121,7 +121,6 @@ public class KVStoreProcessor implements KVStore {
 							replacingLine = key + " " + value + " " + hash + "\r\n" +  line;
 							added = true;
 						}
-						logger.info(replacingLine);
 						Stream<String> lines = Files.lines(Paths.get(path + "/" + kind + ".txt"));
 						String replaced = lines.map(row -> row.replaceAll(line, replacingLine))
 								.collect(Collectors.joining("\r\n"));
@@ -255,7 +254,6 @@ public class KVStoreProcessor implements KVStore {
 			BigInteger hashEdge = new BigInteger(hashToAdd, 16);
 			BigInteger hashNeighbour = new BigInteger(neighbour, 16);
 			BigInteger hashToCompare;
-
 			//creating tmp paths
 			toStay = new File(path + "/rebalancing1.txt");
 			toReturn = new File(path + "/rebalancing2.txt");
@@ -265,27 +263,45 @@ public class KVStoreProcessor implements KVStore {
 			fwToReturn = new FileWriter(toReturn, true);
 			fwToStay = new FileWriter(toStay, true);
 
-			try {
-				scanner = new Scanner(new FileInputStream(storage));
-				while (scanner.hasNextLine()) {
-					String line = scanner.nextLine();
-					keyvalue = line.split(" ");
-					hashToCompare = new BigInteger(keyvalue[2], 16);
-					if(hashEdge.compareTo(hashToCompare) < 0 && hashNeighbour.compareTo(hashToCompare) >= 0){
-						fwToStay.write(line + "\r\n");
+			if(hashEdge.compareTo(hashNeighbour) < 0){
+				try {
+					scanner = new Scanner(new FileInputStream(storage));
+					while (scanner.hasNextLine()) {
+						String line = scanner.nextLine();
+						keyvalue = line.split(" ");
+						hashToCompare = new BigInteger(keyvalue[2], 16);
+						if(hashEdge.compareTo(hashToCompare) < 0 && hashNeighbour.compareTo(hashToCompare) >= 0){
+							fwToStay.write(line + "\r\n");
+						}
+						else{
+							fwToReturn.write(line + "\r\n");
+						}
 					}
-					else{
-						fwToReturn.write(line + "\r\n");
-					}
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
-			} catch (Exception e) {
-				e.printStackTrace();
+			}else{
+				try {
+					scanner = new Scanner(new FileInputStream(storage));
+					while (scanner.hasNextLine()) {
+						String line = scanner.nextLine();
+						keyvalue = line.split(" ");
+						hashToCompare = new BigInteger(keyvalue[2], 16);
+						if(hashEdge.compareTo(hashToCompare) > 0 && hashNeighbour.compareTo(hashToCompare) <= 0){
+							fwToReturn.write(line + "\r\n");
+						}
+						else{
+							fwToStay.write(line + "\r\n");
+						}
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
+
 			fwToReturn.close();
 			fwToStay.close();
 
-			// cut out part we're also leaving for a replica 1
-			// replica1 gets to be replica2
 			String linesNew = Files.lines(Paths.get(path + "/rebalancing1.txt")).collect(Collectors.joining("\r\n"));
 			String linesR2 = Files.lines(Paths.get(path + "/replica1.txt")).collect(Collectors.joining("\r\n"));
 			String linesR1 = Files.lines(Paths.get(path + "/rebalancing2.txt")).collect(Collectors.joining("\r\n"));
@@ -301,9 +317,6 @@ public class KVStoreProcessor implements KVStore {
 			fwR2.close();
 			fwR1.close();
 			fw.close();
-
-//			toStay.deleteOnExit();
-//			toReturn.deleteOnExit();
 
 			return toReturn;
 		}

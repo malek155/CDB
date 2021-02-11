@@ -264,18 +264,9 @@ public class KVCommandProcessor implements CommandProcessor {
 			logger.info("Server is ready");
 			this.readOnly = false;
 		} else if (input[0].equals("replica1")) {
-			// 1 = key, 2 = value, 3 = hash
-//			if(input[1].equals("first")){
-//				kvStore.removeReplica1();
-//				kvStore.put(input[2], input[3], input[4], "replica1");
-//			}else
 				kvStore.put(input[1], input[2], input[3], "replica1");
 			logger.info("Updating replica1");
 		} else if (input[0].equals("replica2")) {
-//			if(input[1].equals("first")){
-//				kvStore.removeReplica2();
-//				kvStore.put(input[2], input[3], input[4], "replica2");
-//			}else
 				kvStore.put(input[1], input[2], input[3], "replica2");
 			logger.info("Updating replica2");
 		} else if (input[0].equals("transferring")) {
@@ -432,8 +423,8 @@ public class KVCommandProcessor implements CommandProcessor {
 	private TreeMap<String, MetadataReplica> metadataMap2(){
 		// I need it to get the replicas
 		TreeMap<String, MetadataReplica> metadataMap2 = new TreeMap();
-		TreeMap<String, Metadata> meta2 = this.metadata;
-		this.metadata.keySet().forEach(key -> {
+		TreeMap<String, Metadata> meta2 = metadata;
+		metadata.keySet().forEach(key -> {
 			Metadata meta1 = metadata.get(key);
 			MetadataReplica mdr = new MetadataReplica(meta1.getIP(), meta1.getPort(), meta1.getStart(), meta1.getEnd(), null, null);
 			// we get the hash of previous server with the start of this server from the metadata

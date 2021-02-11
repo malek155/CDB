@@ -54,9 +54,6 @@ public class InnerConnectionHandleThread extends Thread {
         String prevNeighbour;
         String newServer;
 
-        logger.info(bootstrap.getHostString() + ":" +  bootstrap.getPort());
-
-        // ip, port -> bootstrap, ecs ip, port
         try(Socket socket = new Socket(bootstrap.getHostString(), bootstrap.getPort())){
             BufferedReader inECS = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter outECS = new PrintWriter(socket.getOutputStream());
@@ -74,50 +71,42 @@ public class InnerConnectionHandleThread extends Thread {
 
                 if(line.equals("NewServer")){
 
-                    newServer = inECS.readLine();  				// newly added server
+                    newServer = inECS.readLine();
                     nextNeighbour = inECS.readLine();           // server we have our data at
 
                     nextNextNeighbour = inECS.readLine();
                     prevNeighbour = inECS.readLine();
                     String nextNextNextNeighbour = inECS.readLine();
-                    logger.info("new server:" + newServer);
-                    logger.info("next server:" + nextNeighbour);
-                    logger.info("nextnext:" + nextNextNeighbour);
-                    logger.info("prev:" + prevNeighbour);
-                    logger.info("nextnextnext:" + nextNextNextNeighbour);
 
-
+                    if(nextNextNextNeighbour.equals(this.hash)){
+                        this.cp.getKVStore().removeReplica2();
+                    }
                     if(nextNextNeighbour.equals(this.hash)){
                         this.cp.getKVStore().removeReplica1();
                         this.cp.getKVStore().removeReplica2();
                     }
-                    if(nextNextNextNeighbour.equals(this.hash)){
-                        this.cp.getKVStore().removeReplica2();
-                    }
                     if(nextNeighbour.equals(this.hash)){
-                        // in kvstoreprocessor toReturn should be saved to the fst replica
                         this.transfer(newServer, nextNeighbour);
                         logger.info("Transferring data to a new server");
 
                         if(prevNeighbour.equals(nextNextNeighbour) && !nextNextNeighbour.equals(" ")){
                             this.transferStorageToRep1(nextNextNeighbour);
-                            logger.info("transferrring, filling a loch");
+                            logger.info("Transferring a storage as replica1 to next after next server");
                         }
 
                         if(!nextNextNeighbour.equals(" ")){
                             this.transferStorageRep1(nextNextNeighbour);
-//                            this.transferRep1to2(nextNextNeighbour);
                             logger.info("Transferring replica of a new server to a next after next server");
                         }
                     }
-                    if(nextNextNeighbour.equals(this.hash)) {
-                        this.transferRep1to2(nextNextNextNeighbour);
-                    }
-
                     if(prevNeighbour.equals(this.hash)){
-                        logger.info("prev");
+
                         this.transferStorageRep1(newServer);
                         logger.info("Transferred replicas to a new server");
+                    }
+                    if(nextNextNeighbour.equals(this.hash) && !nextNextNextNeighbour.equals(" ")) {
+                        this.transferRep1to2(nextNextNextNeighbour);
+                        logger.info("Updating reduced replica2 of next after next after next server");
                     }
                 }else if(line.startsWith("metadata") || line.startsWith("firstmetadata")){
                     cp.process(line);
@@ -166,7 +155,7 @@ public class InnerConnectionHandleThread extends Thread {
                 }
                 if(this.cp.getUpdates()){
                     // to ecs
-                    // 1: command with a hash - put/delete/publish blabla, 2: replica1, 3:rep2
+                    // 1: command with a hash - put/delete/publish ..., 2: replica1, 3:replica2
                     outECS.write(cp.getToReps().get(0) + ":" + cp.getToReps().get(1) + ":" + cp.getToReps().get(2) + "\r\n");
                     outECS.flush();
                     cp.setUpdateReps(false);
@@ -219,17 +208,20 @@ public class InnerConnectionHandleThread extends Thread {
     /**
      * transfer2  universal method to send a two files to @server
      * @param server hash value of a server to send files
+     * @param file1 first file that should be transferred
+     * @param file2 second file that should be transferred
+     * @param ms how much a thred should wait in ms
      */
-    private void transfer2(String server, File file1, File file2, boolean wait) throws IOException, InterruptedException {
+    private void transfer2(String server, File file1, File file2, int ms) throws IOException, InterruptedException {
         String newIP = cp.getMetadata().get(server).getIP();
         int newPort = cp.getMetadata().get(server).getPort();
 
         if(this.serverConnections != null && this.serverConnections.containsKey(newIP+newPort))
-            this.serverConnections.get(newIP+newPort).transfer2(file1, file2, wait);
+            this.serverConnections.get(newIP+newPort).transfer2(file1, file2, ms);
         else{
             ServerConnection newConnection = new ServerConnection(newIP, newPort);
             new Thread(newConnection).start();
-            newConnection.transfer2(file1, file2, wait);
+            newConnection.transfer2(file1, file2, ms);
             this.serverConnections.put(newIP+newPort, newConnection);
         }
     }
@@ -242,8 +234,7 @@ public class InnerConnectionHandleThread extends Thread {
         File replica1 = this.cp.getKVStore().getStorage("", "");
         File replica2 = this.cp.getKVStore().getReplica1();
 
-        this.transfer2(newServer, replica1, replica2, true);
-
+        this.transfer2(newServer, replica1, replica2, 2000);
     }
 
 
@@ -254,40 +245,54 @@ public class InnerConnectionHandleThread extends Thread {
     private void transferRep12(String server) throws IOException, InterruptedException {
         File replica1 = this.cp.getKVStore().getReplica1();
         File replica2 = this.cp.getKVStore().getReplica2();
-        this.transfer2(server, replica1, replica2, false);
+        this.transfer2(server, replica1, replica2, 0);
     }
 
     /**
      * transferOne method to send one file to @server
      * @param server hash value of a server to send a file to
+     * @param file that should be transferred
+     * @param ms how much a thred should wait in ms
      */
-    private void transferOne(String server, File file, String fileName, boolean wait) throws IOException, InterruptedException {
+    private void transferOne(String server, File file, String fileName, int ms) throws IOException, InterruptedException {
         String nextNextIP = cp.getMetadata().get(server).getIP();
         int nextNextPort = cp.getMetadata().get(server).getPort();
 
         if(this.serverConnections != null && this.serverConnections.containsKey(nextNextIP+nextNextPort))
-            this.serverConnections.get(nextNextIP+nextNextPort).transferOne(file, fileName, wait);
+            this.serverConnections.get(nextNextIP+nextNextPort).transferOne(file, fileName, ms);
         else{
             ServerConnection newConnection = new ServerConnection(nextNextIP, nextNextPort);
             new Thread(newConnection).start();
-            newConnection.transferOne(file, fileName, wait);
+            newConnection.transferOne(file, fileName, ms);
             this.serverConnections.put(nextNextIP+nextNextPort, newConnection);
         }
     }
 
-    private void transferRep1to2(String nextNextServer) throws IOException, InterruptedException {
+    /**
+     * transferRep1to2 method to send one file to @server
+     * @param server hash value of a server to send a file to (replica1 as replica2 afterwards)
+     */
+    private void transferRep1to2(String server) throws IOException, InterruptedException {
         File replica2 = this.cp.getKVStore().getReplica1();
-        this.transferOne(nextNextServer, replica2, "replica2", true);
+        this.transferOne(server, replica2, "replica2", 3000);
     }
 
+    /**
+     * transferRep2to2 method to send one file to @server
+     * @param server hash value of a server to send a file to (replica2 as replica2 afterwards)
+     */
     private void transferRep2to2(String server) throws IOException, InterruptedException {
         File replica2 = this.cp.getKVStore().getReplica2();
-        this.transferOne(server, replica2, "replica2", false);
+        this.transferOne(server, replica2, "replica2", 0);
     }
 
+    /**
+     * transferStorageToRep1 method to send one file to @server
+     * @param server hash value of a server to send a file to (storage as replica1 afterwards)
+     */
     public void transferStorageToRep1(String server) throws IOException, InterruptedException {
         File storage = this.cp.getKVStore().getStorage("", "");
-        this.transferOne(server, storage, "replica1", true);
+        this.transferOne(server, storage, "replica1", 0);
     }
 
     /**
