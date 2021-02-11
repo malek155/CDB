@@ -20,8 +20,10 @@ public class Broker {
     private PrintWriter out = null;
     private static TreeMap<String, ArrayList<Subscriber>> subscriptions = new TreeMap<>();
     private static ArrayList<BrokerConnection> clientConnections = new ArrayList<>();
+    private Path path;
 
     public Broker(Path path, int retention) {
+        this.path = path;
         StorPub = new File(path + "/storpub.txt");
         this.retention = retention;
         try {
