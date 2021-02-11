@@ -1,21 +1,29 @@
 package de.tum.i13.server.pubsub;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.logging.Logger;
 
 public class Broker{
 
-    private static TreeMap<String, ArrayList<Subscriber>> subscriptions;
-    private static ArrayList<BrokerConnection> clientConnections;
+    private int retention;
+    private File StorPub;
+    private Scanner scanner;
+    private FileWriter fw;
+    private static TreeMap<String, ArrayList<Subscriber>> subscriptions = new TreeMap<>();
+    private static ArrayList<BrokerConnection> clientConnections = new ArrayList<>();
 
-    public Broker(){
-        if(clientConnections == null){
-            clientConnections = new ArrayList<>();
-        }
-        if(subscriptions == null) {
-            subscriptions = new TreeMap<>();
+    public Broker(Path path, int retention) {
+        StorPub = new File(path + "/storpub.txt");
+        this.retention = retention;
+        try {
+            scanner = new Scanner(new FileInputStream(StorPub));
+            fw = new FileWriter(StorPub, false);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -57,20 +65,23 @@ public class Broker{
      * @param (key,value) key - topic a client is subscribed to, value - a changed value after a publication
      */
     public void notify(String key, String value) throws IOException {
+        long millis = System.currentTimeMillis();
+        fw.write(key + " " + value);
+        fw.flush();
         boolean isInList;
-        if(subscriptions.containsKey(key)){
+        if (subscriptions.containsKey(key)) {
             ArrayList<Subscriber> subscribers = subscriptions.get(key);
-            for(Subscriber subscriber : subscribers){
+            for (Subscriber subscriber : subscribers) {
                 isInList = false;
-                for(BrokerConnection connection : clientConnections){
-                    if(subscriber.getIp().equals(connection.getIp())
-                            && subscriber.getPort() == connection.getPort()){
+                for (BrokerConnection connection : clientConnections) {
+                    if (subscriber.getIp().equals(connection.getIp())
+                            && subscriber.getPort() == connection.getPort()) {
                         connection.notifyOne("notify " + key + " " + value);
                         isInList = true;
                         break;
                     }
                 }
-                if(!isInList){
+                if (!isInList) {
                     BrokerConnection newConnection = new BrokerConnection(subscriber.getIp(), subscriber.getPort());
                     new Thread(newConnection).start();
                     clientConnections.add(newConnection);
@@ -78,6 +89,14 @@ public class Broker{
                 }
             }
         }
+        long millis2 = System.currentTimeMillis();
+        int dif = (int) (millis2 - millis2);
+
+        if (dif > retention) {
+
+
+        }
+
     }
 
 }

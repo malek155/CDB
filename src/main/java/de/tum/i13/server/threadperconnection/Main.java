@@ -53,7 +53,7 @@ public class Main {
 		// now we can open a listening serversocket
 		final ServerSocket serverSocket = new ServerSocket();
 
-		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache, cfg.listenaddr, cfg.port);
+		KVCommandProcessor logic = new KVCommandProcessor(kvStore, cache, cfg.listenaddr, cfg.port,cfg.seconds);
 		InnerConnectionHandleThread innerThread = new InnerConnectionHandleThread(logic, cfg.bootstrap, cfg.listenaddr, cfg.port);
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
