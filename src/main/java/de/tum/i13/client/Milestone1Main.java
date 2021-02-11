@@ -1,20 +1,22 @@
 package de.tum.i13.client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.*;
 import java.util.stream.Stream;
 
 import de.tum.i13.server.kv.KVCommandProcessor;
+import de.tum.i13.server.kv.Subscriber;
+import de.tum.i13.server.threadperconnection.Main;
+import de.tum.i13.shared.Constants;
 import de.tum.i13.shared.Metadata;
 
 /**
@@ -25,6 +27,7 @@ import de.tum.i13.shared.Metadata;
 public class Milestone1Main {
     // the logger
     public static Logger logger = Logger.getLogger(Milestone1Main.class.getName());
+
 
     /**
      * hashMD5 method hashes a given key to its Hexadecimal value with md5
@@ -47,6 +50,7 @@ public class Milestone1Main {
      */
 
     public static void main(String[] args) throws IOException, InterruptedException, NoSuchAlgorithmException {
+        ArrayList<Integer> listening = new ArrayList<Integer>();
         LogManager.getLogManager().reset();
         logger.setLevel(Level.ALL);
         // Console Handler
@@ -98,7 +102,7 @@ public class Milestone1Main {
                     // the maximum number of retry is 5
                     while (count <= 5) {
                         // we check whether the metadata is empty
-                        if (!metadataMap.isEmpty()) {
+                        if (!metadataMap.isEmpty() && !(command[0].equals("keyrange") || command[0].equals("keyrange_read"))) {
                             logger.info("metadata is not empty");
                             Metadata meta = null;
                             try {
@@ -111,6 +115,49 @@ public class Milestone1Main {
                             // building a new connection to this server
                             activeConnection = buildconnection(a);
 
+                        }
+                        if (command[0].equals("subscribe")) {
+                            if (listening.isEmpty() || !listening.contains(Integer.parseInt(command[2]))) {
+                                listening.add(Integer.parseInt(command[2]));
+                                ServerSocket serverSocket = new ServerSocket();
+                                // there is no config for client side so I can not specify an ip for the client so I have no choice except listening in the local host !!
+                                serverSocket.bind(new InetSocketAddress(InetAddress.getLocalHost(), Integer.parseInt(command[3])));
+                                // waiting for the broker to connect
+                                Socket brokerSocket = serverSocket.accept();
+                                // we start a new thread for the broker
+                                Thread th = new Thread(new Runnable() {
+
+                                    @Override
+                                    public void run() {
+                                        try {
+                                            logger.info("Starting the ClientConnection to listen to the broker !");
+                                            BufferedReader in = new BufferedReader(
+                                                    new InputStreamReader(brokerSocket.getInputStream(), Constants.TELNET_ENCODING));
+                                            PrintWriter out = new PrintWriter(
+                                                    new OutputStreamWriter(brokerSocket.getOutputStream(), Constants.TELNET_ENCODING));
+                                            String line;
+                                            while (!brokerSocket.isClosed()) {
+                                                line = in.readLine();
+                                                String[] msg = line.split(" ");
+                                                // the acknowledgement
+                                                if (msg[0].equals("notify")) {
+                                                    String ack = "I got it !";
+                                                    Thread.yield();
+
+                                                    out.write(ack);
+                                                    out.flush();
+                                                }
+
+
+                                            }
+
+
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                });
+                            }
                         }
                         // send the request
                         String result = sendrequest(activeConnection, command, line);
