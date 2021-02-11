@@ -87,6 +87,7 @@ public class Broker {
 
         if (dif > retention) {
 
+            StorPub = new File(this.path + "/storpub.txt");
 
         }
 
